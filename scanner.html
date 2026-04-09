@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ManteniPro — Escáner</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap');
+:root{--bg:#0a0c12;--s1:#111420;--s2:#1e2336;--border:#252d45;--accent:#00e5a0;--blue:#4d9fff;--warn:#ffb800;--danger:#ff4466;--text:#dde3f5;--muted:#5a6282;--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;}
+.header{background:var(--s1);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;}
+.header-logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#00b87a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-text{font-family:var(--mono);font-size:13px;font-weight:600;}
+.back-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:7px;font-size:12px;cursor:pointer;font-family:var(--sans);}
+.back-btn:hover{color:var(--text);border-color:var(--muted);}
+
+.content{flex:1;padding:20px 16px;max-width:500px;margin:0 auto;width:100%;}
+
+.scanner-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.scanner-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.scanner-title{font-family:var(--mono);font-size:13px;font-weight:600;}
+.scanner-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+#reader{width:100%;}
+#reader video{width:100%!important;border-radius:0!important;}
+
+.mode-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.mode-tab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--sans);font-weight:500;transition:all .15s;text-align:center;}
+.mode-tab.active{background:var(--accent);color:#0a0c12;border-color:var(--accent);font-weight:600;}
+
+.result-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;display:none;}
+.result-card.show{display:block;}
+.result-title{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.result-name{font-size:18px;font-weight:600;margin-bottom:4px;}
+.result-meta{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px;}
+.result-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-size:10px;font-family:var(--mono);font-weight:600;}
+.b-green{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.2);}
+.b-warn{background:rgba(255,184,0,.1);color:var(--warn);border:1px solid rgba(255,184,0,.2);}
+.b-danger{background:rgba(255,68,102,.1);color:var(--danger);border:1px solid rgba(255,68,102,.2);}
+.b-blue{background:rgba(77,159,255,.1);color:var(--blue);border:1px solid rgba(77,159,255,.2);}
+.b-gray{background:rgba(90,98,130,.12);color:var(--muted);border:1px solid var(--border);}
+
+.action-btns{display:flex;flex-direction:column;gap:8px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans);width:100%;}
+.btn-primary{background:var(--accent);color:#0a0c12;}
+.btn-primary:hover{background:#00cc8e;}
+.btn-blue{background:transparent;color:var(--blue);border:1px solid var(--blue);}
+.btn-blue:hover{background:rgba(77,159,255,.1);}
+.btn-warn{background:transparent;color:var(--warn);border:1px solid var(--warn);}
+.btn-warn:hover{background:rgba(255,184,0,.1);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);}
+
+.manual-input{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+.manual-title{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.fi{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:var(--mono);outline:none;transition:border .15s;margin-bottom:10px;}
+.fi:focus{border-color:var(--accent);}
+.fi::placeholder{color:var(--muted);}
+
+.qty-control{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.qty-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qty-val{font-family:var(--mono);font-size:20px;font-weight:600;min-width:40px;text-align:center;}
+.qty-label{font-size:12px;color:var(--muted);}
+
+.fl{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-family:var(--mono);}
+.fs{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;margin-bottom:12px;}
+.fs:focus{border-color:var(--accent);}
+.fs option{background:var(--s2);}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s2);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:9px;font-size:13px;font-family:var(--mono);z-index:999;opacity:0;transition:all .25s;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.err{border-color:var(--danger);color:var(--danger);}
+.toast.warn{border-color:var(--warn);color:var(--warn);}
+
+.status-bar{background:var(--s1);border-top:1px solid var(--border);padding:10px 16px;text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono);}
+.pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-mark">📷</div>
+    <div><div class="logo-text">Escáner QR</div></div>
+  </div>
+  <button class="back-btn" onclick="window.location.href='index.html'">← Volver</button>
+</div>
+
+<div class="content">
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('info',this)">👁 Ver info</button>
+    <button class="mode-tab" onclick="setMode('entrada',this)">📥 Entrada</button>
+    <button class="mode-tab" onclick="setMode('salida',this)">📤 Salida</button>
+    <button class="mode-tab" onclick="setMode('mant',this)">🔧 Mantenim.</button>
+  </div>
+
+  <div class="scanner-box">
+    <div class="scanner-header">
+      <div>
+        <div class="scanner-title">📷 Cámara activa</div>
+        <div class="scanner-sub">Apuntá al código QR o de barras</div>
+      </div>
+    </div>
+    <div id="reader"></div>
+  </div>
+
+  <div class="manual-input">
+    <div class="manual-title">⌨ Ingreso manual</div>
+    <input class="fi" id="manual-code" placeholder="STOCK:MAT-001 o MAQUINA:EQ-001" oninput="liveSearch(this.value)">
+    <button class="btn btn-ghost" onclick="processCode(document.getElementById('manual-code').value)">Buscar</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card" id="result-card">
+    <div class="result-title" id="res-tipo">Resultado</div>
+    <div class="result-name" id="res-nombre">—</div>
+    <div class="result-meta" id="res-meta">—</div>
+    <div class="result-badges" id="res-badges"></div>
+    <div id="res-actions"></div>
+  </div>
+
+</div>
+
+<div class="status-bar"><span class="pulse"></span>Conectado a Firebase · ManteniPro v5</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, doc, getDocs, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAe1I0uUxsSFd6LulUfkZQQrh6HlIcsHgY",
+  authDomain: "mantenipro-f76ce.firebaseapp.com",
+  projectId: "mantenipro-f76ce",
+  storageBucket: "mantenipro-f76ce.firebasestorage.app",
+  messagingSenderId: "376207385684",
+  appId: "1:376207385684:web:85674fa3108c213220f9c1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let currentMode = 'info';
+let currentItem = null;
+let currentType = null;
+let stockData = [], maqData = [], mantData = [];
+let qty = 1;
+
+// Load data
+async function loadData() {
+  const [sSnap, mSnap, mtSnap] = await Promise.all([
+    getDocs(collection(db, 'stock')),
+    getDocs(collection(db, 'maquinas')),
+    getDocs(collection(db, 'mantenimientos'))
+  ]);
+  stockData = sSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  maqData = mSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  mantData = mtSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
+}
+loadData();
+
+// QR Scanner
+const html5QrCode = new Html5Qrcode("reader");
+html5QrCode.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: { width: 250, height: 250 } },
+  (code) => { processCode(code); }
+).catch(err => {
+  document.getElementById('reader').innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">⚠ No se pudo acceder a la cámara.<br>Usá el ingreso manual.</div>';
+});
+
+window.setMode = function(mode, el) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (currentItem) showResult(currentItem, currentType);
+};
+
+window.liveSearch = function(val) {
+  if (val.length < 3) return;
+  const found = findItem(val);
+  if (found) showResult(found.item, found.type);
+};
+
+window.processCode = function(code) {
+  if (!code) return;
+  const found = findItem(code);
+  if (!found) { toast('⚠ Código no encontrado: ' + code.substring(0, 30), 'err'); return; }
+  showResult(found.item, found.type);
+  navigator.vibrate?.([50, 30, 50]);
+};
+
+function findItem(code) {
+  const clean = code.trim();
+  // QR format: STOCK:codigo|nombre|ubicacion
+  if (clean.startsWith('STOCK:')) {
+    const parts = clean.replace('STOCK:', '').split('|');
+    const cod = parts[0];
+    const item = stockData.find(s => s.codigo === cod || s._id === cod);
+    if (item) return { item, type: 'stock' };
+  }
+  if (clean.startsWith('MAQUINA:')) {
+    const parts = clean.replace('MAQUINA:', '').split('|');
+    const cod = parts[0];
+    const item = maqData.find(m => m.codigo === cod || m._id === cod);
+    if (item) return { item, type: 'maquina' };
+  }
+  // Búsqueda libre por código o nombre
+  const byCode = stockData.find(s => s.codigo?.toLowerCase() === clean.toLowerCase() || s.nombre?.toLowerCase().includes(clean.toLowerCase()));
+  if (byCode) return { item: byCode, type: 'stock' };
+  const byMaq = maqData.find(m => m.codigo?.toLowerCase() === clean.toLowerCase() || m.nombre?.toLowerCase().includes(clean.toLowerCase()));
+  if (byMaq) return { item: byMaq, type: 'maquina' };
+  return null;
+}
+
+function showResult(item, type) {
+  currentItem = item;
+  currentType = type;
+  qty = 1;
+  const card = document.getElementById('result-card');
+  card.className = 'result-card show';
+
+  if (type === 'stock') {
+    document.getElementById('res-tipo').textContent = '▦ Artículo de Stock';
+    document.getElementById('res-nombre').textContent = item.nombre;
+    document.getElementById('res-meta').textContent = `${item.codigo || '—'} · ${item.ubicacion || '—'} · ${item.categoria}`;
+    const st = item.qty === 0 ? ['b-danger','Sin stock'] : item.qty <= item.min ? ['b-warn','Stock bajo'] : ['b-green','Disponible'];
+    document.getElementById('res-badges').innerHTML = `<span class="badge ${st[0]}">${st[1]}</span><span class="badge b-gray">${item.qty} ${item.unidad} disponibles</span><span class="badge b-gray">Mín: ${item.min}</span>`;
+    renderStockActions(item);
+  } else {
+    document.getElementById('res-tipo').textContent = '🏭 Máquina / Equipo';
+    document.getElementById('res-nombre').textContent = item.nombre;
+    document.getElementById('res-meta').textContent = `${item.codigo || '—'} · ${item.ubicacion || '—'} · ${item.marca || ''}`;
+    const estCls = { Operativo: 'b-green', 'En mantenimiento': 'b-warn', 'Fuera de servicio': 'b-danger' }[item.estado] || 'b-gray';
+    document.getElementById('res-badges').innerHTML = `<span class="badge ${estCls}">${item.estado}</span><span class="badge b-gray">${item.categoria || 'General'}</span>`;
+    renderMaqActions(item);
+  }
+}
+
+function renderStockActions(item) {
+  const el = document.getElementById('res-actions');
+  if (currentMode === 'info') {
+    el.innerHTML = `<button class="btn btn-ghost" onclick="window.location.href='index.html#stock'">Ver en app →</button>`;
+    return;
+  }
+  const label = currentMode === 'entrada' ? '📥 Registrar entrada' : '📤 Registrar salida';
+  const btnCls = currentMode === 'entrada' ? 'btn-primary' : 'btn-warn';
+  el.innerHTML = `
+    <label class="fl">${currentMode === 'entrada' ? 'Cantidad a ingresar' : 'Cantidad a retirar'}</label>
+    <div class="qty-control">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <div><div class="qty-val" id="qty-display">1</div><div class="qty-label">${item.unidad}</div></div>
+      <button class="qty-btn" onclick="changeQty(1)">+</button>
+    </div>
+    ${currentMode === 'salida' ? `
+      <label class="fl">Responsable</label>
+      <input class="fi" id="scan-resp" placeholder="Nombre del operario">
+      <label class="fl">Motivo</label>
+      <input class="fi" id="scan-motivo" placeholder="Para qué se usa">
+    ` : `
+      <label class="fl">Proveedor / Nota</label>
+      <input class="fi" id="scan-nota" placeholder="Opcional">
+    `}
+    <button class="btn ${btnCls}" onclick="ejecutarMovimiento()">${label}</button>
+  `;
+}
+
+function renderMaqActions(item) {
+  const el = document.getElementById('res-actions');
+  const pendMant = mantData.filter(m => m.maqId === item._id && m.estado !== 'Completado');
+  if (currentMode === 'mant' && pendMant.length) {
+    el.innerHTML = `
+      <label class="fl">Mantenimiento a completar</label>
+      <select class="fs" id="scan-mant-sel">
+        ${pendMant.map(m => `<option value="${m._id}">${m.tipo} — ${m.fecha}</option>`).join('')}
+      </select>
+      <label class="fl">Observaciones</label>
+      <input class="fi" id="scan-mant-obs" placeholder="¿Qué se hizo?">
+      <button class="btn btn-primary" onclick="completarMant()">✓ Marcar como completado</button>
+    `;
+  } else if (currentMode === 'mant') {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:10px 0">✓ Sin mantenimientos pendientes para este equipo</div><button class="btn btn-ghost" onclick="window.location.href='index.html'">Ir a la app →</button>`;
+  } else {
+    el.innerHTML = `
+      <div class="action-btns">
+        <button class="btn btn-blue" onclick="cambiarEstado('${item._id}','Operativo')">✅ Marcar Operativo</button>
+        <button class="btn btn-warn" onclick="cambiarEstado('${item._id}','En mantenimiento')">🔧 En mantenimiento</button>
+        <button class="btn btn-ghost" onclick="cambiarEstado('${item._id}','Fuera de servicio')">🔴 Fuera de servicio</button>
+      </div>
+    `;
+  }
+}
+
+window.changeQty = function(delta) {
+  qty = Math.max(1, qty + delta);
+  const el = document.getElementById('qty-display');
+  if (el) el.textContent = qty;
+};
+
+window.ejecutarMovimiento = async function() {
+  if (!currentItem) return;
+  if (currentMode === 'salida') {
+    const resp = document.getElementById('scan-resp')?.value.trim();
+    const motivo = document.getElementById('scan-motivo')?.value.trim();
+    if (!resp) { toast('⚠ Indicá el responsable', 'warn'); return; }
+    if (qty > currentItem.qty) { toast('⚠ Stock insuficiente', 'err'); return; }
+    await updateDoc(doc(db, 'stock', currentItem._id), { qty: currentItem.qty - qty });
+    await addDoc(collection(db, 'historial'), { tipo: 'stock', desc: `Salida por escáner: ${currentItem.nombre} x${qty} — ${resp}${motivo?' ('+motivo+')':''}`, usuario: resp, ts: serverTimestamp(), fecha: new Date().toLocaleString('es-AR') });
+    currentItem.qty -= qty;
+    toast(`✓ Salida registrada: ${qty} ${currentItem.unidad}`);
+  } else {
+    const nota = document.getElementById('scan-nota')?.value.trim();
+    await updateDoc(doc(db, 'stock', currentItem._id), { qty: currentItem.qty + qty });
+    await addDoc(collection(db, 'historial'), { tipo: 'stock', desc: `Entrada por escáner: ${currentItem.nombre} x${qty}${nota?' — '+nota:''}`, usuario: 'Admin', ts: serverTimestamp(), fecha: new Date().toLocaleString('es-AR') });
+    currentItem.qty += qty;
+    toast(`✓ Entrada registrada: ${qty} ${currentItem.unidad}`);
+  }
+  showResult(currentItem, currentType);
+  await loadData();
+};
+
+window.completarMant = async function() {
+  const mantId = document.getElementById('scan-mant-sel')?.value;
+  const obs = document.getElementById('scan-mant-obs')?.value.trim();
+  if (!mantId) return;
+  await updateDoc(doc(db, 'mantenimientos', mantId), { estado: 'Completado', obs: obs || '' });
+  await updateDoc(doc(db, 'maquinas', currentItem._id), { ultMant: new Date().toISOString().split('T')[0] });
+  await addDoc(collection(db, 'historial'), { tipo: 'mantenimiento', desc: `Mantenimiento completado (escáner): ${currentItem.nombre}`, usuario: 'Admin', ts: serverTimestamp(), fecha: new Date().toLocaleString('es-AR') });
+  toast('✓ Mantenimiento completado');
+  await loadData();
+  mantData = mantData.filter(m => m._id !== mantId);
+  renderMaqActions(currentItem);
+};
+
+window.cambiarEstado = async function(id, estado) {
+  await updateDoc(doc(db, 'maquinas', id), { estado });
+  currentItem.estado = estado;
+  toast(`✓ Estado actualizado: ${estado}`);
+  showResult(currentItem, currentType);
+  await loadData();
+};
+
+window.toast = function(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + tipo + ' show';
+  setTimeout(() => t.classList.remove('show'), 2800);
+};
+</script>
+</body>
+</html>
