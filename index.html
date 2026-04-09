@@ -10,6 +10,7 @@
 <title>ManteniPro — Sistema de Gestión Industrial</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -244,6 +245,27 @@ textarea.fi{resize:vertical;min-height:56px;}
 .toast.t-err{border-color:var(--danger);color:var(--danger);}
 .toast.t-warn{border-color:var(--warn);color:var(--warn);}
 
+/* FAB */
+.fab{position:fixed;bottom:24px;right:24px;z-index:300;}
+.fab-main{width:52px;height:52px;border-radius:50%;background:var(--accent);color:#0a0c12;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px var(--aglow);transition:all .2s;}
+.fab-main:hover{background:#00cc8e;transform:scale(1.08);}
+.fab-menu{position:absolute;bottom:62px;right:0;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:none;transition:all .2s;transform:translateY(10px);}
+.fab-menu.open{opacity:1;pointer-events:all;transform:translateY(0);}
+.fab-item{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;white-space:nowrap;font-size:13px;font-weight:500;transition:all .15s;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+.fab-item:hover{border-color:var(--accent);color:var(--accent);}
+/* ACTIVITY FEED */
+.feed{display:flex;flex-direction:column;gap:0;}
+.feed-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(37,45,69,.4);}
+.feed-item:last-child{border-bottom:none;}
+.feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.feed-dot.stock{background:var(--blue);}
+.feed-dot.maquina{background:var(--accent);}
+.feed-dot.mantenimiento{background:var(--warn);}
+.feed-dot.prestamo{background:var(--purple);}
+.feed-dot.orden{background:var(--danger);}
+.feed-text{font-size:12px;line-height:1.4;}
+.feed-time{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px;}
+
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
 @media(max-width:900px){
@@ -322,6 +344,7 @@ textarea.fi{resize:vertical;min-height:56px;}
         <div><div class="sh"><div class="st">⚠ Stock crítico</div></div><div class="tw"><table><thead><tr><th>Artículo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="d-sc"></tbody></table></div></div>
       </div>
       <div><div class="sh"><div class="st">≡ Órdenes recientes</div></div><div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Prioridad</th><th>Responsable</th><th>Estado</th></tr></thead><tbody id="d-ol"></tbody></table></div></div>
+      <div style="margin-top:4px"><div class="sh"><div class="st">⚡ Actividad reciente</div><button class="btn btn-ghost btn-sm" onclick="exportPDF()">⬇ PDF Reporte</button></div><div class="tw" style="padding:4px 0"><div class="feed" id="activity-feed"><div class="empty">Cargando actividad...</div></div></div></div>
     </div>
 
     <!-- ALERTAS -->
@@ -479,8 +502,9 @@ textarea.fi{resize:vertical;min-height:56px;}
   <div class="modal">
     <div class="mt">⇄ Registrar Préstamo</div>
     <div class="fg"><label class="fl">Artículo</label><select class="fss" id="pr-item"></select></div>
-    <div class="fr"><div class="fg"><label class="fl">Cantidad</label><input class="fi" type="number" id="pr-cant" placeholder="1" min="1"></div><div class="fg"><label class="fl">Fecha devolución</label><input class="fi" type="date" id="pr-fecha"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Cantidad</label><input class="fi" type="number" id="pr-cant" placeholder="1" min="1"></div><div class="fg"><label class="fl">Fecha de salida</label><input class="fi" type="date" id="pr-salida"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Responsable</label><input class="fi" id="pr-resp" placeholder="Nombre"></div><div class="fg"><label class="fl">Sector</label><input class="fi" id="pr-sec" placeholder="Área"></div></div>
+    <div class="fg"><label class="fl">Fecha devolución</label><input class="fi" type="date" id="pr-fecha"></div>
     <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="pr-obs" placeholder="Opcional"></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-prest')">Cancelar</button><button class="btn btn-primary" onclick="savePrestamo()">Registrar</button></div>
   </div>
@@ -506,6 +530,16 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="qr-wrap"><canvas id="qr-canvas"></canvas><div style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="qr-label">—</div><div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px;word-break:break-all" id="qr-code"></div></div>
     <div class="mf" style="justify-content:center"><button class="btn btn-ghost" onclick="closeModal('m-qr')">Cerrar</button><button class="btn btn-primary" onclick="dlQR()">⬇ Descargar</button></div>
   </div>
+</div>
+
+<!-- FAB -->
+<div class="fab" id="fab">
+  <div class="fab-menu" id="fab-menu">
+    <div class="fab-item" onclick="closeFab();UI.openOrd()">📝 Nueva Orden</div>
+    <div class="fab-item" onclick="closeFab();nav('stock');setTimeout(()=>UI.openStock(),100)">📦 Nuevo Artículo</div>
+    <div class="fab-item" onclick="closeFab();window.location.href='scanner.html'">📱 Escanear QR</div>
+  </div>
+  <button class="fab-main" onclick="toggleFab()" id="fab-btn">+</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -548,7 +582,7 @@ function initListeners() {
   onSnapshot(collection(db,'stock'), s=>{ stock=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('stock'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
-  onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); });
+  onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
 }
 function chk(){ loaded++; if(loaded>=5){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
 function isActive(v){ return document.getElementById('view-'+v)?.classList.contains('active'); }
@@ -630,6 +664,7 @@ function rDash(){
 
   const ro=[...ordenes].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
   document.getElementById('d-ol').innerHTML=ro.length?ro.map(o=>`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td><td style="font-weight:500">${o.desc}</td><td><span class="badge ${pC(o.prio)}">${o.prio}</span></td><td style="color:var(--muted);font-size:12px">${o.resp}</td><td><span class="badge ${eC(o.estado)}">${o.estado}</span></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">Sin órdenes</div></td></tr>';
+  renderFeed();
 }
 
 // ALERTAS
@@ -739,7 +774,7 @@ function rPL(cid,list,showR,showA=false){
   el.innerHTML=list.map(p=>{const item=stock.find(s=>s._id===p.itemId);const nom=item?item.nombre:'Eliminado';const ico=item?getIco(item.categoria):'📦';
   return`<div class="ec">
     <div class="eicon bg-b" style="font-size:19px">${ico}</div>
-    <div><div class="en">${nom} <span style="color:var(--muted);font-weight:400">×${p.cantidad}</span></div><div class="em">${p.responsable} · ${p.sector} · Dev: ${p.fechaDevolucion}${p.obs?' · '+p.obs:''}</div></div>
+    <div><div class="en">${nom} <span style="color:var(--muted);font-weight:400">×${p.cantidad}</span></div><div class="em">${p.responsable} · ${p.sector} · Salida: ${p.fechaSalida||'—'} · Dev: ${p.fechaDevolucion}</div></div>
     <div class="ea">
       ${showA?'<span class="badge b-d">Vencido</span>':''}
       ${showR?`<button class="btn btn-sm btn-warn" onclick="UI.devolver('${p._id}')">↩</button>`:`<span class="badge b-x">${p.estado==='devuelto'?'Devuelto':'Vencido'}</span>`}
@@ -922,6 +957,7 @@ window.UI={
     const disp=stock.filter(s=>s.qty>0);if(!disp.length){toast('⚠ Sin stock disponible','warn');return;}
     document.getElementById('pr-item').innerHTML=disp.map(s=>`<option value="${s._id}">${s.nombre} (${s.qty})</option>`).join('');
     document.getElementById('pr-cant').value=1;document.getElementById('pr-resp').value='';document.getElementById('pr-sec').value='';document.getElementById('pr-obs').value='';
+    const hoy=new Date().toISOString().split('T')[0];document.getElementById('pr-salida').value=hoy;
     const d=new Date();d.setDate(d.getDate()+7);document.getElementById('pr-fecha').value=d.toISOString().split('T')[0];
     document.getElementById('m-prest').classList.add('open');
   },
@@ -972,7 +1008,7 @@ window.savePrestamo=async function(){
   if(!resp){toast('⚠ Indicá el responsable','warn');return;}
   const item=stock.find(s=>s._id===itemId);if(cant>item.qty){toast('⚠ Stock insuficiente','warn');return;}
   await fbUpd('stock',itemId,{qty:item.qty-cant});
-  await fbAdd('prestamos',{itemId,cantidad:cant,responsable:resp,sector:document.getElementById('pr-sec').value.trim()||'—',fechaSalida:new Date().toISOString().split('T')[0],fechaDevolucion:document.getElementById('pr-fecha').value,obs:document.getElementById('pr-obs').value.trim(),estado:'activo'});
+  await fbAdd('prestamos',{itemId,cantidad:cant,responsable:resp,sector:document.getElementById('pr-sec').value.trim()||'—',fechaSalida:document.getElementById('pr-salida').value||new Date().toISOString().split('T')[0],fechaDevolucion:document.getElementById('pr-fecha').value,obs:document.getElementById('pr-obs').value.trim(),estado:'activo'});
   await logH('prestamo',`Préstamo: ${item.nombre} x${cant} — ${resp}`);
   closeModal('m-prest');toast('✓ Préstamo registrado');
 };
@@ -989,7 +1025,112 @@ document.querySelectorAll('.ov').forEach(m=>m.addEventListener('click',e=>{if(e.
 window.toast=function(msg,tipo='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast t-'+tipo+' show';setTimeout(()=>t.classList.remove('show'),2800);};
 function toast(msg,tipo='ok'){window.toast(msg,tipo);}
 
-// PWA
+// FAB
+window.toggleFab=function(){const m=document.getElementById('fab-menu');const b=document.getElementById('fab-btn');m.classList.toggle('open');b.textContent=m.classList.contains('open')?'✕':'+';}
+window.closeFab=function(){document.getElementById('fab-menu').classList.remove('open');document.getElementById('fab-btn').textContent='+';}
+document.addEventListener('click',e=>{if(!document.getElementById('fab').contains(e.target))closeFab();});
+
+// ACTIVITY FEED
+function timeAgo(ts){
+  if(!ts)return'—';
+  const d=ts.toDate?ts.toDate():new Date(ts);
+  const diff=Math.floor((Date.now()-d)/1000);
+  if(diff<60)return`Hace ${diff}s`;
+  if(diff<3600)return`Hace ${Math.floor(diff/60)}m`;
+  if(diff<86400)return`Hace ${Math.floor(diff/3600)}h`;
+  return`Hace ${Math.floor(diff/86400)}d`;
+}
+function renderFeed(){
+  const el=document.getElementById('activity-feed');
+  if(!el)return;
+  const items=historial.slice(0,12);
+  if(!items.length){el.innerHTML='<div class="empty">Sin actividad reciente</div>';return;}
+  const icons={stock:'📦',prestamo:'⇄',orden:'📋',maquina:'🏭',mantenimiento:'🔧'};
+  el.innerHTML=items.map(h=>`
+    <div class="feed-item">
+      <div class="feed-dot ${h.tipo||'stock'}"></div>
+      <div>
+        <div class="feed-text">${icons[h.tipo]||'•'} ${h.desc}</div>
+        <div class="feed-time">${timeAgo(h.ts)} · ${h.usuario||'Sistema'}</div>
+      </div>
+    </div>`).join('');
+}
+
+// PDF EXPORT
+window.exportPDF=async function(){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,margin=14;
+  let y=margin;
+
+  // Header
+  pdf.setFillColor(10,12,18);
+  pdf.rect(0,0,W,28,'F');
+  pdf.setTextColor(0,229,160);
+  pdf.setFontSize(16);pdf.setFont('helvetica','bold');
+  pdf.text('ManteniPro',margin,12);
+  pdf.setFontSize(9);pdf.setFont('helvetica','normal');
+  pdf.setTextColor(90,98,130);
+  pdf.text('Reporte generado: '+new Date().toLocaleString('es-AR'),margin,20);
+  y=36;
+
+  // Stats
+  pdf.setTextColor(30,30,30);
+  pdf.setFontSize(11);pdf.setFont('helvetica','bold');
+  pdf.text('Resumen General',margin,y);y+=6;
+  pdf.setFontSize(9);pdf.setFont('helvetica','normal');
+  pdf.setTextColor(60,60,60);
+  const op=maquinas.filter(m=>m.estado==='Operativo').length;
+  pdf.text(`Máquinas: ${maquinas.length} (${op} operativas)`,margin,y);y+=5;
+  pdf.text(`Stock: ${stock.length} artículos (${stock.filter(s=>s.qty<=s.min).length} bajo mínimo)`,margin,y);y+=5;
+  pdf.text(`Mantenimientos pendientes: ${mantenimientos.filter(m=>m.estado!=='Completado').length}`,margin,y);y+=5;
+  pdf.text(`Órdenes activas: ${ordenes.filter(o=>o.estado!=='Completada').length}`,margin,y);y+=10;
+
+  // Stock crítico
+  const critic=stock.filter(s=>s.qty<=s.min);
+  if(critic.length){
+    pdf.setFontSize(11);pdf.setFont('helvetica','bold');pdf.setTextColor(30,30,30);
+    pdf.text('Stock Crítico',margin,y);y+=6;
+    pdf.setFontSize(8);pdf.setFont('helvetica','bold');pdf.setTextColor(90,98,130);
+    pdf.text('Artículo',margin,y);pdf.text('Código',90,y);pdf.text('Stock',130,y);pdf.text('Mínimo',155,y);pdf.text('Estado',175,y);
+    y+=4;pdf.setDrawColor(200,200,200);pdf.line(margin,y,W-margin,y);y+=4;
+    pdf.setFont('helvetica','normal');pdf.setTextColor(40,40,40);
+    critic.forEach(s=>{
+      if(y>270){pdf.addPage();y=margin;}
+      pdf.text(s.nombre.substring(0,35),margin,y);
+      pdf.text(s.codigo||'—',90,y);
+      pdf.text(String(s.qty),130,y);
+      pdf.text(String(s.min),155,y);
+      pdf.setTextColor(s.qty===0?200:180,s.qty===0?30:120,30);
+      pdf.text(s.qty===0?'SIN STOCK':'BAJO',175,y);
+      pdf.setTextColor(40,40,40);
+      y+=5;
+    });
+    y+=6;
+  }
+
+  // Máquinas
+  pdf.setFontSize(11);pdf.setFont('helvetica','bold');pdf.setTextColor(30,30,30);
+  pdf.text('Equipos',margin,y);y+=6;
+  pdf.setFontSize(8);pdf.setFont('helvetica','bold');pdf.setTextColor(90,98,130);
+  pdf.text('Equipo',margin,y);pdf.text('Código',90,y);pdf.text('Ubicación',120,y);pdf.text('Estado',170,y);
+  y+=4;pdf.setDrawColor(200,200,200);pdf.line(margin,y,W-margin,y);y+=4;
+  pdf.setFont('helvetica','normal');pdf.setTextColor(40,40,40);
+  maquinas.forEach(m=>{
+    if(y>270){pdf.addPage();y=margin;}
+    pdf.text(m.nombre.substring(0,35),margin,y);
+    pdf.text((m.codigo||'—').substring(0,15),90,y);
+    pdf.text((m.ubicacion||'—').substring(0,20),120,y);
+    const color=m.estado==='Operativo'?[0,180,100]:m.estado==='En mantenimiento'?[200,140,0]:[200,50,50];
+    pdf.setTextColor(...color);
+    pdf.text(m.estado,170,y);
+    pdf.setTextColor(40,40,40);
+    y+=5;
+  });
+
+  pdf.save('mantenipro-reporte.pdf');
+  toast('✓ PDF generado');
+};
 
 
 
