@@ -377,8 +377,10 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="si" placeholder="🔍 Buscar..." id="s-stock" oninput="renderStock()">
         <select class="fs" id="f-sk-cat" onchange="renderStock()"><option value="">Todas las categorías</option></select>
+        <select class="fs" id="f-sk-dep" onchange="renderStock()"><option value="">Todos los depósitos</option></select>
+        <button class="btn btn-ghost btn-sm" onclick="exportStockPDF()">⬇ PDF Stock</button>
       </div>
-      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="t-stock"></tbody></table></div>
+      <div id="stock-container"></div>
     </div>
 
     <!-- PRESTAMOS -->
@@ -491,8 +493,10 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="mt">▦ <span id="ms-title">Nuevo Artículo</span></div>
     <div class="fr"><div class="fg"><label class="fl">Código</label><input class="fi" id="sk-cod" placeholder="MAT-001"></div><div class="fg"><label class="fl">Categoría</label><input class="fi" id="sk-cat" placeholder="Herramientas"></div></div>
     <div class="fg"><label class="fl">Nombre</label><input class="fi" id="sk-nom" placeholder="Llave inglesa 12mm"></div>
+    <div class="fg"><label class="fl">Marca</label><input class="fi" id="sk-marca" placeholder="Ej: Stanley, Bosch, 3M..."></div>
+    <div class="fg"><label class="fl">Características</label><input class="fi" id="sk-caract" placeholder="Ej: 12mm, 220V, Talle 40, Rojo..."></div>
     <div class="fr3"><div class="fg"><label class="fl">Stock</label><input class="fi" type="number" id="sk-qty" placeholder="0" min="0"></div><div class="fg"><label class="fl">Mínimo</label><input class="fi" type="number" id="sk-min" placeholder="0" min="0"></div><div class="fg"><label class="fl">Unidad</label><select class="fss" id="sk-uni"><option>Unidad</option><option>Par</option><option>Caja</option><option>Litro</option><option>Metro</option><option>Kg</option><option>Rollo</option></select></div></div>
-    <div class="fg"><label class="fl">Ubicación</label><input class="fi" id="sk-ubic" placeholder="Depósito A - Estante 3"></div>
+    <div class="fr"><div class="fg"><label class="fl">Depósito / Estante</label><input class="fi" id="sk-dep" placeholder="Depósito Baño, Estante A..."></div><div class="fg"><label class="fl">Posición</label><input class="fi" id="sk-pos" placeholder="Posición 1, Cajón 2..."></div></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-stock')">Cancelar</button><button class="btn btn-primary" onclick="saveStock()">Guardar</button></div>
   </div>
 </div>
@@ -739,26 +743,47 @@ window.swMT = function(tid,el){document.querySelectorAll('#view-mantenimiento .t
 function renderStock(){
   const q=document.getElementById('s-stock')?.value.toLowerCase()||'';
   const cat=document.getElementById('f-sk-cat')?.value||'';
+  const dep=document.getElementById('f-sk-dep')?.value||'';
   const cats=[...new Set(stock.map(s=>s.categoria))];
-  const sel=document.getElementById('f-sk-cat');if(sel){const cv=sel.value;sel.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${c}"${c===cv?' selected':''}>${c}</option>`).join('');}
-  const f=stock.filter(s=>(!q||s.nombre?.toLowerCase().includes(q)||s.codigo?.toLowerCase().includes(q))&&(!cat||s.categoria===cat));
-  const tb=document.getElementById('t-stock');
-  if(!f.length){tb.innerHTML='<tr><td colspan="8"><div class="empty">No se encontraron artículos</div></td></tr>';return;}
-  tb.innerHTML=f.map(s=>{const st=sSt(s);const pct=s.min===0?100:Math.min(100,Math.round((s.qty/(s.min*3))*100));const fc=s.qty===0?'sf-d':s.qty<=s.min?'sf-w':'sf-g';
-  return`<tr>
-    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.codigo||'—'}</td>
-    <td style="font-weight:500">${s.nombre}</td>
-    <td><span class="badge b-x">${s.categoria}</span></td>
-    <td><span class="sbar"><span class="sfill ${fc}" style="width:${pct}%;height:100%;border-radius:3px;display:block;background:${s.qty===0?'var(--danger)':s.qty<=s.min?'var(--warn)':'var(--accent)'}"></span></span><span style="font-family:var(--mono);font-size:12px">${s.qty} ${s.unidad}</span></td>
-    <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.min}</td>
-    <td style="color:var(--muted);font-size:11px">${s.ubicacion||'—'}</td>
-    <td><span class="badge ${st.c}">${st.l}</span></td>
-    <td>
-      <button class="ab qr-btn" onclick="UI.showQR('${s._id}','stock')" title="QR">⊡</button>
-      <button class="ab ed" onclick="UI.editStock('${s._id}')" title="Editar">✎</button>
-      <button class="ab del" onclick="UI.delStock('${s._id}')" title="Eliminar">✕</button>
-    </td>
-  </tr>`;}).join('');
+  const deps=[...new Set(stock.map(s=>s.deposito||'Sin depósito').filter(Boolean))].sort();
+  const selC=document.getElementById('f-sk-cat');if(selC){const cv=selC.value;selC.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${c}"${c===cv?' selected':''}>${c}</option>`).join('');}
+  const selD=document.getElementById('f-sk-dep');if(selD){const dv=selD.value;selD.innerHTML='<option value="">Todos los depósitos</option>'+deps.map(d=>`<option value="${d}"${d===dv?' selected':''}>${d}</option>`).join('');}
+  const f=stock.filter(s=>(!q||s.nombre?.toLowerCase().includes(q)||s.codigo?.toLowerCase().includes(q)||s.marca?.toLowerCase().includes(q)||s.caracteristicas?.toLowerCase().includes(q))&&(!cat||s.categoria===cat)&&(!dep||(s.deposito||'Sin depósito')===dep));
+  const cont=document.getElementById('stock-container');
+  if(!f.length){cont.innerHTML='<div class="empty">No se encontraron artículos</div>';return;}
+  // Group by deposito
+  const grupos={};
+  f.forEach(s=>{const d=s.deposito||'Sin depósito';if(!grupos[d])grupos[d]=[];grupos[d].push(s);});
+  // Sort each group by posicion
+  Object.keys(grupos).forEach(d=>{grupos[d].sort((a,b)=>(a.posicion||'').localeCompare(b.posicion||'',undefined,{numeric:true}));});
+  const depKeys=Object.keys(grupos).sort();
+  cont.innerHTML=depKeys.map(depKey=>{
+    const items=grupos[depKey];
+    const rows=items.map(s=>{
+      const st=sSt(s);const pct=s.min===0?100:Math.min(100,Math.round((s.qty/(s.min*3))*100));
+      return`<tr>
+        <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.codigo||'—'}</td>
+        <td><div style="font-weight:500">${s.nombre}</div>${s.marca?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${s.marca}${s.caracteristicas?' · '+s.caracteristicas:''}</div>`:s.caracteristicas?`<div style="font-size:10px;color:var(--muted)">${s.caracteristicas}</div>`:''}</td>
+        <td><span class="badge b-x">${s.categoria}</span></td>
+        <td><span class="sbar"><span style="width:${pct}%;height:100%;border-radius:3px;display:block;background:${s.qty===0?'var(--danger)':s.qty<=s.min?'var(--warn)':'var(--accent)'}"></span></span><span style="font-family:var(--mono);font-size:12px">${s.qty} ${s.unidad}</span></td>
+        <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.min}</td>
+        <td style="color:var(--muted);font-size:11px">${s.posicion||'—'}</td>
+        <td><span class="badge ${st.c}">${st.l}</span></td>
+        <td>
+          <button class="ab qr-btn" onclick="UI.showQR('${s._id}','stock')" title="QR">⊡</button>
+          <button class="ab ed" onclick="UI.editStock('${s._id}')" title="Editar">✎</button>
+          <button class="ab del" onclick="UI.delStock('${s._id}')" title="Eliminar">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return`<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px">📦 ${depKey}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${items.length} artículo${items.length!==1?'s':''}</div>
+      </div>
+      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div>`;
+  }).join('');
 }
 
 // PRESTAMOS
@@ -947,8 +972,8 @@ window.UI={
   async delMant(id){await fbDel('mantenimientos',id);toast('Mantenimiento eliminado');},
   openStock(id=null){
     eIds.stock=id;document.getElementById('ms-title').textContent=id?'Editar Artículo':'Nuevo Artículo';
-    if(id){const s=stock.find(x=>x._id===id);document.getElementById('sk-cod').value=s.codigo||'';document.getElementById('sk-cat').value=s.categoria||'';document.getElementById('sk-nom').value=s.nombre||'';document.getElementById('sk-qty').value=s.qty||0;document.getElementById('sk-min').value=s.min||0;document.getElementById('sk-uni').value=s.unidad||'Unidad';document.getElementById('sk-ubic').value=s.ubicacion||'';}
-    else{['sk-cod','sk-cat','sk-nom','sk-qty','sk-min','sk-ubic'].forEach(i=>document.getElementById(i).value='');document.getElementById('sk-uni').value='Unidad';}
+    if(id){const s=stock.find(x=>x._id===id);document.getElementById('sk-cod').value=s.codigo||'';document.getElementById('sk-cat').value=s.categoria||'';document.getElementById('sk-nom').value=s.nombre||'';document.getElementById('sk-marca').value=s.marca||'';document.getElementById('sk-caract').value=s.caracteristicas||'';document.getElementById('sk-qty').value=s.qty||0;document.getElementById('sk-min').value=s.min||0;document.getElementById('sk-uni').value=s.unidad||'Unidad';document.getElementById('sk-dep').value=s.deposito||'';document.getElementById('sk-pos').value=s.posicion||'';}
+    else{['sk-cod','sk-cat','sk-nom','sk-marca','sk-caract','sk-qty','sk-min','sk-dep','sk-pos'].forEach(i=>document.getElementById(i).value='');document.getElementById('sk-uni').value='Unidad';}
     document.getElementById('m-stock').classList.add('open');
   },
   editStock(id){this.openStock(id);},
@@ -999,7 +1024,7 @@ window.saveMant=async function(){
 };
 window.saveStock=async function(){
   const nom=document.getElementById('sk-nom').value.trim();if(!nom){toast('⚠ Completá el nombre','warn');return;}
-  const obj={codigo:document.getElementById('sk-cod').value.trim()||'SIN-COD',categoria:document.getElementById('sk-cat').value.trim()||'General',nombre:nom,qty:parseInt(document.getElementById('sk-qty').value)||0,min:parseInt(document.getElementById('sk-min').value)||0,unidad:document.getElementById('sk-uni').value,ubicacion:document.getElementById('sk-ubic').value.trim()||'—'};
+  const obj={codigo:document.getElementById('sk-cod').value.trim()||'SIN-COD',categoria:document.getElementById('sk-cat').value.trim()||'General',nombre:nom,marca:document.getElementById('sk-marca').value.trim()||'',caracteristicas:document.getElementById('sk-caract').value.trim()||'',qty:parseInt(document.getElementById('sk-qty').value)||0,min:parseInt(document.getElementById('sk-min').value)||0,unidad:document.getElementById('sk-uni').value,deposito:document.getElementById('sk-dep').value.trim()||'Sin depósito',posicion:document.getElementById('sk-pos').value.trim()||'',ubicacion:document.getElementById('sk-dep').value.trim()+' - '+document.getElementById('sk-pos').value.trim()};
   if(eIds.stock){await fbSet('stock',eIds.stock,obj);await logH('stock',`Artículo editado: ${nom}`);}else{await fbAdd('stock',obj);await logH('stock',`Nuevo artículo: ${nom}`);}
   closeModal('m-stock');toast('✓ Artículo guardado');
 };
@@ -1056,7 +1081,66 @@ function renderFeed(){
     </div>`).join('');
 }
 
-// PDF EXPORT
+// PDF STOCK
+window.exportStockPDF=async function(){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=297,margin=12;
+  let y=margin;
+
+  // Header
+  pdf.setFillColor(10,12,18);
+  pdf.rect(0,0,W,24,'F');
+  pdf.setTextColor(0,229,160);
+  pdf.setFontSize(15);pdf.setFont('helvetica','bold');
+  pdf.text('ManteniPro — Inventario de Stock',margin,10);
+  pdf.setFontSize(8);pdf.setFont('helvetica','normal');pdf.setTextColor(90,98,130);
+  pdf.text('Generado: '+new Date().toLocaleString('es-AR')+' | Total: '+stock.length+' artículos',margin,18);
+  y=30;
+
+  // Group by deposito
+  const grupos={};
+  stock.forEach(s=>{const d=s.deposito||'Sin depósito';if(!grupos[d])grupos[d]=[];grupos[d].push(s);});
+  Object.keys(grupos).forEach(d=>{grupos[d].sort((a,b)=>(a.posicion||'').localeCompare(b.posicion||'',undefined,{numeric:true}));});
+
+  for(const depKey of Object.keys(grupos).sort()){
+    if(y>170){pdf.addPage();y=margin;}
+    // Depot header
+    pdf.setFillColor(17,20,32);
+    pdf.rect(margin,y,W-margin*2,7,'F');
+    pdf.setTextColor(0,229,160);
+    pdf.setFontSize(9);pdf.setFont('helvetica','bold');
+    pdf.text('📦 '+depKey.toUpperCase()+' ('+grupos[depKey].length+' artículos)',margin+2,y+5);
+    y+=10;
+
+    // Table headers
+    pdf.setFontSize(7);pdf.setFont('helvetica','bold');pdf.setTextColor(90,98,130);
+    pdf.text('Código',margin,y);pdf.text('Artículo',margin+18,y);pdf.text('Marca',margin+80,y);pdf.text('Características',margin+110,y);pdf.text('Cat.',margin+155,y);pdf.text('Stock',margin+180,y);pdf.text('Mín.',margin+200,y);pdf.text('Posición',margin+215,y);pdf.text('Estado',margin+248,y);
+    y+=3;pdf.setDrawColor(37,45,69);pdf.line(margin,y,W-margin,y);y+=4;
+
+    pdf.setFont('helvetica','normal');pdf.setTextColor(40,40,40);
+    for(const s of grupos[depKey]){
+      if(y>188){pdf.addPage();y=margin;}
+      pdf.setFontSize(7);
+      pdf.text((s.codigo||'—').substring(0,10),margin,y);
+      pdf.text(s.nombre.substring(0,30),margin+18,y);
+      pdf.text((s.marca||'—').substring(0,15),margin+80,y);
+      pdf.text((s.caracteristicas||'—').substring(0,22),margin+110,y);
+      pdf.text((s.categoria||'—').substring(0,12),margin+155,y);
+      pdf.text(String(s.qty)+' '+s.unidad,margin+180,y);
+      pdf.text(String(s.min),margin+200,y);
+      pdf.text((s.posicion||'—').substring(0,15),margin+215,y);
+      const color=s.qty===0?[200,50,50]:s.qty<=s.min?[180,140,0]:[0,160,90];
+      pdf.setTextColor(...color);
+      pdf.text(s.qty===0?'SIN STOCK':s.qty<=s.min?'BAJO':'OK',margin+248,y);
+      pdf.setTextColor(40,40,40);
+      y+=5;
+    }
+    y+=4;
+  }
+  pdf.save('mantenipro-stock.pdf');
+  toast('✓ PDF de stock generado');
+};
 window.exportPDF=async function(){
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
