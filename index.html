@@ -281,7 +281,21 @@ textarea.fi{resize:vertical;min-height:56px;}
 </head>
 <body>
 
-<!-- SIN LOGIN -->
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-mark">⚙</div>
+      <div><div class="login-title">ManteniPro</div><div class="login-sub">Sistema de Gestión Industrial</div></div>
+    </div>
+    <label class="login-label">Usuario</label>
+    <input class="login-input" id="l-user" placeholder="tu.usuario" onkeydown="if(event.key==='Enter')window.doLogin&&window.doLogin()">
+    <label class="login-label">Contraseña</label>
+    <input class="login-input" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.doLogin&&window.doLogin()">
+    <button class="login-btn" onclick="window.doLogin&&window.doLogin()">Ingresar →</button>
+    <div class="login-err" id="l-err"></div>
+  </div>
+</div>
 
 <!-- LOADING -->
 <div class="ls" id="ls"><div class="spinner"></div><div style="font-family:var(--mono);color:var(--muted);font-size:12px">Cargando datos...</div></div>
@@ -315,7 +329,7 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div><div class="uname" id="u-name">—</div><div class="urole" id="u-role">—</div></div>
     </div>
     <div class="sync-row"><div class="sdot" id="sdot"></div><span id="slabel">—</span></div>
-    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">ManteniPro v5</div>
+    <button class="logout-btn" onclick="window.doLogout&&window.doLogout()">← Cerrar sesión</button>
   </div>
 </aside>
 
@@ -547,6 +561,60 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 <div class="toast" id="toast"></div>
 
+<script>
+// ═══════════════════════════════════
+// USUARIOS Y ROLES - Editá acá para agregar/cambiar usuarios
+// Roles: 'admin' | 'tecnico' | 'supervisor'
+// ═══════════════════════════════════
+var USERS = {
+  'admin':      { pass:'admin123',  rol:'admin',      label:'Administrador', color:'#00e5a0', avatar:'⚙' },
+  'tecnico1':   { pass:'tec123',    rol:'tecnico',    label:'Técnico',       color:'#4d9fff', avatar:'🔧' },
+  'tecnico2':   { pass:'tec456',    rol:'tecnico',    label:'Técnico',       color:'#4d9fff', avatar:'🔧' },
+  'supervisor': { pass:'sup123',    rol:'supervisor', label:'Supervisor',    color:'#ffb800', avatar:'👁' },
+};
+
+var PERMS = {
+  admin:      { eliminar:true,  editar:true,  crear:true  },
+  tecnico:    { eliminar:false, editar:true,  crear:true  },
+  supervisor: { eliminar:false, editar:false, crear:false },
+};
+
+var currentUser = null;
+
+function doLogin(){
+  var u = document.getElementById('l-user').value.trim().toLowerCase();
+  var p = document.getElementById('l-pass').value;
+  if(USERS[u] && USERS[u].pass === p){
+    currentUser = Object.assign({ username:u }, USERS[u]);
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('u-name').textContent = u;
+    document.getElementById('u-role').textContent = USERS[u].label;
+    document.getElementById('u-avatar').textContent = USERS[u].avatar;
+    document.getElementById('u-avatar').style.background = USERS[u].color+'22';
+    document.getElementById('l-err').textContent = '';
+    if(window._initListeners) window._initListeners();
+  } else {
+    document.getElementById('l-err').textContent = '⚠ Usuario o contraseña incorrectos';
+  }
+}
+
+function doLogout(){
+  currentUser = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('l-pass').value = '';
+  document.getElementById('l-user').value = '';
+  location.reload();
+}
+
+function canDo(accion){
+  if(!currentUser) return false;
+  var p = PERMS[currentUser.rol];
+  if(accion==='eliminar' && !p.eliminar){ if(window.toast)toast('⚠ Sin permiso para eliminar','err'); return false; }
+  if(accion==='editar'   && !p.editar)  { if(window.toast)toast('⚠ Sin permiso para editar','err');   return false; }
+  if(accion==='crear'    && !p.crear)   { if(window.toast)toast('⚠ Sin permiso para crear','err');    return false; }
+  return true;
+}
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, updateDoc, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
@@ -561,13 +629,6 @@ const FC = {
 };
 const app = initializeApp(FC);
 const db = getFirestore(app);
-
-// AUTO-LOGIN sin contraseña
-const currentUser = { username: 'admin', role: 'Administrador', color: '#00e5a0', avatar: '⚙' };
-document.getElementById('u-name').textContent = 'Admin';
-document.getElementById('u-role').textContent = 'Administrador';
-document.getElementById('u-avatar').textContent = '⚙';
-document.getElementById('u-avatar').style.background = '#00e5a022';
 
 // STATE
 let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[];
@@ -587,6 +648,7 @@ function initListeners() {
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
 }
+window._initListeners = initListeners;
 function chk(){ loaded++; if(loaded>=5){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
 function isActive(v){ return document.getElementById('view-'+v)?.classList.contains('active'); }
 function ref(v){ if(isActive(v)){ const fn={maquinas:renderMaquinas,mantenimiento:renderMant,stock:renderStock,prestamos:renderPrestamos,ordenes:renderOrdenes}[v]; if(fn)fn(); } }
@@ -966,7 +1028,7 @@ window.UI={
     document.getElementById('m-maq').classList.add('open');
   },
   editMaq(id){this.openMaq(id);},
-  async delMaq(id){const m=maquinas.find(x=>x._id===id);if(!confirm(`¿Eliminar "${m?.nombre||'este equipo'}"?`))return;await fbDel('maquinas',id);await logH('maquina',`Equipo eliminado: ${m?.nombre||''}`);toast('Equipo eliminado');},
+  async delMaq(id){if(!canDo('eliminar'))return;const m=maquinas.find(x=>x._id===id);if(!confirm(`¿Eliminar "${m?.nombre||'este equipo'}"?`))return;await fbDel('maquinas',id);await logH('maquina',`Equipo eliminado: ${m?.nombre||''}`);toast('Equipo eliminado');},
   openMant(id=null){
     eIds.mant=id;document.getElementById('mmt-title').textContent=id?'Editar Mantenimiento':'Registrar Mantenimiento';
     document.getElementById('mt-maq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
@@ -976,7 +1038,7 @@ window.UI={
   },
   editMant(id){this.openMant(id);},
   async completarMant(id){const m=mantenimientos.find(x=>x._id===id);const maq=maquinas.find(q=>q._id===m?.maqId);await fbUpd('mantenimientos',id,{estado:'Completado'});if(maq)await fbUpd('maquinas',maq._id,{ultMant:new Date().toISOString().split('T')[0]});await logH('mantenimiento',`Mantenimiento completado: ${maq?.nombre||'equipo'}`);toast('✓ Mantenimiento completado');},
-  async delMant(id){await fbDel('mantenimientos',id);toast('Mantenimiento eliminado');},
+  async delMant(id){if(!canDo('eliminar'))return;await fbDel('mantenimientos',id);toast('Mantenimiento eliminado');},
   openStock(id=null){
     eIds.stock=id;document.getElementById('ms-title').textContent=id?'Editar Artículo':'Nuevo Artículo';
     if(id){const s=stock.find(x=>x._id===id);document.getElementById('sk-cod').value=s.codigo||'';document.getElementById('sk-cat').value=s.categoria||'';document.getElementById('sk-nom').value=s.nombre||'';document.getElementById('sk-marca').value=s.marca||'';document.getElementById('sk-caract').value=s.caracteristicas||'';document.getElementById('sk-qty').value=s.qty||0;document.getElementById('sk-min').value=s.min||0;document.getElementById('sk-uni').value=s.unidad||'Unidad';document.getElementById('sk-dep').value=s.deposito||'';document.getElementById('sk-pos').value=s.posicion||'';}
@@ -984,7 +1046,7 @@ window.UI={
     document.getElementById('m-stock').classList.add('open');
   },
   editStock(id){this.openStock(id);},
-  async delStock(id){const s=stock.find(x=>x._id===id);if(!confirm(`¿Eliminar "${s?.nombre||'este artículo'}"?`))return;await fbDel('stock',id);await logH('stock',`Artículo eliminado: ${s?.nombre||''}`);toast('Artículo eliminado');},
+  async delStock(id){if(!canDo('eliminar'))return;const s=stock.find(x=>x._id===id);if(!confirm(`¿Eliminar "${s?.nombre||'este artículo'}"?`))return;await fbDel('stock',id);await logH('stock',`Artículo eliminado: ${s?.nombre||''}`);toast('Artículo eliminado');},
   openPrest(){
     const disp=stock.filter(s=>s.qty>0);if(!disp.length){toast('⚠ Sin stock disponible','warn');return;}
     document.getElementById('pr-item').innerHTML=disp.map(s=>`<option value="${s._id}">${s.nombre} (${s.qty})</option>`).join('');
@@ -994,7 +1056,7 @@ window.UI={
     document.getElementById('m-prest').classList.add('open');
   },
   async devolver(id){const p=prestamos.find(x=>x._id===id);const item=stock.find(s=>s._id===p.itemId);await fbUpd('prestamos',id,{estado:'devuelto'});if(item)await fbUpd('stock',item._id,{qty:item.qty+p.cantidad});await logH('prestamo',`Devolución: ${item?.nombre||'ítem'} x${p.cantidad} — ${p.responsable}`);toast('✓ Devolución registrada');},
-  async delPrest(id){await fbDel('prestamos',id);toast('Préstamo eliminado');},
+  async delPrest(id){if(!canDo('eliminar'))return;await fbDel('prestamos',id);toast('Préstamo eliminado');},
   openOrd(id=null){
     eIds.ord=id;document.getElementById('mo-title').textContent=id?'Editar Orden':'Nueva Orden';
     document.getElementById('or-eq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
@@ -1003,7 +1065,7 @@ window.UI={
     document.getElementById('m-ord').classList.add('open');
   },
   editOrd(id){this.openOrd(id);},
-  async delOrd(id){const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
+  async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
   showQR(id,tipo){
     const canvas=document.getElementById('qr-canvas');
     let label='',code='';
@@ -1224,8 +1286,6 @@ if('serviceWorker' in navigator){
   });
 }
 
-// INICIO AUTOMÁTICO
-initListeners();
 
 setTimeout(()=>{if(loaded<4&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
 </script>
