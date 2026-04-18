@@ -1288,6 +1288,31 @@ if('serviceWorker' in navigator){
 
 
 setTimeout(()=>{if(loaded<4&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
+
+// --- FUNCIÓN DE NAVEGACIÓN CONTEXTUAL ---
+window.irA = function(vista, idBusqueda) {
+  nav(vista); // Cambia de pestaña
+  
+  setTimeout(() => {
+    let inputId = '';
+    let renderFn = null;
+
+    if (vista === 'maquinas') {
+      inputId = 's-maq';
+      renderFn = renderMaquinas;
+    } else if (vista === 'stock') {
+      inputId = 's-stock';
+      renderFn = renderStock;
+    }
+
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.value = idBusqueda; // Escribe el nombre en el buscador
+      if (renderFn) renderFn(); // Ejecuta el filtro visualmente
+    }
+  }, 150);
+};
+  
 </script>
 </body>
 </html>
