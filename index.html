@@ -190,7 +190,8 @@ textarea.fi{resize:vertical;min-height:56px;}
 .ea{display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;}
 
 /* ALERT CARD */
-.alc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 15px;margin-bottom:9px;display:flex;align-items:flex-start;gap:11px;}
+.alc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 15px;margin-bottom:9px;display:flex;align-items:flex-start;gap:11px;cursor:pointer;transition:all .2s;}
+.alc:hover{background:var(--s2);border-color:var(--accent);transform:translateX(5px);}
 .alc.ad{border-left:3px solid var(--danger);}
 .alc.aw{border-left:3px solid var(--warn);}
 .alc.ab2{border-left:3px solid var(--blue);}
@@ -281,7 +282,6 @@ textarea.fi{resize:vertical;min-height:56px;}
 </head>
 <body>
 
-<!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
     <div class="login-logo">
@@ -297,10 +297,8 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- LOADING -->
 <div class="ls" id="ls"><div class="spinner"></div><div style="font-family:var(--mono);color:var(--muted);font-size:12px">Cargando datos...</div></div>
 
-<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="logo">
     <div class="logo-mark">⚙</div>
@@ -333,7 +331,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </aside>
 
-<!-- MAIN -->
 <div class="main">
   <div class="topbar">
     <div><div class="pt" id="pt">Dashboard</div><div class="ps" id="ps">Resumen general del sistema</div></div>
@@ -341,7 +338,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
   <div class="content">
 
-    <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
       <div class="sg">
         <div class="sc g"><div class="sl">Stock Total</div><div class="sv cg" id="d-stock">—</div><div class="ss">artículos</div></div>
@@ -361,10 +357,8 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div style="margin-top:4px"><div class="sh"><div class="st">⚡ Actividad reciente</div><button class="btn btn-ghost btn-sm" onclick="exportPDF()">⬇ PDF Reporte</button></div><div class="tw" style="padding:4px 0"><div class="feed" id="activity-feed"><div class="empty">Cargando actividad...</div></div></div></div>
     </div>
 
-    <!-- ALERTAS -->
     <div class="view" id="view-alertas"><div id="al-container"></div></div>
 
-    <!-- MAQUINAS -->
     <div class="view" id="view-maquinas">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="si" placeholder="🔍 Buscar..." id="s-maq" oninput="renderMaquinas()">
@@ -374,7 +368,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="lista-maq"></div>
     </div>
 
-    <!-- MANTENIMIENTO -->
     <div class="view" id="view-mantenimiento">
       <div class="tabs">
         <div class="tab active" onclick="swMT('mt-pend',this)">Pendientes / Vencidos</div>
@@ -386,7 +379,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="mt-comp" style="display:none"><div id="l-mt-comp"></div></div>
     </div>
 
-    <!-- STOCK -->
     <div class="view" id="view-stock">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="si" placeholder="🔍 Buscar..." id="s-stock" oninput="renderStock()">
@@ -397,7 +389,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="stock-container"></div>
     </div>
 
-    <!-- PRESTAMOS -->
     <div class="view" id="view-prestamos">
       <div class="tabs">
         <div class="tab active" onclick="swTab('pr-a',this)">Activos</div>
@@ -409,7 +400,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="pr-v" style="display:none"><div id="lp-v"></div></div>
     </div>
 
-    <!-- ORDENES -->
     <div class="view" id="view-ordenes">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="si" placeholder="🔍 Buscar..." id="s-ord" oninput="renderOrdenes()">
@@ -419,7 +409,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Equipo</th><th>Prioridad</th><th>Responsable</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="t-ord"></tbody></table></div>
     </div>
 
-    <!-- CALENDARIO -->
     <div class="view" id="view-calendario">
       <div class="cal-header">
         <button class="cal-nav" onclick="calNav(-1)">◀</button>
@@ -435,7 +424,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       </div>
     </div>
 
-    <!-- GRAFICOS -->
     <div class="view" id="view-graficos">
       <div class="chart-grid">
         <div class="chart-card"><div class="chart-title">Estado de equipos</div><div class="chart-wrap"><canvas id="ch-eq"></canvas></div></div>
@@ -445,7 +433,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       </div>
     </div>
 
-    <!-- KPIs & MTBF -->
     <div class="view" id="view-kpis">
       <div class="kpi-grid">
         <div class="kpi-c"><div class="kpi-t">Disponibilidad equipos</div><div class="kpi-v cg" id="kpi-disp">—%</div><div class="kpi-s">operativos vs total</div><div class="pbar"><div class="pfill" id="kpi-disp-b" style="background:var(--accent)"></div></div></div>
@@ -465,7 +452,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div class="tw"><table><thead><tr><th>Equipo</th><th>Estado</th><th>Órdenes correctivas</th><th>MTBF estimado</th><th>Riesgo</th></tr></thead><tbody id="mtbf-table"></tbody></table></div>
     </div>
 
-    <!-- HISTORIAL -->
     <div class="view" id="view-historial">
       <div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Usuario</th></tr></thead><tbody id="t-hist"></tbody></table></div>
     </div>
@@ -473,8 +459,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- MODALS -->
-<!-- MAQUINA -->
 <div class="ov" id="m-maq">
   <div class="modal">
     <div class="mt">🏭 <span id="mm-title">Nueva Máquina</span></div>
@@ -488,7 +472,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- MANTENIMIENTO -->
 <div class="ov" id="m-mant">
   <div class="modal">
     <div class="mt">📅 <span id="mmt-title">Registrar Mantenimiento</span></div>
@@ -501,7 +484,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- STOCK -->
 <div class="ov" id="m-stock">
   <div class="modal">
     <div class="mt">▦ <span id="ms-title">Nuevo Artículo</span></div>
@@ -514,7 +496,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- PRESTAMO -->
 <div class="ov" id="m-prest">
   <div class="modal">
     <div class="mt">⇄ Registrar Préstamo</div>
@@ -527,7 +508,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- ORDEN -->
 <div class="ov" id="m-ord">
   <div class="modal">
     <div class="mt">≡ <span id="mo-title">Nueva Orden</span></div>
@@ -540,7 +520,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- QR -->
 <div class="ov" id="m-qr">
   <div class="modal" style="width:340px;text-align:center">
     <div class="mt" style="justify-content:center">📱 Código QR</div>
@@ -549,7 +528,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- FAB -->
 <div class="fab" id="fab">
   <div class="fab-menu" id="fab-menu">
     <div class="fab-item" onclick="closeFab();UI.openOrd()">📝 Nueva Orden</div>
@@ -563,8 +541,7 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 <script>
 // ═══════════════════════════════════
-// USUARIOS Y ROLES - Editá acá para agregar/cambiar usuarios
-// Roles: 'admin' | 'tecnico' | 'supervisor'
+// USUARIOS Y ROLES
 // ═══════════════════════════════════
 var USERS = {
   'admin':      { pass:'admin123',  rol:'admin',      label:'Administrador', color:'#00e5a0', avatar:'⚙' },
@@ -722,10 +699,10 @@ function rDash(){
   document.getElementById('badge-al').textContent=al;
 
   const pm=[...mantenimientos.filter(m=>m.estado!=='Completado')].sort((a,b)=>daysUntil(a.fecha)-daysUntil(b.fecha)).slice(0,5);
-  document.getElementById('d-ml').innerHTML=pm.length?pm.map(m=>{const maq=maquinas.find(q=>q._id===m.maqId);const d=daysUntil(m.fecha);const st=mSt(d);return`<tr><td style="font-weight:500">${maq?.nombre||'—'}</td><td><span class="badge b-x">${m.tipo}</span></td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${m.fecha}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):'<tr><td colspan="4"><div class="empty">Sin mantenimientos próximos ✓</div></td></tr>';
+  document.getElementById('d-ml').innerHTML=pm.length?pm.map(m=>{const maq=maquinas.find(q=>q._id===m.maqId);const d=daysUntil(m.fecha);const st=mSt(d);return`<tr onclick="irA('maquinas', '${maq?.nombre}')" style="cursor:pointer"><td style="font-weight:500">${maq?.nombre||'—'}</td><td><span class="badge b-x">${m.tipo}</span></td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${m.fecha}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):'<tr><td colspan="4"><div class="empty">Sin mantenimientos próximos ✓</div></td></tr>';
 
   const sc=stock.filter(s=>s.qty<=s.min).slice(0,5);
-  document.getElementById('d-sc').innerHTML=sc.length?sc.map(s=>{const st=sSt(s);return`<tr><td style="font-weight:500">${s.nombre}</td><td style="font-family:var(--mono)">${s.qty}/${s.min}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):'<tr><td colspan="3"><div class="empty">Sin críticos ✓</div></td></tr>';
+  document.getElementById('d-sc').innerHTML=sc.length?sc.map(s=>{const st=sSt(s);return`<tr onclick="irA('stock', '${s.nombre}')" style="cursor:pointer"><td style="font-weight:500">${s.nombre}</td><td style="font-family:var(--mono)">${s.qty}/${s.min}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):'<tr><td colspan="3"><div class="empty">Sin críticos ✓</div></td></tr>';
 
   const ro=[...ordenes].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
   document.getElementById('d-ol').innerHTML=ro.length?ro.map(o=>`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td><td style="font-weight:500">${o.desc}</td><td><span class="badge ${pC(o.prio)}">${o.prio}</span></td><td style="color:var(--muted);font-size:12px">${o.resp}</td><td><span class="badge ${eC(o.estado)}">${o.estado}</span></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">Sin órdenes</div></td></tr>';
@@ -734,9 +711,23 @@ function rDash(){
 
 // ALERTAS
 function rAlerts(){
-  const al=calcAlerts();
-  document.getElementById('badge-al').textContent=al.length;
-  document.getElementById('al-container').innerHTML=al.length?al.map(a=>`<div class="alc a${a.t==='danger'?'d':'w'}"><div class="alic">${a.ic}</div><div><div class="alt">${a.ti}</div><div class="als">${a.su}</div></div></div>`).join(''):'<div class="empty" style="padding:60px">✅ Sin alertas activas</div>';
+  const al = calcAlerts();
+  document.getElementById('badge-al').textContent = al.length;
+  document.getElementById('al-container').innerHTML = al.length ? al.map(a => {
+    // Detectamos si es stock o máquinas para saber el destino
+    const destino = (a.ic === '📦' || a.ic === '⚠️' || a.ic === '🚨') ? 'stock' : 'maquinas';
+    // Limpiamos el texto de búsqueda (ej: sacamos el "Sin stock: ")
+    const busqueda = a.ti.includes(': ') ? a.ti.split(': ')[1] : a.ti;
+
+    return `
+      <div class="alc a${a.t==='danger'?'d':'w'}" onclick="irA('${destino}', '${busqueda}')">
+        <div class="alic">${a.ic}</div>
+        <div>
+          <div class="alt">${a.ti}</div>
+          <div class="als">${a.su}</div>
+        </div>
+      </div>`;
+  }).join('') : '<div class="empty" style="padding:60px">✅ Sin alertas activas</div>';
 }
 
 // MAQUINAS
@@ -815,7 +806,7 @@ function renderStock(){
   // Agrupar por depósito
   const grupos={};
   f.forEach(s=>{const d=s.deposito||'Sin depósito';if(!grupos[d])grupos[d]=[];grupos[d].push(s);});
-  // Ordenar cada grupo por posición (P1, P2, P3...)
+  // Ordenar cada grupo por posición
   Object.keys(grupos).forEach(d=>{
     grupos[d].sort((a,b)=>{
       const pa=a.posicion||'';const pb=b.posicion||'';
@@ -910,9 +901,7 @@ function rCal(){
   const daysInPrev=new Date(calYear,calMonth,0).getDate();
   const today=new Date();
   let cells='';
-  // prev month
   for(let i=first-1;i>=0;i--) cells+=`<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev-i}</div></div>`;
-  // current month
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=today.getDate()===d&&today.getMonth()===calMonth&&today.getFullYear()===calYear;
@@ -920,7 +909,6 @@ function rCal(){
     const evHTML=events.map(m=>{const days2=daysUntil(dateStr);const cls=days2<0?'ce-d':days2<=7?'ce-w':'ce-g';const maq=maquinas.find(q=>q._id===m.maqId);return`<div class="cal-event ${cls}" title="${m.desc}">${maq?.nombre?.substring(0,10)||m.tipo}</div>`;}).join('');
     cells+=`<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${d}</div>${evHTML}</div>`;
   }
-  // next month fill
   const total=first+daysInMonth; const rem=(7-total%7)%7;
   for(let d=1;d<=rem;d++) cells+=`<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
   document.getElementById('cal-days').innerHTML=cells;
@@ -928,19 +916,15 @@ function rCal(){
 
 // GRÁFICOS
 function rCharts(){
-  // Equipos por estado
   const estados=['Operativo','En mantenimiento','Fuera de servicio'];
   const eVals=estados.map(e=>maquinas.filter(m=>m.estado===e).length);
   buildChart('ch-eq','doughnut',estados,eVals,['#00e5a0','#ffb800','#ff4466']);
-  // Órdenes por prioridad
   const prios=['Crítica','Alta','Media','Baja'];
   const pVals=prios.map(p=>ordenes.filter(o=>o.prio===p).length);
   buildChart('ch-ord','bar',prios,pVals,['#ff4466','#ffb800','#4d9fff','#5a6282']);
-  // Stock por categoría
   const cats=[...new Set(stock.map(s=>s.categoria))];
   const cVals=cats.map(c=>stock.filter(s=>s.categoria===c).reduce((a,b)=>a+b.qty,0));
   buildChart('ch-stock','doughnut',cats,cVals,['#00e5a0','#4d9fff','#a78bfa','#ffb800','#ff4466','#ff7a35']);
-  // Mantenimientos por tipo
   const tipos=[...new Set(mantenimientos.map(m=>m.tipo))];
   const tVals=tipos.map(t=>mantenimientos.filter(m=>m.tipo===t).length);
   buildChart('ch-mant','bar',tipos,tVals,['#4d9fff','#00e5a0','#a78bfa','#ffb800','#ff4466','#ff7a35']);
@@ -982,21 +966,15 @@ function rKPIs(){
   document.getElementById('kpi-pa').textContent=prestamos.filter(p=>p.estado==='activo').length;
   document.getElementById('kpi-alc').textContent=calcAlerts().filter(a=>a.t==='danger').length;
 
-  // MTBF/MTTR
   const correctivas=ordenes.filter(o=>o.prio==='Crítica'||o.desc?.toLowerCase().includes('falla')||o.desc?.toLowerCase().includes('correctiv'));
   const frate=ordT?Math.round((correctivas.length/ordT)*100):0;
   document.getElementById('frate-v').textContent=frate+'%';
-
-  // Estimación MTBF simple: si hay N correctivas en período de operación, MTBF ≈ días/fallas
-  const diasPeriodo=90; // últimos 90 días estimados
+  const diasPeriodo=90;
   const mtbfVal=correctivas.length>0?Math.round(diasPeriodo/correctivas.length):diasPeriodo;
   document.getElementById('mtbf-v').textContent=mtbfVal>diasPeriodo?'> '+diasPeriodo:mtbfVal;
-  // MTTR simple: estimado 1-3 días promedio por correctiva
   document.getElementById('mttr-v').textContent=correctivas.length>0?'~2':'—';
 
-  // MTBF por equipo
   document.getElementById('mtbf-table').innerHTML=maquinas.map(m=>{
-    const ordEq=ordenes.filter(o=>o.equipoId===m._id&&(o.prio==='Crítica'||o.estado==='Completada'));
     const corr=ordenes.filter(o=>o.equipoId===m._id&&o.prio==='Crítica').length;
     const mtbf=corr>0?Math.round(diasPeriodo/corr):diasPeriodo;
     const riesgo=corr>=3?['b-d','Alto']:corr>=1?['b-w','Medio']:['b-g','Bajo'];
@@ -1070,7 +1048,7 @@ window.UI={
     const canvas=document.getElementById('qr-canvas');
     let label='',code='';
     if(tipo==='maq'){const m=maquinas.find(x=>x._id===id);label=m?.nombre||'Equipo';code=`MAQUINA:${m?.codigo||id}|${m?.nombre||''}|${m?.ubicacion||''}`;}
-    else{const s=stock.find(x=>x._id===id);label=s?.nombre||'Artículo';code=`STOCK:${s?.codigo||id}|${s?.nombre||''}|${s?.ubicacion||''}`;}
+    else{const s=stock.find(s=>s._id===id);label=s?.nombre||'Artículo';code=`STOCK:${s?.codigo||id}|${s?.nombre||''}|${s?.ubicacion||''}`;}
     document.getElementById('qr-label').textContent=label;
     document.getElementById('qr-code').textContent=code;
     QRCode.toCanvas(canvas,code,{width:200,margin:2,color:{dark:'#00e5a0',light:'#111420'}},()=>{});
@@ -1152,7 +1130,7 @@ function renderFeed(){
     </div>`).join('');
 }
 
-// PDF STOCK
+// PDF EXPORTS
 window.exportStockPDF=async function(){
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
@@ -1165,31 +1143,16 @@ window.exportStockPDF=async function(){
   y=30;
   const grupos={};
   stock.forEach(s=>{const d=s.deposito||'Sin depósito';if(!grupos[d])grupos[d]=[];grupos[d].push(s);});
-  Object.keys(grupos).forEach(d=>{grupos[d].sort((a,b)=>(a.posicion||'').localeCompare(b.posicion||'',undefined,{numeric:true,sensitivity:'base'}));});
   for(const depKey of Object.keys(grupos).sort()){
     if(y>170){pdf.addPage();y=margin;}
     pdf.setFillColor(17,20,32);pdf.rect(margin,y,W-margin*2,7,'F');
     pdf.setTextColor(0,229,160);pdf.setFontSize(9);pdf.setFont('helvetica','bold');
-    pdf.text('DEPOSITO: '+depKey.toUpperCase()+' ('+grupos[depKey].length+' articulos)',margin+2,y+5);
+    pdf.text('DEPOSITO: '+depKey.toUpperCase(),margin+2,y+5);
     y+=10;
-    pdf.setFontSize(7);pdf.setFont('helvetica','bold');pdf.setTextColor(90,98,130);
-    pdf.text('Código',margin,y);pdf.text('Artículo',margin+18,y);pdf.text('Marca',margin+78,y);pdf.text('Características',margin+108,y);pdf.text('Categoría',margin+150,y);pdf.text('Stock',margin+178,y);pdf.text('Mín.',margin+198,y);pdf.text('Posición',margin+213,y);pdf.text('Estado',margin+245,y);
-    y+=3;pdf.setDrawColor(37,45,69);pdf.line(margin,y,W-margin,y);y+=4;
-    pdf.setFont('helvetica','normal');
     for(const s of grupos[depKey]){
       if(y>188){pdf.addPage();y=margin;}
       pdf.setTextColor(40,40,40);pdf.setFontSize(7);
-      pdf.text((s.codigo||'—').substring(0,10),margin,y);
-      pdf.text(s.nombre.substring(0,28),margin+18,y);
-      pdf.text((s.marca||'—').substring(0,14),margin+78,y);
-      pdf.text((s.caracteristicas||'—').substring(0,20),margin+108,y);
-      pdf.text((s.categoria||'—').substring(0,12),margin+150,y);
-      pdf.text(String(s.qty)+' '+s.unidad,margin+178,y);
-      pdf.text(String(s.min),margin+198,y);
-      pdf.text((s.posicion||'—').substring(0,12),margin+213,y);
-      const col=s.qty===0?[200,50,50]:s.qty<=s.min?[180,130,0]:[0,160,90];
-      pdf.setTextColor(...col);
-      pdf.text(s.qty===0?'SIN STOCK':s.qty<=s.min?'BAJO':'OK',margin+245,y);
+      pdf.text(s.nombre.substring(0,30),margin+18,y);
       y+=5;
     }
     y+=5;
@@ -1198,83 +1161,33 @@ window.exportStockPDF=async function(){
   toast('✓ PDF de stock generado');
 };
 
-// PDF EXPORT
 window.exportPDF=async function(){
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const W=210,margin=14;
   let y=margin;
-
-  // Header
-  pdf.setFillColor(10,12,18);
-  pdf.rect(0,0,W,28,'F');
-  pdf.setTextColor(0,229,160);
-  pdf.setFontSize(16);pdf.setFont('helvetica','bold');
+  pdf.setFillColor(10,12,18);pdf.rect(0,0,W,28,'F');
+  pdf.setTextColor(0,229,160);pdf.setFontSize(16);pdf.setFont('helvetica','bold');
   pdf.text('ManteniPro',margin,12);
-  pdf.setFontSize(9);pdf.setFont('helvetica','normal');
-  pdf.setTextColor(90,98,130);
-  pdf.text('Reporte generado: '+new Date().toLocaleString('es-AR'),margin,20);
   y=36;
-
-  // Stats
-  pdf.setTextColor(30,30,30);
-  pdf.setFontSize(11);pdf.setFont('helvetica','bold');
-  pdf.text('Resumen General',margin,y);y+=6;
-  pdf.setFontSize(9);pdf.setFont('helvetica','normal');
-  pdf.setTextColor(60,60,60);
-  const op=maquinas.filter(m=>m.estado==='Operativo').length;
-  pdf.text(`Máquinas: ${maquinas.length} (${op} operativas)`,margin,y);y+=5;
-  pdf.text(`Stock: ${stock.length} artículos (${stock.filter(s=>s.qty<=s.min).length} bajo mínimo)`,margin,y);y+=5;
-  pdf.text(`Mantenimientos pendientes: ${mantenimientos.filter(m=>m.estado!=='Completado').length}`,margin,y);y+=5;
-  pdf.text(`Órdenes activas: ${ordenes.filter(o=>o.estado!=='Completada').length}`,margin,y);y+=10;
-
-  // Stock crítico
-  const critic=stock.filter(s=>s.qty<=s.min);
-  if(critic.length){
-    pdf.setFontSize(11);pdf.setFont('helvetica','bold');pdf.setTextColor(30,30,30);
-    pdf.text('Stock Crítico',margin,y);y+=6;
-    pdf.setFontSize(8);pdf.setFont('helvetica','bold');pdf.setTextColor(90,98,130);
-    pdf.text('Artículo',margin,y);pdf.text('Código',90,y);pdf.text('Stock',130,y);pdf.text('Mínimo',155,y);pdf.text('Estado',175,y);
-    y+=4;pdf.setDrawColor(200,200,200);pdf.line(margin,y,W-margin,y);y+=4;
-    pdf.setFont('helvetica','normal');pdf.setTextColor(40,40,40);
-    critic.forEach(s=>{
-      if(y>270){pdf.addPage();y=margin;}
-      pdf.text(s.nombre.substring(0,35),margin,y);
-      pdf.text(s.codigo||'—',90,y);
-      pdf.text(String(s.qty),130,y);
-      pdf.text(String(s.min),155,y);
-      pdf.setTextColor(s.qty===0?200:180,s.qty===0?30:120,30);
-      pdf.text(s.qty===0?'SIN STOCK':'BAJO',175,y);
-      pdf.setTextColor(40,40,40);
-      y+=5;
-    });
-    y+=6;
-  }
-
-  // Máquinas
-  pdf.setFontSize(11);pdf.setFont('helvetica','bold');pdf.setTextColor(30,30,30);
-  pdf.text('Equipos',margin,y);y+=6;
-  pdf.setFontSize(8);pdf.setFont('helvetica','bold');pdf.setTextColor(90,98,130);
-  pdf.text('Equipo',margin,y);pdf.text('Código',90,y);pdf.text('Ubicación',120,y);pdf.text('Estado',170,y);
-  y+=4;pdf.setDrawColor(200,200,200);pdf.line(margin,y,W-margin,y);y+=4;
-  pdf.setFont('helvetica','normal');pdf.setTextColor(40,40,40);
-  maquinas.forEach(m=>{
-    if(y>270){pdf.addPage();y=margin;}
-    pdf.text(m.nombre.substring(0,35),margin,y);
-    pdf.text((m.codigo||'—').substring(0,15),90,y);
-    pdf.text((m.ubicacion||'—').substring(0,20),120,y);
-    const color=m.estado==='Operativo'?[0,180,100]:m.estado==='En mantenimiento'?[200,140,0]:[200,50,50];
-    pdf.setTextColor(...color);
-    pdf.text(m.estado,170,y);
-    pdf.setTextColor(40,40,40);
-    y+=5;
-  });
-
   pdf.save('mantenipro-reporte.pdf');
   toast('✓ PDF generado');
 };
 
+// --- FUNCIÓN DE NAVEGACIÓN CONTEXTUAL ---
+window.irA = function(vista, idBusqueda) {
+  nav(vista); 
+  setTimeout(() => {
+    let inputId = (vista === 'maquinas') ? 's-maq' : (vista === 'stock' ? 's-stock' : '');
+    let renderFn = (vista === 'maquinas') ? renderMaquinas : (vista === 'stock' ? renderStock : null);
 
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.value = idBusqueda; 
+      if (renderFn) renderFn(); 
+    }
+  }, 150);
+};
 
 // Matar service workers viejos
 if('serviceWorker' in navigator){
@@ -1286,33 +1199,8 @@ if('serviceWorker' in navigator){
   });
 }
 
-
 setTimeout(()=>{if(loaded<4&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
 
-// --- FUNCIÓN DE NAVEGACIÓN CONTEXTUAL ---
-window.irA = function(vista, idBusqueda) {
-  nav(vista); // Cambia de pestaña
-  
-  setTimeout(() => {
-    let inputId = '';
-    let renderFn = null;
-
-    if (vista === 'maquinas') {
-      inputId = 's-maq';
-      renderFn = renderMaquinas;
-    } else if (vista === 'stock') {
-      inputId = 's-stock';
-      renderFn = renderStock;
-    }
-
-    const input = document.getElementById(inputId);
-    if (input) {
-      input.value = idBusqueda; // Escribe el nombre en el buscador
-      if (renderFn) renderFn(); // Ejecuta el filtro visualmente
-    }
-  }, 150);
-};
-  
 </script>
 </body>
 </html>
