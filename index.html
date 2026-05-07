@@ -319,6 +319,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('graficos')"><span class="ic">📈</span><span>Gráficos</span></div>
     <div class="ni" onclick="nav('kpis')"><span class="ic">📊</span><span>KPIs & MTBF</span></div>
     <div class="ng">Registro</div>
+    <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
     <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
   </nav>
   <div class="sf">
@@ -394,10 +395,12 @@ textarea.fi{resize:vertical;min-height:56px;}
         <div class="tab active" onclick="swTab('pr-a',this)">Activos</div>
         <div class="tab" onclick="swTab('pr-d',this)">Devueltos</div>
         <div class="tab" onclick="swTab('pr-v',this)">Vencidos</div>
+        <div class="tab" onclick="swTab('pr-c',this)">Consumos <span style="font-size:10px;color:var(--muted)">(sin dev.)</span></div>
       </div>
       <div id="pr-a"><div id="lp-a"></div></div>
       <div id="pr-d" style="display:none"><div id="lp-d"></div></div>
       <div id="pr-v" style="display:none"><div id="lp-v"></div></div>
+      <div id="pr-c" style="display:none"><div id="lp-c"></div></div>
     </div>
 
     <div class="view" id="view-ordenes">
@@ -452,6 +455,15 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div class="tw"><table><thead><tr><th>Equipo</th><th>Estado</th><th>Órdenes correctivas</th><th>MTBF estimado</th><th>Riesgo</th></tr></thead><tbody id="mtbf-table"></tbody></table></div>
     </div>
 
+    <div class="view" id="view-bajas">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <input class="si" placeholder="🔍 Buscar..." id="s-baja" oninput="renderBajas()">
+        <select class="fs" id="f-bj-tipo" onchange="renderBajas()"><option value="">Todos los tipos</option><option>Rotura</option><option>Pérdida</option><option>Obsoleto</option><option>Accidente</option><option>Otro</option></select>
+        <select class="fs" id="f-bj-cat" onchange="renderBajas()"><option value="">Todas las categorías</option><option>Equipo</option><option>Insumo</option></select>
+      </div>
+      <div class="tw"><table><thead><tr><th>Fecha</th><th>Código</th><th>Artículo / Equipo</th><th>Categoría</th><th>Cantidad</th><th>Motivo</th><th>Tipo</th><th>Responsable</th><th>Notas</th><th>Acciones</th></tr></thead><tbody id="t-bajas"></tbody></table></div>
+    </div>
+
     <div class="view" id="view-historial">
       <div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Usuario</th></tr></thead><tbody id="t-hist"></tbody></table></div>
     </div>
@@ -484,6 +496,19 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
+<div class="ov" id="m-baja">
+  <div class="modal">
+    <div class="mt">🗑 Registrar Baja</div>
+    <div class="fr"><div class="fg"><label class="fl">Categoría</label><select class="fss" id="bj-cat" onchange="bajaCatChange()"><option value="Insumo">Insumo / Stock</option><option value="Equipo">Equipo / Máquina</option></select></div><div class="fg"><label class="fl">Fecha de baja</label><input class="fi" type="date" id="bj-fecha"></div></div>
+    <div class="fg" id="bj-item-row"><label class="fl">Artículo</label><select class="fss" id="bj-item"></select></div>
+    <div class="fg" id="bj-maq-row" style="display:none"><label class="fl">Equipo</label><select class="fss" id="bj-maq"></select></div>
+    <div class="fg" id="bj-cant-row"><label class="fl">Cantidad</label><input class="fi" type="number" id="bj-cant" placeholder="1" min="1" value="1"></div>
+    <div class="fr"><div class="fg"><label class="fl">Motivo</label><select class="fss" id="bj-motivo"><option>Rotura</option><option>Pérdida</option><option>Obsoleto</option><option>Accidente</option><option>Otro</option></select></div><div class="fg"><label class="fl">Responsable</label><input class="fi" id="bj-resp" placeholder="Quién reporta"></div></div>
+    <div class="fg"><label class="fl">Notas / Descripción</label><input class="fi" id="bj-notas" placeholder="Detalle de lo ocurrido (opcional)"></div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-baja')">Cancelar</button><button class="btn btn-danger" onclick="saveBaja()">⬇ Registrar Baja</button></div>
+  </div>
+</div>
+
 <div class="ov" id="m-stock">
   <div class="modal">
     <div class="mt">▦ <span id="ms-title">Nuevo Artículo</span></div>
@@ -498,11 +523,17 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 <div class="ov" id="m-prest">
   <div class="modal">
-    <div class="mt">⇄ Registrar Préstamo</div>
+    <div class="mt">⇄ Registrar Préstamo / Consumo</div>
     <div class="fg"><label class="fl">Artículo</label><select class="fss" id="pr-item"></select></div>
     <div class="fr"><div class="fg"><label class="fl">Cantidad</label><input class="fi" type="number" id="pr-cant" placeholder="1" min="1"></div><div class="fg"><label class="fl">Fecha de salida</label><input class="fi" type="date" id="pr-salida"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Responsable</label><input class="fi" id="pr-resp" placeholder="Nombre"></div><div class="fg"><label class="fl">Sector</label><input class="fi" id="pr-sec" placeholder="Área"></div></div>
-    <div class="fg"><label class="fl">Fecha devolución</label><input class="fi" type="date" id="pr-fecha"></div>
+    <div class="fg" id="pr-fecha-row"><label class="fl">Fecha devolución</label><input class="fi" type="date" id="pr-fecha"></div>
+    <div class="fg" style="margin-bottom:13px">
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text)">
+        <input type="checkbox" id="pr-sin-dev" onchange="toggleSinDev()" style="accent-color:var(--warn);width:15px;height:15px;cursor:pointer;">
+        <span>Sin devolución <span style="color:var(--muted);font-size:11px">(consumible: electrodos, insumos, etc.)</span></span>
+      </label>
+    </div>
     <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="pr-obs" placeholder="Opcional"></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-prest')">Cancelar</button><button class="btn btn-primary" onclick="savePrestamo()">Registrar</button></div>
   </div>
@@ -608,7 +639,7 @@ const app = initializeApp(FC);
 const db = getFirestore(app);
 
 // STATE
-let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[];
+let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[];
 let eIds={maq:null,mant:null,stock:null,ord:null};
 let loaded=0, listenersInit=false;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
@@ -624,11 +655,12 @@ function initListeners() {
   onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
+  onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); });
 }
 window._initListeners = initListeners;
-function chk(){ loaded++; if(loaded>=5){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
+function chk(){ loaded++; if(loaded>=6){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
 function isActive(v){ return document.getElementById('view-'+v)?.classList.contains('active'); }
-function ref(v){ if(isActive(v)){ const fn={maquinas:renderMaquinas,mantenimiento:renderMant,stock:renderStock,prestamos:renderPrestamos,ordenes:renderOrdenes}[v]; if(fn)fn(); } }
+function ref(v){ if(isActive(v)){ const fn={maquinas:renderMaquinas,mantenimiento:renderMant,stock:renderStock,prestamos:renderPrestamos,ordenes:renderOrdenes,bajas:renderBajas}[v]; if(fn)fn(); } }
 
 // FB OPS
 async function fbAdd(col,data){ setSynced('sy'); try{const r=await addDoc(collection(db,col),data);setSynced('ok');return r.id;}catch(e){setSynced('er');toast('⚠ Error: '+e.message,'err');} }
@@ -638,8 +670,8 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},prestamos:{t:'Préstamos',s:'Herramientas en préstamo'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -660,6 +692,7 @@ window.nav = function(v) {
   if(v==='dashboard')rDash();
   if(v==='calendario')rCal();
   if(v==='graficos')rCharts();
+  if(v==='bajas')renderBajas();
 };
 
 // HELPERS
@@ -848,26 +881,59 @@ function renderStock(){
 
 // PRESTAMOS
 function renderPrestamos(){
-  const g={activo:[],devuelto:[],vencido:[]};
-  prestamos.forEach(p=>{if(g[p.estado])g[p.estado].push(p);});
-  rPL('lp-a',g.activo,true);rPL('lp-d',g.devuelto,false);rPL('lp-v',g.vencido,false,true);
+  const g={activo:[],devuelto:[],vencido:[],consumo:[]};
+  prestamos.forEach(p=>{
+    if(p.sinDevolucion) g.consumo.push(p);
+    else if(g[p.estado]) g[p.estado].push(p);
+  });
+  rPL('lp-a',g.activo,true);rPL('lp-d',g.devuelto,false);rPL('lp-v',g.vencido,false,true);rPL('lp-c',g.consumo,false,false,true);
 }
 function getIco(cat){return{'Electricidad':'⚡','Herramientas':'🔧','Lubricantes':'🛢','Seguridad':'🦺','Medición':'📏'}[cat]||'📦';}
-function rPL(cid,list,showR,showA=false){
+function rPL(cid,list,showR,showA=false,showC=false){
   const el=document.getElementById(cid);
+  if(!el){return;}
   if(!list.length){el.innerHTML='<div class="empty">No hay préstamos</div>';return;}
   el.innerHTML=list.map(p=>{const item=stock.find(s=>s._id===p.itemId);const nom=item?item.nombre:'Eliminado';const ico=item?getIco(item.categoria):'📦';
   return`<div class="ec">
     <div class="eicon bg-b" style="font-size:19px">${ico}</div>
-    <div><div class="en">${nom} <span style="color:var(--muted);font-weight:400">×${p.cantidad}</span></div><div class="em">${p.responsable} · ${p.sector} · Salida: ${p.fechaSalida||'—'} · Dev: ${p.fechaDevolucion}</div></div>
+    <div><div class="en">${nom} <span style="color:var(--muted);font-weight:400">×${p.cantidad}</span></div><div class="em">${p.responsable} · ${p.sector} · Salida: ${p.fechaSalida||'—'}${p.sinDevolucion?'':' · Dev: '+p.fechaDevolucion}</div></div>
     <div class="ea">
       ${showA?'<span class="badge b-d">Vencido</span>':''}
-      ${showR?`<button class="btn btn-sm btn-warn" onclick="UI.devolver('${p._id}')">↩</button>`:`<span class="badge b-x">${p.estado==='devuelto'?'Devuelto':'Vencido'}</span>`}
+      ${showC?'<span class="badge b-p">Consumo</span>':''}
+      ${showR?`<button class="btn btn-sm btn-warn" onclick="UI.devolver('${p._id}')">↩ Devolver</button>`:''}
+      ${(!showR&&!showC)?`<span class="badge b-x">${p.estado==='devuelto'?'Devuelto':'Vencido'}</span>`:''}
       <button class="ab del" onclick="UI.delPrest('${p._id}')" title="Eliminar">✕</button>
     </div>
   </div>`;}).join('');
 }
-window.swTab = function(tid,el){document.querySelectorAll('#view-prestamos .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['pr-a','pr-d','pr-v'].forEach(t=>document.getElementById(t).style.display=t===tid?'block':'none');};
+window.swTab = function(tid,el){document.querySelectorAll('#view-prestamos .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['pr-a','pr-d','pr-v','pr-c'].forEach(t=>document.getElementById(t)&&(document.getElementById(t).style.display=t===tid?'block':'none'));};
+
+// BAJAS
+window.renderBajas = function(){
+  const q=document.getElementById('s-baja')?.value.toLowerCase()||'';
+  const tipo=document.getElementById('f-bj-tipo')?.value||'';
+  const cat=document.getElementById('f-bj-cat')?.value||'';
+  const f=bajas.filter(b=>(!q||b.nombre?.toLowerCase().includes(b.nombre?.toLowerCase())||b.codigo?.toLowerCase().includes(q)||b.nombre?.toLowerCase().includes(q)||b.responsable?.toLowerCase().includes(q))&&(!tipo||b.motivo===tipo)&&(!cat||b.categoria===cat));
+  const tb=document.getElementById('t-bajas');
+  if(!tb)return;
+  if(!f.length){tb.innerHTML='<tr><td colspan="10"><div class="empty">No hay registros de bajas</div></td></tr>';return;}
+  tb.innerHTML=[...f].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(b=>{
+    const mC={'Rotura':'b-d','Pérdida':'b-w','Obsoleto':'b-x','Accidente':'b-d','Otro':'b-x'}[b.motivo]||'b-x';
+    const catC=b.categoria==='Equipo'?'b-b':'b-p';
+    return`<tr>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${b.fecha||'—'}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${b.codigo||'—'}</td>
+      <td style="font-weight:500">${b.nombre||'—'}</td>
+      <td><span class="badge ${catC}">${b.categoria||'—'}</span></td>
+      <td style="font-family:var(--mono);font-size:12px;text-align:center">${b.cantidad||'—'}</td>
+      <td><span class="badge ${mC}">${b.motivo||'—'}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${b.tipo||'—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${b.responsable||'—'}</td>
+      <td style="font-size:11px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.notas||'—'}</td>
+      <td><button class="ab del" onclick="UI.delBaja('${b._id}')" title="Eliminar">✕</button></td>
+    </tr>`;
+  }).join('');
+};
 
 // ORDENES
 function renderOrdenes(){
@@ -1029,6 +1095,8 @@ window.UI={
     const disp=stock.filter(s=>s.qty>0);if(!disp.length){toast('⚠ Sin stock disponible','warn');return;}
     document.getElementById('pr-item').innerHTML=disp.map(s=>`<option value="${s._id}">${s.nombre} (${s.qty})</option>`).join('');
     document.getElementById('pr-cant').value=1;document.getElementById('pr-resp').value='';document.getElementById('pr-sec').value='';document.getElementById('pr-obs').value='';
+    document.getElementById('pr-sin-dev').checked=false;
+    document.getElementById('pr-fecha-row').style.display='';
     const hoy=new Date().toISOString().split('T')[0];document.getElementById('pr-salida').value=hoy;
     const d=new Date();d.setDate(d.getDate()+7);document.getElementById('pr-fecha').value=d.toISOString().split('T')[0];
     document.getElementById('m-prest').classList.add('open');
@@ -1044,6 +1112,17 @@ window.UI={
   },
   editOrd(id){this.openOrd(id);},
   async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
+  openBaja(){
+    document.getElementById('bj-cat').value='Insumo';
+    document.getElementById('bj-fecha').value=new Date().toISOString().split('T')[0];
+    document.getElementById('bj-cant').value=1;
+    document.getElementById('bj-resp').value='';document.getElementById('bj-notas').value='';
+    document.getElementById('bj-item').innerHTML=stock.map(s=>`<option value="${s._id}">${s.nombre} (${s.codigo||'—'}) — Stock: ${s.qty}</option>`).join('');
+    document.getElementById('bj-maq').innerHTML=maquinas.map(m=>`<option value="${m._id}">${m.nombre} (${m.codigo||'—'})</option>`).join('');
+    document.getElementById('bj-item-row').style.display='';document.getElementById('bj-maq-row').style.display='none';document.getElementById('bj-cant-row').style.display='';
+    document.getElementById('m-baja').classList.add('open');
+  },
+  async delBaja(id){if(!canDo('eliminar'))return;if(!confirm('¿Eliminar este registro de baja?'))return;await fbDel('bajas',id);toast('Registro eliminado');},
   showQR(id,tipo){
     const canvas=document.getElementById('qr-canvas');
     let label='',code='';
@@ -1081,11 +1160,53 @@ window.savePrestamo=async function(){
   const itemId=document.getElementById('pr-item').value;const cant=parseInt(document.getElementById('pr-cant').value)||1;const resp=document.getElementById('pr-resp').value.trim();
   if(!resp){toast('⚠ Indicá el responsable','warn');return;}
   const item=stock.find(s=>s._id===itemId);if(cant>item.qty){toast('⚠ Stock insuficiente','warn');return;}
+  const sinDev=document.getElementById('pr-sin-dev').checked;
   await fbUpd('stock',itemId,{qty:item.qty-cant});
-  await fbAdd('prestamos',{itemId,cantidad:cant,responsable:resp,sector:document.getElementById('pr-sec').value.trim()||'—',fechaSalida:document.getElementById('pr-salida').value||new Date().toISOString().split('T')[0],fechaDevolucion:document.getElementById('pr-fecha').value,obs:document.getElementById('pr-obs').value.trim(),estado:'activo'});
-  await logH('prestamo',`Préstamo: ${item.nombre} x${cant} — ${resp}`);
-  closeModal('m-prest');toast('✓ Préstamo registrado');
+  await fbAdd('prestamos',{itemId,cantidad:cant,responsable:resp,sector:document.getElementById('pr-sec').value.trim()||'—',fechaSalida:document.getElementById('pr-salida').value||new Date().toISOString().split('T')[0],fechaDevolucion:sinDev?null:document.getElementById('pr-fecha').value,obs:document.getElementById('pr-obs').value.trim(),estado:sinDev?'consumo':'activo',sinDevolucion:sinDev});
+  const accion=sinDev?'Consumo':'Préstamo';
+  await logH('prestamo',`${accion}: ${item.nombre} x${cant} — ${resp}`);
+  closeModal('m-prest');toast(sinDev?'✓ Consumo registrado':'✓ Préstamo registrado');
 };
+window.toggleSinDev=function(){
+  const sinDev=document.getElementById('pr-sin-dev').checked;
+  document.getElementById('pr-fecha-row').style.display=sinDev?'none':'';
+};
+
+window.bajaCatChange=function(){
+  const cat=document.getElementById('bj-cat').value;
+  document.getElementById('bj-item-row').style.display=cat==='Insumo'?'':'none';
+  document.getElementById('bj-maq-row').style.display=cat==='Equipo'?'':'none';
+  document.getElementById('bj-cant-row').style.display=cat==='Insumo'?'':'none';
+};
+
+window.saveBaja=async function(){
+  const cat=document.getElementById('bj-cat').value;
+  const motivo=document.getElementById('bj-motivo').value;
+  const resp=document.getElementById('bj-resp').value.trim();
+  const fecha=document.getElementById('bj-fecha').value||new Date().toISOString().split('T')[0];
+  const notas=document.getElementById('bj-notas').value.trim();
+  let obj={categoria:cat,motivo,responsable:resp,fecha,notas,tipo:''};
+  if(cat==='Insumo'){
+    const itemId=document.getElementById('bj-item').value;
+    const cant=parseInt(document.getElementById('bj-cant').value)||1;
+    const item=stock.find(s=>s._id===itemId);
+    if(!item){toast('⚠ Seleccioná un artículo','warn');return;}
+    if(cant>item.qty){toast('⚠ Cantidad mayor al stock actual','warn');return;}
+    obj={...obj,itemId,nombre:item.nombre,codigo:item.codigo||'—',cantidad:cant,tipo:'Insumo/Stock'};
+    await fbUpd('stock',itemId,{qty:item.qty-cant});
+    await logH('stock',`Baja: ${item.nombre} x${cant} — Motivo: ${motivo}`);
+  } else {
+    const maqId=document.getElementById('bj-maq').value;
+    const maq=maquinas.find(m=>m._id===maqId);
+    if(!maq){toast('⚠ Seleccioná un equipo','warn');return;}
+    obj={...obj,maqId,nombre:maq.nombre,codigo:maq.codigo||'—',cantidad:1,tipo:'Equipo/Máquina'};
+    await fbUpd('maquinas',maqId,{estado:'Fuera de servicio'});
+    await logH('maquina',`Baja de equipo: ${maq.nombre} — Motivo: ${motivo}`);
+  }
+  await fbAdd('bajas',obj);
+  closeModal('m-baja');toast('✓ Baja registrada');
+};
+
 window.saveOrden=async function(){
   const desc=document.getElementById('or-desc').value.trim();if(!desc){toast('⚠ Completá la descripción','warn');return;}
   const eqId=document.getElementById('or-eq').value;const maq=maquinas.find(m=>m._id===eqId);
@@ -1199,7 +1320,7 @@ if('serviceWorker' in navigator){
   });
 }
 
-setTimeout(()=>{if(loaded<4&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
+setTimeout(()=>{if(loaded<6&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
 
 </script>
 </body>
