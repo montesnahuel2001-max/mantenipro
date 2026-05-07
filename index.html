@@ -312,6 +312,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('maquinas')"><span class="ic">🏭</span><span>Máquinas</span></div>
     <div class="ni" onclick="nav('mantenimiento')"><span class="ic">📅</span><span>Mantenimiento</span></div>
     <div class="ni" onclick="nav('stock')"><span class="ic">▦</span><span>Stock</span></div>
+    <div class="ni" onclick="nav('entradas')"><span class="ic">⬆</span><span>Entradas</span></div>
     <div class="ni" onclick="nav('prestamos')"><span class="ic">⇄</span><span>Préstamos</span></div>
     <div class="ni" onclick="nav('ordenes')"><span class="ic">≡</span><span>Órdenes</span></div>
     <div class="ng">Análisis</div>
@@ -388,6 +389,16 @@ textarea.fi{resize:vertical;min-height:56px;}
         <button class="btn btn-ghost btn-sm" onclick="exportStockPDF()">⬇ PDF Stock</button>
       </div>
       <div id="stock-container"></div>
+    </div>
+
+    <div class="view" id="view-entradas">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <input class="si" placeholder="🔍 Buscar artículo, proveedor..." id="s-ent" oninput="renderEntradas()">
+        <input class="fi" type="month" id="f-ent-mes" onchange="renderEntradas()" style="width:160px;padding:7px 9px;font-size:12px">
+        <select class="fs" id="f-ent-cat" onchange="renderEntradas()"><option value="">Todas las categorías</option></select>
+      </div>
+      <div id="entradas-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
+      <div class="tw"><table><thead><tr><th>Fecha</th><th>Artículo</th><th>Categoría</th><th>Cant. ingresada</th><th>Stock anterior</th><th>Stock nuevo</th><th>Proveedor</th><th>N° Remito</th><th>Precio unit.</th><th>Recibió</th><th>Notas</th><th>Acciones</th></tr></thead><tbody id="t-entradas"></tbody></table></div>
     </div>
 
     <div class="view" id="view-prestamos">
@@ -509,6 +520,27 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
+<div class="ov" id="m-entrada">
+  <div class="modal" style="width:560px">
+    <div class="mt">⬆ <span id="ment-title">Registrar Entrada de Stock</span></div>
+    <div class="fg"><label class="fl">Artículo</label><select class="fss" id="ent-item" onchange="entItemChange()"></select></div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:13px;display:flex;gap:18px;font-size:11px;font-family:var(--mono)" id="ent-info-bar">
+      <span>Stock actual: <strong id="ent-stock-actual" style="color:var(--accent)">—</strong></span>
+      <span>Mínimo: <strong id="ent-stock-min" style="color:var(--warn)">—</strong></span>
+      <span>Depósito: <strong id="ent-deposito" style="color:var(--muted)">—</strong></span>
+    </div>
+    <div class="fr"><div class="fg"><label class="fl">Cantidad que ingresa</label><input class="fi" type="number" id="ent-cant" placeholder="0" min="1" oninput="entCalc()"></div><div class="fg"><label class="fl">Fecha de ingreso</label><input class="fi" type="date" id="ent-fecha"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Proveedor</label><input class="fi" id="ent-prov" placeholder="Nombre del proveedor"></div><div class="fg"><label class="fl">N° Remito / Factura</label><input class="fi" id="ent-remito" placeholder="R-0001, FAC-123..."></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Precio unitario ($)</label><input class="fi" type="number" id="ent-precio" placeholder="0.00" min="0" step="0.01"></div><div class="fg"><label class="fl">Recibió</label><input class="fi" id="ent-recibio" placeholder="Nombre del responsable"></div></div>
+    <div class="fg"><label class="fl">Notas</label><input class="fi" id="ent-notas" placeholder="Observaciones del ingreso (opcional)"></div>
+    <div style="background:var(--ag);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px 13px;margin-bottom:13px;font-size:12px;font-family:var(--mono);display:flex;gap:16px;align-items:center" id="ent-preview">
+      <span style="color:var(--muted)">Stock resultante:</span>
+      <span id="ent-resultado" style="color:var(--accent);font-size:16px;font-weight:700">—</span>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-entrada')">Cancelar</button><button class="btn btn-primary" onclick="saveEntrada()">⬆ Confirmar Ingreso</button></div>
+  </div>
+</div>
+
 <div class="ov" id="m-stock">
   <div class="modal">
     <div class="mt">▦ <span id="ms-title">Nuevo Artículo</span></div>
@@ -517,6 +549,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="fr"><div class="fg"><label class="fl">Marca</label><input class="fi" id="sk-marca" placeholder="Stanley, Bosch, 3M..."></div><div class="fg"><label class="fl">Características</label><input class="fi" id="sk-caract" placeholder="12mm, 220V, Talle 40..."></div></div>
     <div class="fr3"><div class="fg"><label class="fl">Stock</label><input class="fi" type="number" id="sk-qty" placeholder="0" min="0"></div><div class="fg"><label class="fl">Mínimo</label><input class="fi" type="number" id="sk-min" placeholder="0" min="0"></div><div class="fg"><label class="fl">Unidad</label><select class="fss" id="sk-uni"><option>Unidad</option><option>Par</option><option>Caja</option><option>Litro</option><option>Metro</option><option>Kg</option><option>Rollo</option></select></div></div>
     <div class="fr"><div class="fg"><label class="fl">Depósito / Estante</label><input class="fi" id="sk-dep" placeholder="Depósito Baño, Estante A..."></div><div class="fg"><label class="fl">Posición</label><input class="fi" id="sk-pos" placeholder="P1, P2, Cajón 1..."></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Último control físico</label><input class="fi" type="date" id="sk-ctrl" title="Fecha en que se verificó el stock físicamente"></div><div class="fg"><label class="fl">Responsable control</label><input class="fi" id="sk-ctrl-resp" placeholder="Quién lo controló"></div></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-stock')">Cancelar</button><button class="btn btn-primary" onclick="saveStock()">Guardar</button></div>
   </div>
 </div>
@@ -639,7 +672,7 @@ const app = initializeApp(FC);
 const db = getFirestore(app);
 
 // STATE
-let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[];
+let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[];
 let eIds={maq:null,mant:null,stock:null,ord:null};
 let loaded=0, listenersInit=false;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
@@ -656,11 +689,12 @@ function initListeners() {
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
   onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); });
+  onSnapshot(collection(db,'entradas'), s=>{ entradas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('entradas'))renderEntradas(); });
 }
 window._initListeners = initListeners;
-function chk(){ loaded++; if(loaded>=6){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
+function chk(){ loaded++; if(loaded>=7){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
 function isActive(v){ return document.getElementById('view-'+v)?.classList.contains('active'); }
-function ref(v){ if(isActive(v)){ const fn={maquinas:renderMaquinas,mantenimiento:renderMant,stock:renderStock,prestamos:renderPrestamos,ordenes:renderOrdenes,bajas:renderBajas}[v]; if(fn)fn(); } }
+function ref(v){ if(isActive(v)){ const fn={maquinas:renderMaquinas,mantenimiento:renderMant,stock:renderStock,prestamos:renderPrestamos,ordenes:renderOrdenes,bajas:renderBajas,entradas:renderEntradas}[v]; if(fn)fn(); } }
 
 // FB OPS
 async function fbAdd(col,data){ setSynced('sy'); try{const r=await addDoc(collection(db,col),data);setSynced('ok');return r.id;}catch(e){setSynced('er');toast('⚠ Error: '+e.message,'err');} }
@@ -670,8 +704,8 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -693,6 +727,7 @@ window.nav = function(v) {
   if(v==='calendario')rCal();
   if(v==='graficos')rCharts();
   if(v==='bajas')renderBajas();
+  if(v==='entradas')renderEntradas();
 };
 
 // HELPERS
@@ -703,6 +738,15 @@ function pC(p){return{'Baja':'b-x','Media':'b-b','Alta':'b-w','Crítica':'b-d'}[
 function eC(e){return{'Pendiente':'b-w','En progreso':'b-b','Completada':'b-g'}[e]||'b-x';}
 function maqIco(cat){ const m=[['Sold','🔥'],['Cort','⚡'],['Taladro','🔩'],['Sierra','🪚'],['Compres','💨'],['Medici','📏'],['Amola','🔴'],['Mult','🔌']]; return m.find(([k])=>cat?.includes(k))?.[1]||'🏭'; }
 function sSt(s){ if(s.qty===0)return{c:'b-d',l:'Sin stock'}; if(s.qty<=s.min)return{c:'b-w',l:'Stock bajo'}; return{c:'b-g',l:'Disponible'}; }
+function ctrlBadge(fecha){
+  if(!fecha) return '<span class="badge b-x">Sin control</span>';
+  const d=Math.floor((Date.now()-new Date(fecha))/(1000*60*60*24));
+  const label=fecha;
+  if(d<=7) return`<span class="badge b-g" title="${fecha}">✓ Hace ${d}d</span>`;
+  if(d<=30) return`<span class="badge b-b" title="${fecha}">Hace ${d}d</span>`;
+  if(d<=90) return`<span class="badge b-w" title="${fecha}">Hace ${d}d</span>`;
+  return`<span class="badge b-d" title="${fecha}">Hace ${d}d ⚠</span>`;
+}
 
 function calcAlerts(){
   const al=[];
@@ -850,6 +894,7 @@ function renderStock(){
     const items=grupos[depKey];
     const rows=items.map(s=>{
       const st=sSt(s);const pct=s.min===0?100:Math.min(100,Math.round((s.qty/(s.min*3))*100));
+      const ctrl=s.ultControl?ctrlBadge(s.ultControl):'<span class="badge b-x" style="font-size:9px">Sin control</span>';
       return`<tr>
         <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.codigo||'—'}</td>
         <td>
@@ -860,8 +905,11 @@ function renderStock(){
         <td><span class="sbar"><span style="width:${pct}%;height:100%;border-radius:3px;display:block;background:${s.qty===0?'var(--danger)':s.qty<=s.min?'var(--warn)':'var(--accent)'}"></span></span><span style="font-family:var(--mono);font-size:12px">${s.qty} ${s.unidad}</span></td>
         <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.min}</td>
         <td style="color:var(--muted);font-size:11px;font-family:var(--mono)">${s.posicion||'—'}</td>
+        <td style="min-width:110px">${ctrl}${s.ctrlResp?`<div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:2px">${s.ctrlResp}</div>`:''}</td>
         <td><span class="badge ${st.c}">${st.l}</span></td>
-        <td>
+        <td style="white-space:nowrap">
+          <button class="ab" onclick="UI.marcarControl('${s._id}')" title="Marcar controlado hoy ✓" style="color:var(--accent);font-size:14px">✓</button>
+          <button class="ab" onclick="UI.openEntrada('${s._id}')" title="Registrar entrada de stock" style="color:var(--blue);font-size:13px">⬆</button>
           <button class="ab qr-btn" onclick="UI.showQR('${s._id}','stock')" title="QR">⊡</button>
           <button class="ab ed" onclick="UI.editStock('${s._id}')" title="Editar">✎</button>
           <button class="ab del" onclick="UI.delStock('${s._id}')" title="Eliminar">✕</button>
@@ -874,7 +922,7 @@ function renderStock(){
         <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)">${depKey}</span>
         <span style="font-size:10px;color:var(--muted);font-family:var(--mono)">${items.length} artículo${items.length!==1?'s':''}</span>
       </div>
-      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>Último control</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
     </div>`;
   }).join('');
 }
@@ -933,6 +981,54 @@ window.renderBajas = function(){
       <td><button class="ab del" onclick="UI.delBaja('${b._id}')" title="Eliminar">✕</button></td>
     </tr>`;
   }).join('');
+};
+
+// ENTRADAS
+window.renderEntradas = function(){
+  const q=document.getElementById('s-ent')?.value.toLowerCase()||'';
+  const mes=document.getElementById('f-ent-mes')?.value||'';
+  const cat=document.getElementById('f-ent-cat')?.value||'';
+  // Populate cat filter
+  const cats=[...new Set(entradas.map(e=>e.categoria).filter(Boolean))];
+  const selC=document.getElementById('f-ent-cat');
+  if(selC){const cv=selC.value;selC.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${c}"${c===cv?' selected':''}>${c}</option>`).join('');}
+  const f=entradas.filter(e=>{
+    const matchQ=!q||(e.nombre||'').toLowerCase().includes(q)||(e.proveedor||'').toLowerCase().includes(q)||(e.remito||'').toLowerCase().includes(q);
+    const matchMes=!mes||((e.fecha||'').startsWith(mes));
+    const matchCat=!cat||e.categoria===cat;
+    return matchQ&&matchMes&&matchCat;
+  });
+  // Resumen cards
+  const resEl=document.getElementById('entradas-resumen');
+  if(resEl){
+    const total=f.reduce((a,e)=>a+e.cantidad,0);
+    const totalCosto=f.reduce((a,e)=>a+(e.precio||0)*e.cantidad,0);
+    const proveedores=[...new Set(f.map(e=>e.proveedor).filter(Boolean))].length;
+    resEl.innerHTML=`
+      <div class="sc g"><div class="sl">Ingresos en período</div><div class="sv cg">${f.length}</div><div class="ss">registros</div></div>
+      <div class="sc b"><div class="sl">Unidades ingresadas</div><div class="sv cb">${total}</div><div class="ss">unidades totales</div></div>
+      <div class="sc w"><div class="sl">Costo total</div><div class="sv cw">$${totalCosto.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="ss">${proveedores} proveedor${proveedores!==1?'es':''}</div></div>`;
+  }
+  const tb=document.getElementById('t-entradas');
+  if(!tb)return;
+  if(!f.length){tb.innerHTML='<tr><td colspan="12"><div class="empty">No hay entradas registradas</div></td></tr>';return;}
+  tb.innerHTML=[...f].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(e=>`<tr>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${e.fecha||'—'}</td>
+    <td>
+      <div style="font-weight:500">${e.nombre||'—'}</div>
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${e.codigo||''}</div>
+    </td>
+    <td><span class="badge b-x">${e.categoria||'—'}</span></td>
+    <td style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)">+${e.cantidad} <span style="font-size:10px;color:var(--muted)">${e.unidad||''}</span></td>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${e.stockAntes??'—'}</td>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--accent)">${e.stockDespues??'—'}</td>
+    <td style="font-size:12px">${e.proveedor||'—'}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${e.remito||'—'}</td>
+    <td style="font-family:var(--mono);font-size:11px">${e.precio!=null&&e.precio!==''?'$'+Number(e.precio).toLocaleString('es-AR'):'—'}</td>
+    <td style="font-size:11px;color:var(--muted)">${e.recibio||'—'}</td>
+    <td style="font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.notas||'—'}</td>
+    <td><button class="ab del" onclick="UI.delEntrada('${e._id}')" title="Eliminar">✕</button></td>
+  </tr>`).join('');
 };
 
 // ORDENES
@@ -1085,8 +1181,8 @@ window.UI={
   async delMant(id){if(!canDo('eliminar'))return;await fbDel('mantenimientos',id);toast('Mantenimiento eliminado');},
   openStock(id=null){
     eIds.stock=id;document.getElementById('ms-title').textContent=id?'Editar Artículo':'Nuevo Artículo';
-    if(id){const s=stock.find(x=>x._id===id);document.getElementById('sk-cod').value=s.codigo||'';document.getElementById('sk-cat').value=s.categoria||'';document.getElementById('sk-nom').value=s.nombre||'';document.getElementById('sk-marca').value=s.marca||'';document.getElementById('sk-caract').value=s.caracteristicas||'';document.getElementById('sk-qty').value=s.qty||0;document.getElementById('sk-min').value=s.min||0;document.getElementById('sk-uni').value=s.unidad||'Unidad';document.getElementById('sk-dep').value=s.deposito||'';document.getElementById('sk-pos').value=s.posicion||'';}
-    else{['sk-cod','sk-cat','sk-nom','sk-marca','sk-caract','sk-qty','sk-min','sk-dep','sk-pos'].forEach(i=>document.getElementById(i).value='');document.getElementById('sk-uni').value='Unidad';}
+    if(id){const s=stock.find(x=>x._id===id);document.getElementById('sk-cod').value=s.codigo||'';document.getElementById('sk-cat').value=s.categoria||'';document.getElementById('sk-nom').value=s.nombre||'';document.getElementById('sk-marca').value=s.marca||'';document.getElementById('sk-caract').value=s.caracteristicas||'';document.getElementById('sk-qty').value=s.qty||0;document.getElementById('sk-min').value=s.min||0;document.getElementById('sk-uni').value=s.unidad||'Unidad';document.getElementById('sk-dep').value=s.deposito||'';document.getElementById('sk-pos').value=s.posicion||'';document.getElementById('sk-ctrl').value=s.ultControl||'';document.getElementById('sk-ctrl-resp').value=s.ctrlResp||'';}
+    else{['sk-cod','sk-cat','sk-nom','sk-marca','sk-caract','sk-qty','sk-min','sk-dep','sk-pos','sk-ctrl','sk-ctrl-resp'].forEach(i=>document.getElementById(i).value='');document.getElementById('sk-uni').value='Unidad';}
     document.getElementById('m-stock').classList.add('open');
   },
   editStock(id){this.openStock(id);},
@@ -1123,6 +1219,21 @@ window.UI={
     document.getElementById('m-baja').classList.add('open');
   },
   async delBaja(id){if(!canDo('eliminar'))return;if(!confirm('¿Eliminar este registro de baja?'))return;await fbDel('bajas',id);toast('Registro eliminado');},
+  openEntrada(itemIdPre=null){
+    document.getElementById('ent-item').innerHTML=stock.map(s=>`<option value="${s._id}"${s._id===itemIdPre?' selected':''}>${s.nombre} — ${s.codigo||'SIN COD'} (${s.qty} ${s.unidad})</option>`).join('');
+    document.getElementById('ent-fecha').value=new Date().toISOString().split('T')[0];
+    document.getElementById('ent-cant').value='';document.getElementById('ent-prov').value='';document.getElementById('ent-remito').value='';document.getElementById('ent-precio').value='';document.getElementById('ent-recibio').value='';document.getElementById('ent-notas').value='';
+    entItemChange();
+    document.getElementById('m-entrada').classList.add('open');
+  },
+  async marcarControl(id){
+    const hoy=new Date().toISOString().split('T')[0];
+    const u=currentUser?.username||'—';
+    await fbUpd('stock',id,{ultControl:hoy,ctrlResp:u});
+    await logH('stock',`Control de stock: ${stock.find(s=>s._id===id)?.nombre||id} — ${u}`);
+    toast('✓ Stock marcado como controlado');
+  },
+  async delEntrada(id){if(!canDo('eliminar'))return;if(!confirm('¿Eliminar este registro de entrada?\n(El stock NO se revertirá automáticamente)'))return;await fbDel('entradas',id);toast('Entrada eliminada');},
   showQR(id,tipo){
     const canvas=document.getElementById('qr-canvas');
     let label='',code='';
@@ -1152,7 +1263,7 @@ window.saveStock=async function(){
   const nom=document.getElementById('sk-nom').value.trim();if(!nom){toast('⚠ Completá el nombre','warn');return;}
   const dep=document.getElementById('sk-dep').value.trim()||'Sin depósito';
   const pos=document.getElementById('sk-pos').value.trim()||'';
-  const obj={codigo:document.getElementById('sk-cod').value.trim()||'SIN-COD',categoria:document.getElementById('sk-cat').value.trim()||'General',nombre:nom,marca:document.getElementById('sk-marca').value.trim()||'',caracteristicas:document.getElementById('sk-caract').value.trim()||'',qty:parseInt(document.getElementById('sk-qty').value)||0,min:parseInt(document.getElementById('sk-min').value)||0,unidad:document.getElementById('sk-uni').value,deposito:dep,posicion:pos,ubicacion:dep+(pos?' - '+pos:'')};
+  const obj={codigo:document.getElementById('sk-cod').value.trim()||'SIN-COD',categoria:document.getElementById('sk-cat').value.trim()||'General',nombre:nom,marca:document.getElementById('sk-marca').value.trim()||'',caracteristicas:document.getElementById('sk-caract').value.trim()||'',qty:parseInt(document.getElementById('sk-qty').value)||0,min:parseInt(document.getElementById('sk-min').value)||0,unidad:document.getElementById('sk-uni').value,deposito:dep,posicion:pos,ubicacion:dep+(pos?' - '+pos:''),ultControl:document.getElementById('sk-ctrl').value||null,ctrlResp:document.getElementById('sk-ctrl-resp').value.trim()||''};
   if(eIds.stock){await fbSet('stock',eIds.stock,obj);await logH('stock',`Artículo editado: ${nom}`);}else{await fbAdd('stock',obj);await logH('stock',`Nuevo artículo: ${nom}`);}
   closeModal('m-stock');toast('✓ Artículo guardado');
 };
@@ -1167,6 +1278,50 @@ window.savePrestamo=async function(){
   await logH('prestamo',`${accion}: ${item.nombre} x${cant} — ${resp}`);
   closeModal('m-prest');toast(sinDev?'✓ Consumo registrado':'✓ Préstamo registrado');
 };
+window.entItemChange=function(){
+  const id=document.getElementById('ent-item').value;
+  const s=stock.find(x=>x._id===id);
+  if(!s){return;}
+  document.getElementById('ent-stock-actual').textContent=`${s.qty} ${s.unidad}`;
+  document.getElementById('ent-stock-min').textContent=`${s.min} ${s.unidad}`;
+  document.getElementById('ent-deposito').textContent=s.deposito||'—';
+  entCalc();
+};
+window.entCalc=function(){
+  const id=document.getElementById('ent-item').value;
+  const s=stock.find(x=>x._id===id);
+  const cant=parseInt(document.getElementById('ent-cant').value)||0;
+  const actual=s?.qty||0;
+  const resultado=actual+cant;
+  document.getElementById('ent-resultado').textContent=cant>0?`${actual} + ${cant} = ${resultado} ${s?.unidad||''}`:'—';
+};
+window.saveEntrada=async function(){
+  const itemId=document.getElementById('ent-item').value;
+  const cant=parseInt(document.getElementById('ent-cant').value)||0;
+  if(!itemId){toast('⚠ Seleccioná un artículo','warn');return;}
+  if(cant<=0){toast('⚠ La cantidad debe ser mayor a 0','warn');return;}
+  const item=stock.find(s=>s._id===itemId);
+  if(!item){toast('⚠ Artículo no encontrado','warn');return;}
+  const stockAntes=item.qty;
+  const stockDespues=stockAntes+cant;
+  const obj={
+    itemId,nombre:item.nombre,codigo:item.codigo||'—',categoria:item.categoria||'General',unidad:item.unidad||'Unidad',
+    cantidad:cant,stockAntes,stockDespues,
+    fecha:document.getElementById('ent-fecha').value||new Date().toISOString().split('T')[0],
+    proveedor:document.getElementById('ent-prov').value.trim()||'—',
+    remito:document.getElementById('ent-remito').value.trim()||'—',
+    precio:parseFloat(document.getElementById('ent-precio').value)||null,
+    recibio:document.getElementById('ent-recibio').value.trim()||currentUser?.username||'—',
+    notas:document.getElementById('ent-notas').value.trim(),
+    usuario:currentUser?.username||'—'
+  };
+  await fbUpd('stock',itemId,{qty:stockDespues});
+  await fbAdd('entradas',obj);
+  await logH('stock',`Entrada: ${item.nombre} +${cant} — Prov: ${obj.proveedor}`);
+  closeModal('m-entrada');
+  toast(`✓ Entrada registrada — Nuevo stock: ${stockDespues} ${item.unidad}`);
+};
+
 window.toggleSinDev=function(){
   const sinDev=document.getElementById('pr-sin-dev').checked;
   document.getElementById('pr-fecha-row').style.display=sinDev?'none':'';
@@ -1320,7 +1475,7 @@ if('serviceWorker' in navigator){
   });
 }
 
-setTimeout(()=>{if(loaded<6&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
+setTimeout(()=>{if(loaded<7&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
 
 </script>
 </body>
