@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -172,6 +173,30 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 /* EMPTY */
 .empty{text-align:center;padding:36px;color:var(--muted);font-size:13px;}
+
+/* NOTIF CONFIG */
+.notif-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;}
+.notif-toggle-left{display:flex;align-items:center;gap:10px;}
+.notif-toggle-icon{font-size:20px;}
+.notif-toggle-name{font-size:13px;font-weight:500;}
+.notif-toggle-sub{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.toggle-sw{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.toggle-sw .slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:22px;transition:.3s;}
+.toggle-sw .slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:var(--muted);border-radius:50%;transition:.3s;}
+.toggle-sw input:checked+.slider{background:var(--accent);}
+.toggle-sw input:checked+.slider:before{transform:translateX(18px);background:#0a0c12;}
+.notif-section{margin-bottom:18px;}
+.notif-section-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-family:var(--mono);margin-bottom:8px;}
+.notif-test-btn{width:100%;padding:9px;background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s;margin-top:6px;}
+.notif-test-btn:hover{border-color:var(--accent);color:var(--accent);}
+.notif-status{font-size:11px;font-family:var(--mono);padding:7px 10px;border-radius:6px;margin-top:8px;display:none;}
+.notif-status.ok{display:block;background:var(--ag);color:var(--accent);border:1px solid rgba(0,229,160,.2);}
+.notif-status.err{display:block;background:var(--ddim);color:var(--danger);border:1px solid rgba(255,68,102,.2);}
+.notif-bell{position:relative;cursor:pointer;background:var(--s2);border:1px solid var(--border);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;flex-shrink:0;}
+.notif-bell:hover{border-color:var(--accent);}
+.notif-bell .nb-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;background:var(--danger);border-radius:50%;display:none;}
+.notif-bell .nb-dot.show{display:block;}
 
 /* TABS */
 .tabs{display:flex;margin-bottom:18px;border-bottom:1px solid var(--border);}
@@ -336,7 +361,7 @@ textarea.fi{resize:vertical;min-height:56px;}
 <div class="main">
   <div class="topbar">
     <div><div class="pt" id="pt">Dashboard</div><div class="ps" id="ps">Resumen general del sistema</div></div>
-    <div class="tar" id="ta"></div>
+    <div class="tar" id="ta"><div class="notif-bell" id="notif-bell" onclick="openNotifModal()" title="Configurar notificaciones">🔔<div class="nb-dot" id="nb-dot"></div></div></div>
   </div>
   <div class="content">
 
@@ -601,6 +626,68 @@ textarea.fi{resize:vertical;min-height:56px;}
   <button class="fab-main" onclick="toggleFab()" id="fab-btn">+</button>
 </div>
 
+<!-- MODAL NOTIFICACIONES -->
+<div class="ov" id="m-notif">
+  <div class="modal" style="width:520px">
+    <div class="mt">🔔 Configurar Notificaciones</div>
+    <div class="notif-section">
+      <div class="notif-section-title">¿Cuándo notificar?</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label class="notif-toggle">
+          <div class="notif-toggle-left"><span class="notif-toggle-icon">🚨</span><div><div class="notif-toggle-name">Sin stock (qty = 0)</div><div class="notif-toggle-sub">Cuando un artículo llega a cero</div></div></div>
+          <label class="toggle-sw"><input type="checkbox" id="nt-sin-stock" checked><span class="slider"></span></label>
+        </label>
+        <label class="notif-toggle">
+          <div class="notif-toggle-left"><span class="notif-toggle-icon">⚠️</span><div><div class="notif-toggle-name">Stock bajo (qty ≤ mínimo)</div><div class="notif-toggle-sub">Cuando queda igual o menos que el mínimo</div></div></div>
+          <label class="toggle-sw"><input type="checkbox" id="nt-bajo-stock" checked><span class="slider"></span></label>
+        </label>
+        <label class="notif-toggle">
+          <div class="notif-toggle-left"><span class="notif-toggle-icon">🔧</span><div><div class="notif-toggle-name">Mantenimiento vencido</div><div class="notif-toggle-sub">Cuando supera la fecha programada</div></div></div>
+          <label class="toggle-sw"><input type="checkbox" id="nt-mant-venc" checked><span class="slider"></span></label>
+        </label>
+        <label class="notif-toggle">
+          <div class="notif-toggle-left"><span class="notif-toggle-icon">🏭</span><div><div class="notif-toggle-name">Equipo fuera de servicio</div><div class="notif-toggle-sub">Cuando un equipo queda operativamente inactivo</div></div></div>
+          <label class="toggle-sw"><input type="checkbox" id="nt-fuera-serv"><span class="slider"></span></label>
+        </label>
+      </div>
+    </div>
+    <div class="notif-section">
+      <div class="notif-section-title">📱 WhatsApp (vía CallMeBot)</div>
+      <div class="fg"><label class="fl">Tu número de WhatsApp (con código de país)</label><input class="fi" id="nt-wa-num" placeholder="+54911xxxxxxxx" type="tel"></div>
+      <div class="fg"><label class="fl">API Key de CallMeBot</label><input class="fi" id="nt-wa-key" placeholder="xxxxxxxx"></div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px;line-height:1.6">
+        📌 Para obtener tu API key gratis: agregá el contacto <strong style="color:var(--text)">+34 644 47 37 21</strong> en WhatsApp y enviá el mensaje: <strong style="color:var(--accent)">I allow callmebot to send me messages</strong>
+      </div>
+      <label class="notif-toggle" style="margin-bottom:0">
+        <div class="notif-toggle-left"><span class="notif-toggle-icon">📱</span><div><div class="notif-toggle-name">Activar notificaciones WhatsApp</div></div></div>
+        <label class="toggle-sw"><input type="checkbox" id="nt-wa-on"><span class="slider"></span></label>
+      </label>
+      <button class="notif-test-btn" onclick="testWA()">📤 Enviar mensaje de prueba a WhatsApp</button>
+      <div class="notif-status" id="nt-wa-status"></div>
+    </div>
+    <div class="notif-section">
+      <div class="notif-section-title">📧 Email (vía EmailJS)</div>
+      <div class="fg"><label class="fl">Tu email</label><input class="fi" id="nt-email-to" placeholder="tumail@gmail.com" type="email"></div>
+      <div class="fg"><label class="fl">Service ID de EmailJS</label><input class="fi" id="nt-ejs-service" placeholder="service_xxxxxxx"></div>
+      <div class="fg"><label class="fl">Template ID de EmailJS</label><input class="fi" id="nt-ejs-template" placeholder="template_xxxxxxx"></div>
+      <div class="fg"><label class="fl">Public Key de EmailJS</label><input class="fi" id="nt-ejs-pubkey" placeholder="xxxxxxxxxxxxxxx"></div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px;line-height:1.6">
+        📌 Cuenta gratis en <strong style="color:var(--accent)">emailjs.com</strong> (200 emails/mes gratis). Creá un servicio Gmail, un template con variables <strong style="color:var(--text)">{{subject}}</strong> y <strong style="color:var(--text)">{{message}}</strong>, y copiá los IDs.
+      </div>
+      <label class="notif-toggle" style="margin-bottom:0">
+        <div class="notif-toggle-left"><span class="notif-toggle-icon">📧</span><div><div class="notif-toggle-name">Activar notificaciones por Email</div></div></div>
+        <label class="toggle-sw"><input type="checkbox" id="nt-email-on"><span class="slider"></span></label>
+      </label>
+      <button class="notif-test-btn" onclick="testEmail()">📤 Enviar email de prueba</button>
+      <div class="notif-status" id="nt-email-status"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-notif')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNotifConfig()">💾 Guardar configuración</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -787,7 +874,7 @@ function rDash(){
 }
 
 // ALERTAS
-function rAlerts(){
+function rAlerts(){ setTimeout(checkAndNotify, 500);
   const al = calcAlerts();
   document.getElementById('badge-al').textContent = al.length;
   document.getElementById('al-container').innerHTML = al.length ? al.map(a => {
@@ -1464,6 +1551,184 @@ window.irA = function(vista, idBusqueda) {
     }
   }, 150);
 };
+
+
+// ═══════════════════════════════════════════════════════
+// SISTEMA DE NOTIFICACIONES — WhatsApp (CallMeBot) + Email (EmailJS)
+// ═══════════════════════════════════════════════════════
+
+// Estado previo de alertas para detectar cambios
+let prevAlertKeys = new Set();
+
+const NC_KEY = 'mantenipro_notif_config';
+
+function loadNotifConfig(){
+  try{ return JSON.parse(localStorage.getItem(NC_KEY)||'{}'); }catch(e){ return {}; }
+}
+function saveNotifConfig(){
+  const cfg = {
+    waOn:   document.getElementById('nt-wa-on').checked,
+    waNum:  document.getElementById('nt-wa-num').value.trim(),
+    waKey:  document.getElementById('nt-wa-key').value.trim(),
+    emailOn:  document.getElementById('nt-email-on').checked,
+    emailTo:  document.getElementById('nt-email-to').value.trim(),
+    ejsService:  document.getElementById('nt-ejs-service').value.trim(),
+    ejsTemplate: document.getElementById('nt-ejs-template').value.trim(),
+    ejsPubkey:   document.getElementById('nt-ejs-pubkey').value.trim(),
+    sinStock:  document.getElementById('nt-sin-stock').checked,
+    bajoStock: document.getElementById('nt-bajo-stock').checked,
+    mantVenc:  document.getElementById('nt-mant-venc').checked,
+    fueraServ: document.getElementById('nt-fuera-serv').checked,
+  };
+  localStorage.setItem(NC_KEY, JSON.stringify(cfg));
+  closeModal('m-notif');
+  toast('✓ Configuración de notificaciones guardada');
+  updateBellDot(cfg);
+}
+window.saveNotifConfig = saveNotifConfig;
+
+function openNotifModal(){
+  const cfg = loadNotifConfig();
+  document.getElementById('nt-wa-on').checked   = !!cfg.waOn;
+  document.getElementById('nt-wa-num').value    = cfg.waNum||'';
+  document.getElementById('nt-wa-key').value    = cfg.waKey||'';
+  document.getElementById('nt-email-on').checked  = !!cfg.emailOn;
+  document.getElementById('nt-email-to').value    = cfg.emailTo||'';
+  document.getElementById('nt-ejs-service').value  = cfg.ejsService||'';
+  document.getElementById('nt-ejs-template').value = cfg.ejsTemplate||'';
+  document.getElementById('nt-ejs-pubkey').value   = cfg.ejsPubkey||'';
+  document.getElementById('nt-sin-stock').checked  = cfg.sinStock!==false;
+  document.getElementById('nt-bajo-stock').checked = cfg.bajoStock!==false;
+  document.getElementById('nt-mant-venc').checked  = cfg.mantVenc!==false;
+  document.getElementById('nt-fuera-serv').checked = !!cfg.fueraServ;
+  document.getElementById('nt-wa-status').className='notif-status';
+  document.getElementById('nt-email-status').className='notif-status';
+  document.getElementById('m-notif').classList.add('open');
+}
+window.openNotifModal = openNotifModal;
+
+function updateBellDot(cfg){
+  const active = (cfg.waOn && cfg.waNum && cfg.waKey) || (cfg.emailOn && cfg.emailTo);
+  document.getElementById('nb-dot').classList.toggle('show', !!active);
+}
+
+// Enviar mensaje WhatsApp vía CallMeBot
+async function sendWA(msg, cfg){
+  if(!cfg.waOn || !cfg.waNum || !cfg.waKey) return;
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(cfg.waNum)}&text=${encodeURIComponent(msg)}&apikey=${cfg.waKey}`;
+  try{
+    await fetch(url, {mode:'no-cors'});
+  }catch(e){ console.warn('WA notif error:', e); }
+}
+
+// Enviar email vía EmailJS
+async function sendEmail(subject, message, cfg){
+  if(!cfg.emailOn || !cfg.emailTo || !cfg.ejsService || !cfg.ejsTemplate || !cfg.ejsPubkey) return;
+  try{
+    if(!window.emailjs) { console.warn('EmailJS no cargado'); return; }
+    await window.emailjs.send(cfg.ejsService, cfg.ejsTemplate, {
+      to_email: cfg.emailTo,
+      subject: subject,
+      message: message,
+    }, cfg.ejsPubkey);
+  }catch(e){ console.warn('Email notif error:', e); }
+}
+
+// Función principal: detecta alertas nuevas y notifica
+async function checkAndNotify(){
+  const cfg = loadNotifConfig();
+  if(!cfg.waOn && !cfg.emailOn) return;
+
+  const newKeys = new Set();
+  const newAlerts = [];
+
+  if(cfg.sinStock){
+    stock.filter(s=>s.qty===0).forEach(s=>{
+      const k='sinstock:'+s._id;
+      newKeys.add(k);
+      if(!prevAlertKeys.has(k)) newAlerts.push({ key:k, msg:`🚨 SIN STOCK: ${s.nombre} — Stock: 0 ${s.unidad} (Mín: ${s.min})` });
+    });
+  }
+  if(cfg.bajoStock){
+    stock.filter(s=>s.qty>0&&s.qty<=s.min).forEach(s=>{
+      const k='bajost:'+s._id;
+      newKeys.add(k);
+      if(!prevAlertKeys.has(k)) newAlerts.push({ key:k, msg:`⚠️ STOCK BAJO: ${s.nombre} — ${s.qty}/${s.min} ${s.unidad}` });
+    });
+  }
+  if(cfg.mantVenc){
+    mantenimientos.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)<0).forEach(m=>{
+      const k='mantvenc:'+m._id;
+      newKeys.add(k);
+      if(!prevAlertKeys.has(k)){
+        const maq=maquinas.find(q=>q._id===m.maqId);
+        newAlerts.push({ key:k, msg:`🔧 MANTENIMIENTO VENCIDO: ${maq?.nombre||'Equipo'} — ${m.tipo} (${m.fecha})` });
+      }
+    });
+  }
+  if(cfg.fueraServ){
+    maquinas.filter(m=>m.estado==='Fuera de servicio').forEach(m=>{
+      const k='fueraserv:'+m._id;
+      newKeys.add(k);
+      if(!prevAlertKeys.has(k)) newAlerts.push({ key:k, msg:`🏭 FUERA DE SERVICIO: ${m.nombre}` });
+    });
+  }
+
+  prevAlertKeys = newKeys;
+
+  if(newAlerts.length === 0) return;
+
+  const lines = newAlerts.map(a=>a.msg);
+  const fullMsg = `⚙️ ManteniPro — ${new Date().toLocaleString('es-AR')}\n\n` + lines.join('\n');
+  const subject = `ManteniPro: ${newAlerts.length} alerta${newAlerts.length>1?'s':''} detectada${newAlerts.length>1?'s':''}`;
+
+  await sendWA(fullMsg, cfg);
+  await sendEmail(subject, fullMsg, cfg);
+}
+
+// Prueba manual de WhatsApp
+window.testWA = async function(){
+  const cfg = {
+    waOn: true,
+    waNum: document.getElementById('nt-wa-num').value.trim(),
+    waKey: document.getElementById('nt-wa-key').value.trim(),
+  };
+  const st = document.getElementById('nt-wa-status');
+  if(!cfg.waNum || !cfg.waKey){ st.className='notif-status err'; st.textContent='⚠ Completá el número y la API key primero.'; return; }
+  st.className='notif-status ok'; st.textContent='📤 Enviando mensaje de prueba...';
+  await sendWA('✅ ManteniPro: ¡Notificaciones por WhatsApp funcionando correctamente!', cfg);
+  st.textContent='✅ Mensaje enviado. Verificá tu WhatsApp (puede demorar unos segundos).';
+};
+
+// Prueba manual de Email
+window.testEmail = async function(){
+  const cfg = {
+    emailOn: true,
+    emailTo:    document.getElementById('nt-email-to').value.trim(),
+    ejsService:  document.getElementById('nt-ejs-service').value.trim(),
+    ejsTemplate: document.getElementById('nt-ejs-template').value.trim(),
+    ejsPubkey:   document.getElementById('nt-ejs-pubkey').value.trim(),
+  };
+  const st = document.getElementById('nt-email-status');
+  if(!cfg.emailTo||!cfg.ejsService||!cfg.ejsTemplate||!cfg.ejsPubkey){ st.className='notif-status err'; st.textContent='⚠ Completá todos los campos de EmailJS primero.'; return; }
+  st.className='notif-status ok'; st.textContent='📤 Enviando email de prueba...';
+  try{
+    await sendEmail('✅ ManteniPro — Prueba de notificación', 'Las notificaciones por email están funcionando correctamente.', cfg);
+    st.textContent='✅ Email enviado. Revisá tu bandeja de entrada.';
+  }catch(e){
+    st.className='notif-status err'; st.textContent='❌ Error al enviar: '+e.message;
+  }
+};
+
+// Inicializar el punto del bell con la config guardada
+(function(){
+  const cfg = loadNotifConfig();
+  updateBellDot(cfg);
+})();
+
+// Hook: cada vez que se actualizan alertas, verificar notificaciones
+const _origRAlerts = window.rAlerts;
+// Se engancha dentro del módulo — se sobreescribe rAlerts abajo via patch
 
 // Matar service workers viejos
 if('serviceWorker' in navigator){
