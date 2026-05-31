@@ -12,7 +12,6 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -332,70 +331,6 @@ textarea.fi{resize:vertical;min-height:56px;}
   .chart-grid{grid-template-columns:1fr;}
   .content{padding:14px;}
 }
-
-/* CHECKLIST DIARIO */
-.check-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:7px;display:flex;align-items:center;gap:12px;transition:all .15s;}
-.check-item.done-chk{opacity:.5;text-decoration:line-through;}
-.check-cb{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .15s;}
-.check-cb.checked{background:var(--accent);border-color:var(--accent);color:#0a0c12;}
-.check-label{flex:1;font-size:13px;}
-.check-meta{font-size:10px;color:var(--muted);font-family:var(--mono);}
-.check-reset-info{font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center;padding:8px;margin-top:8px;}
-
-/* COMENTARIOS EN ÓRDENES */
-.comment-thread{background:var(--s2);border-radius:8px;padding:12px;margin-top:8px;}
-.comment-item{padding:8px 0;border-bottom:1px solid var(--border);}
-.comment-item:last-child{border-bottom:none;}
-.comment-author{font-size:10px;font-family:var(--mono);color:var(--accent);font-weight:700;}
-.comment-time{font-size:10px;color:var(--muted);font-family:var(--mono);margin-left:8px;}
-.comment-text{font-size:12px;margin-top:3px;line-height:1.5;}
-.comment-input-row{display:flex;gap:8px;margin-top:10px;}
-.comment-input{flex:1;background:var(--s1);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:12px;font-family:var(--sans);outline:none;}
-.comment-input:focus{border-color:var(--accent);}
-
-/* FIRMA DIGITAL */
-.firma-wrap{border:1px solid var(--border);border-radius:8px;background:var(--s2);padding:10px;margin-top:6px;}
-.firma-canvas{width:100%;height:80px;border-radius:5px;background:#fff;cursor:crosshair;touch-action:none;}
-.firma-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
-
-/* FOTO ADJUNTA */
-.foto-preview{width:80px;height:80px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
-.foto-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-.foto-add{width:80px;height:80px;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--muted);transition:all .15s;flex-shrink:0;}
-.foto-add:hover{border-color:var(--accent);color:var(--accent);}
-.foto-wrap{position:relative;}
-.foto-del{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;border:none;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-
-/* EPP */
-.epp-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:13px 16px;margin-bottom:9px;display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;}
-.epp-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
-.epp-ok{background:var(--ag);}
-.epp-warn{background:var(--wdim);}
-.epp-exp{background:var(--ddim);}
-
-/* TURNOS */
-.turno-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:9px;}
-.turno-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.turno-day{font-family:var(--mono);font-size:13px;font-weight:700;}
-.turno-list{display:flex;flex-direction:column;gap:6px;}
-.turno-item{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--s2);border-radius:7px;font-size:12px;}
-.turno-hora{font-family:var(--mono);color:var(--accent);font-size:11px;flex-shrink:0;width:80px;}
-
-/* PRODUCTIVIDAD */
-.prod-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:5px;}
-.prod-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s;}
-.prod-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:9px;}
-
-/* HISTORIAL MÁQUINA */
-.maq-hist-timeline{position:relative;padding-left:20px;}
-.maq-hist-timeline::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--border);}
-.maq-hist-item{position:relative;padding:8px 0 8px 16px;font-size:12px;}
-.maq-hist-item::before{content:'';position:absolute;left:-9px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);}
-.maq-hist-fecha{font-family:var(--mono);font-size:10px;color:var(--muted);}
-
-/* REPORTE COSTOS */
-.costo-row{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(37,45,69,.4);font-size:13px;}
-.costo-row:hover{background:var(--s2);}
 </style>
 </head>
 <body>
@@ -412,13 +347,6 @@ textarea.fi{resize:vertical;min-height:56px;}
     <input class="login-input" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.doLogin&&window.doLogin()">
     <button class="login-btn" onclick="window.doLogin&&window.doLogin()">Ingresar →</button>
     <div class="login-err" id="l-err"></div>
-    <div class="login-users">
-      <div class="login-users-title">Acceso rápido (demo)</div>
-      <div class="user-chip" onclick="document.getElementById('l-user').value='admin';document.getElementById('l-pass').value='admin123'">⚙ admin</div>
-      <div class="user-chip" onclick="document.getElementById('l-user').value='tecnico1';document.getElementById('l-pass').value='tec123'">🔧 tecnico1</div>
-      <div class="user-chip" onclick="document.getElementById('l-user').value='supervisor';document.getElementById('l-pass').value='sup123'">👁 supervisor</div>
-      <div class="user-chip" onclick="document.getElementById('l-user').value='visitante';document.getElementById('l-pass').value='ver123'">👀 visitante</div>
-    </div>
   </div>
 </div>
 
@@ -450,12 +378,6 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ng">Registro</div>
     <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
     <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
-    <div class="ng">Nuevas funciones</div>
-    <div class="ni" onclick="nav('checklist')"><span class="ic">✅</span><span>Checklist Diario</span><span class="nbadge" id="badge-chk" style="background:var(--blue);display:none">0</span></div>
-    <div class="ni" onclick="nav('turnos')"><span class="ic">📆</span><span>Turnos Técnicos</span></div>
-    <div class="ni" onclick="nav('epp')"><span class="ic">🦺</span><span>Control EPP</span><span class="nbadge" id="badge-epp" style="background:var(--danger);display:none">!</span></div>
-    <div class="ni" onclick="nav('costos')"><span class="ic">💰</span><span>Reporte Costos</span></div>
-    <div class="ni" onclick="nav('productividad')"><span class="ic">📊</span><span>Productividad</span></div>
   </nav>
   <div class="sf">
     <div class="user-row">
@@ -638,60 +560,6 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="cp-done" style="display:none"><div id="l-cp-done"></div></div>
     </div>
 
-    <!-- CHECKLIST DIARIO -->
-    <div class="view" id="view-checklist">
-      <div style="background:rgba(77,159,255,.06);border:1px solid rgba(77,159,255,.15);border-radius:var(--rl);padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
-        <span style="font-size:22px;flex-shrink:0">✅</span>
-        <div>
-          <div style="font-weight:600;font-size:14px;margin-bottom:3px">Checklist de tareas diarias</div>
-          <div style="font-size:12px;color:var(--muted)">Las tareas se resetean automáticamente cada día. Los técnicos van tildando lo completado. El admin define las tareas desde las notas.</div>
-        </div>
-      </div>
-      <div id="checklist-container"><div class="empty">Cargando...</div></div>
-      <div class="check-reset-info" id="chk-reset-info"></div>
-    </div>
-
-    <!-- TURNOS TÉCNICOS -->
-    <div class="view" id="view-turnos">
-      <div id="turnos-container"><div class="empty">Cargando turnos...</div></div>
-    </div>
-
-    <!-- CONTROL EPP -->
-    <div class="view" id="view-epp">
-      <div style="background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.2);border-radius:var(--rl);padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
-        <span style="font-size:22px;flex-shrink:0">🦺</span>
-        <div>
-          <div style="font-weight:600;font-size:14px;margin-bottom:3px">Control de EPP — Equipos de Protección Personal</div>
-          <div style="font-size:12px;color:var(--muted)">Registrá cascos, arneses, guantes y otros EPP con su fecha de vencimiento. El sistema alerta automáticamente.</div>
-        </div>
-      </div>
-      <div id="epp-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
-      <div id="epp-container"><div class="empty">Cargando EPP...</div></div>
-    </div>
-
-    <!-- REPORTE COSTOS -->
-    <div class="view" id="view-costos">
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-        <input class="fi" type="month" id="f-cost-mes" onchange="renderCostos()" style="width:160px;padding:7px 9px;font-size:12px">
-        <select class="fs" id="f-cost-cat" onchange="renderCostos()"><option value="">Todas las categorías</option></select>
-      </div>
-      <div id="costos-resumen" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px"></div>
-      <div class="sh"><div class="st">💰 Detalle de entradas por artículo</div></div>
-      <div class="tw">
-        <div style="overflow:hidden">
-          <div class="costo-row" style="background:var(--s2);font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">
-            <span>Artículo / Categoría</span><span style="text-align:right">Cant. ingresada</span><span style="text-align:right">Precio unit.</span><span style="text-align:right">Total</span>
-          </div>
-          <div id="costos-rows"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PRODUCTIVIDAD -->
-    <div class="view" id="view-productividad">
-      <div id="prod-container"><div class="empty">Cargando...</div></div>
-    </div>
-
   </div>
 </div>
 
@@ -716,16 +584,6 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="fg"><label class="fl">Descripción</label><input class="fi" id="mt-desc" placeholder="Tarea a realizar"></div>
     <div class="fr"><div class="fg"><label class="fl">Responsable</label><input class="fi" id="mt-resp" placeholder="Técnico"></div><div class="fg"><label class="fl">Estado</label><select class="fss" id="mt-est"><option>Programado</option><option>En progreso</option><option>Completado</option></select></div></div>
     <div class="fg"><label class="fl">Notas</label><input class="fi" id="mt-notas" placeholder="Materiales, observaciones..."></div>
-    <div class="fg" id="firma-mant-wrap" style="display:none">
-      <label class="fl">Firma digital del técnico</label>
-      <div class="firma-wrap">
-        <canvas class="firma-canvas" id="firma-mant-canvas" width="440" height="80"></canvas>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-          <div class="firma-meta" id="firma-mant-meta">Firmado por: — · —</div>
-          <button class="btn btn-ghost btn-sm" onclick="clearFirma('mant')">✕ Borrar</button>
-        </div>
-      </div>
-    </div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-mant')">Cancelar</button><button class="btn btn-primary" onclick="saveMant()">Guardar</button></div>
   </div>
 </div>
@@ -796,38 +654,13 @@ textarea.fi{resize:vertical;min-height:56px;}
 </div>
 
 <div class="ov" id="m-ord">
-  <div class="modal" style="width:560px">
+  <div class="modal">
     <div class="mt">≡ <span id="mo-title">Nueva Orden</span></div>
     <div class="fg"><label class="fl">Descripción</label><input class="fi" id="or-desc" placeholder="Descripción del trabajo"></div>
     <div class="fg"><label class="fl">Equipo</label><select class="fss" id="or-eq"></select></div>
-    <div class="fr"><div class="fg"><label class="fl">Prioridad</label><select class="fss" id="or-pr"><option>Baja</option><option>Media</option><option selected>Alta</option><option>Crítica</option></select></div><div class="fg"><label class="fl">Estado</label><select class="fss" id="or-est" onchange="toggleFirmaOrd(this.value)"><option>Pendiente</option><option>En progreso</option><option>Completada</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Prioridad</label><select class="fss" id="or-pr"><option>Baja</option><option>Media</option><option selected>Alta</option><option>Crítica</option></select></div><div class="fg"><label class="fl">Estado</label><select class="fss" id="or-est"><option>Pendiente</option><option>En progreso</option><option>Completada</option></select></div></div>
     <div class="fg"><label class="fl">Responsable</label><input class="fi" id="or-resp" placeholder="Técnico asignado"></div>
     <div class="fg"><label class="fl">Notas</label><input class="fi" id="or-notas" placeholder="Instrucciones adicionales"></div>
-    <div class="fg">
-      <label class="fl">Fotos adjuntas</label>
-      <div class="foto-grid" id="ord-fotos">
-        <div class="foto-add" onclick="document.getElementById('ord-foto-input').click()" title="Agregar foto">📷</div>
-      </div>
-      <input type="file" id="ord-foto-input" accept="image/*" multiple style="display:none" onchange="handleFotoUpload('ord',this)">
-    </div>
-    <div class="fg" id="firma-ord-wrap" style="display:none">
-      <label class="fl">Firma al completar</label>
-      <div class="firma-wrap">
-        <canvas class="firma-canvas" id="firma-ord-canvas" width="500" height="80"></canvas>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-          <div class="firma-meta" id="firma-ord-meta">Firmado por: — · —</div>
-          <button class="btn btn-ghost btn-sm" onclick="clearFirma('ord')">✕ Borrar</button>
-        </div>
-      </div>
-    </div>
-    <div id="ord-comments-section" style="display:none">
-      <label class="fl" style="margin-bottom:6px">Comentarios del trabajo</label>
-      <div class="comment-thread" id="ord-comment-list"></div>
-      <div class="comment-input-row">
-        <input class="comment-input" id="ord-comment-input" placeholder="Agregar comentario...">
-        <button class="btn btn-primary btn-sm" onclick="addOrdComment()">Enviar</button>
-      </div>
-    </div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-ord')">Cancelar</button><button class="btn btn-primary" onclick="saveOrden()">Guardar</button></div>
   </div>
 </div>
@@ -913,76 +746,6 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 <div class="toast" id="toast"></div>
 
-<!-- MODAL EPP -->
-<div class="ov" id="m-epp">
-  <div class="modal">
-    <div class="mt">🦺 <span id="mepp-title">Nuevo EPP</span></div>
-    <div class="fr"><div class="fg"><label class="fl">Tipo de EPP</label><select class="fss" id="epp-tipo"><option>Casco</option><option>Arnés</option><option>Guantes</option><option>Calzado de seguridad</option><option>Lentes</option><option>Protector auditivo</option><option>Ropa de trabajo</option><option>Máscara/Respirador</option><option>Otro</option></select></div><div class="fg"><label class="fl">Talle / Modelo</label><input class="fi" id="epp-talle" placeholder="Talle M, Modelo X200..."></div></div>
-    <div class="fg"><label class="fl">Asignado a</label><input class="fi" id="epp-usuario" placeholder="Nombre del técnico"></div>
-    <div class="fr"><div class="fg"><label class="fl">Fecha de entrega</label><input class="fi" type="date" id="epp-entrega"></div><div class="fg"><label class="fl">Fecha de vencimiento</label><input class="fi" type="date" id="epp-vence"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">N° Serie / Código</label><input class="fi" id="epp-serie" placeholder="SN-001, opcional"></div><div class="fg"><label class="fl">Proveedor</label><input class="fi" id="epp-prov" placeholder="Opcional"></div></div>
-    <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="epp-obs" placeholder="Opcional"></div>
-    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-epp')">Cancelar</button><button class="btn btn-primary" onclick="saveEPP()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- MODAL CHECKLIST TAREA -->
-<div class="ov" id="m-chk">
-  <div class="modal">
-    <div class="mt">✅ <span id="mchk-title">Nueva Tarea del Checklist</span></div>
-    <div class="fg"><label class="fl">Descripción de la tarea</label><input class="fi" id="chk-desc" placeholder="Ej: Revisar nivel de aceite todas las máquinas"></div>
-    <div class="fr"><div class="fg"><label class="fl">Turno</label><select class="fss" id="chk-turno"><option value="">Todos</option><option>Mañana</option><option>Tarde</option><option>Noche</option></select></div><div class="fg"><label class="fl">Responsable sugerido</label><input class="fi" id="chk-resp" placeholder="Opcional"></div></div>
-    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-chk')">Cancelar</button><button class="btn btn-primary" onclick="saveChkTarea()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- MODAL TURNO -->
-<div class="ov" id="m-turno">
-  <div class="modal">
-    <div class="mt">📆 Agregar Turno Técnico</div>
-    <div class="fr"><div class="fg"><label class="fl">Técnico</label><input class="fi" id="trn-tec" placeholder="Nombre del técnico"></div><div class="fg"><label class="fl">Fecha</label><input class="fi" type="date" id="trn-fecha"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Turno</label><select class="fss" id="trn-turno"><option>Mañana (06:00-14:00)</option><option>Tarde (14:00-22:00)</option><option>Noche (22:00-06:00)</option><option>Full day (08:00-17:00)</option></select></div><div class="fg"><label class="fl">Máquinas asignadas</label><input class="fi" id="trn-maq" placeholder="Sector A, B, ..."></div></div>
-    <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="trn-obs" placeholder="Opcional"></div>
-    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-turno')">Cancelar</button><button class="btn btn-primary" onclick="saveTurno()">Guardar</button></div>
-  </div>
-</div>
-
-<!-- MODAL HISTORIAL MÁQUINA -->
-<div class="ov" id="m-maq-hist">
-  <div class="modal" style="width:620px">
-    <div class="mt">📋 Historial completo: <span id="mhist-nombre" style="color:var(--accent)">—</span></div>
-    <div class="tabs" style="margin-bottom:14px">
-      <div class="tab active" onclick="swMaqHist('mh-mant',this)">Mantenimientos</div>
-      <div class="tab" onclick="swMaqHist('mh-ord',this)">Órdenes</div>
-    </div>
-    <div id="mh-mant"><div id="mh-mant-list"></div></div>
-    <div id="mh-ord" style="display:none"><div id="mh-ord-list"></div></div>
-    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-maq-hist')">Cerrar</button></div>
-  </div>
-</div>
-
-<!-- MODAL BACKUP/EXPORTAR -->
-<div class="ov" id="m-backup">
-  <div class="modal" style="width:460px">
-    <div class="mt">💾 Exportar & Backup de datos</div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
-      <button class="notif-toggle" style="cursor:pointer" onclick="exportAllExcel()">
-        <div class="notif-toggle-left"><span class="notif-toggle-icon">📊</span><div><div class="notif-toggle-name">Exportar todo a Excel</div><div class="notif-toggle-sub">Stock, mantenimientos, órdenes, entradas en .xlsx</div></div></div>
-        <span class="btn btn-primary btn-sm">Descargar</span>
-      </button>
-      <button class="notif-toggle" style="cursor:pointer" onclick="backupJSON()">
-        <div class="notif-toggle-left"><span class="notif-toggle-icon">🗄</span><div><div class="notif-toggle-name">Backup completo a JSON</div><div class="notif-toggle-sub">Descarga todos los datos de Firebase como archivo .json</div></div></div>
-        <span class="btn btn-blue btn-sm">Descargar</span>
-      </button>
-      <button class="notif-toggle" style="cursor:pointer" onclick="exportStockPDF()">
-        <div class="notif-toggle-left"><span class="notif-toggle-icon">📄</span><div><div class="notif-toggle-name">Exportar Stock a PDF</div><div class="notif-toggle-sub">Inventario completo en formato PDF</div></div></div>
-        <span class="btn btn-ghost btn-sm">PDF</span>
-      </button>
-    </div>
-    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-backup')">Cerrar</button></div>
-  </div>
-</div>
-
 <!-- MODAL NOTA -->
 <div class="ov" id="m-nota">
   <div class="modal">
@@ -1024,14 +787,12 @@ var USERS = {
   'tecnico1':   { pass:'tec123',    rol:'tecnico',    label:'Técnico',       color:'#4d9fff', avatar:'🔧' },
   'tecnico2':   { pass:'tec456',    rol:'tecnico',    label:'Técnico',       color:'#4d9fff', avatar:'🔧' },
   'supervisor': { pass:'sup123',    rol:'supervisor', label:'Supervisor',    color:'#ffb800', avatar:'👁' },
-  'visitante':  { pass:'ver123',    rol:'visitante',  label:'Solo Lectura',  color:'#a78bfa', avatar:'👀' },
 };
 
 var PERMS = {
   admin:      { eliminar:true,  editar:true,  crear:true  },
   tecnico:    { eliminar:false, editar:true,  crear:true  },
   supervisor: { eliminar:false, editar:false, crear:false },
-  visitante:  { eliminar:false, editar:false, crear:false },
 };
 
 var currentUser = null;
@@ -1087,18 +848,10 @@ const db = getFirestore(app);
 
 // STATE
 let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[];
-let chkTareas=[], chkStates=[], turnos=[], eppItems=[], ordComments=[];
-let eIds={maq:null,mant:null,stock:null,ord:null,epp:null,chk:null,trn:null};
+let eIds={maq:null,mant:null,stock:null,ord:null};
 let loaded=0, listenersInit=false;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let charts={};
-// Firma digital state
-let firmaCtx={mant:null,ord:null};
-let firmaDrawing={mant:false,ord:false};
-// Foto adjunta state
-let ordFotos=[];
-// Edición de orden actual (para comentarios)
-let currentOrdId=null;
 
 function setSynced(s){ document.getElementById('sdot').className='sdot '+s; document.getElementById('slabel').textContent={ok:'Sincronizado',sy:'Guardando...',er:'Sin conexión'}[s]||s; }
 
@@ -1114,11 +867,6 @@ function initListeners() {
   onSnapshot(collection(db,'entradas'), s=>{ entradas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('entradas'))renderEntradas(); });
   onSnapshot(collection(db,'notas'), s=>{ notas=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('notas'))renderNotas(); });
   onSnapshot(collection(db,'compras'), s=>{ compras=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('compras'))renderCompras();updateBadgeCompras(); });
-  onSnapshot(collection(db,'chkTareas'), s=>{ chkTareas=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('checklist'))renderChecklist(); });
-  onSnapshot(collection(db,'chkStates'), s=>{ chkStates=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('checklist'))renderChecklist();updateChkBadge(); });
-  onSnapshot(collection(db,'turnos'), s=>{ turnos=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('turnos'))renderTurnos(); });
-  onSnapshot(collection(db,'epp'), s=>{ eppItems=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('epp'))renderEPP();updateEPPBadge(); });
-  onSnapshot(collection(db,'ordComments'), s=>{ ordComments=s.docs.map(d=>({_id:d.id,...d.data()})); if(currentOrdId&&document.getElementById('m-ord').classList.contains('open'))renderOrdComments(currentOrdId); });
 }
 window._initListeners = initListeners;
 function chk(){ loaded++; if(loaded>=7){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
@@ -1133,8 +881,8 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},checklist:{t:'Checklist Diario',s:'Tareas del día para técnicos'},turnos:{t:'Turnos Técnicos',s:'Agenda y asignación de técnicos'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos'},costos:{t:'Reporte de Costos',s:'Costos por mes, equipo y categoría'},productividad:{t:'Productividad Técnicos',s:'Órdenes completadas y tiempos de resolución'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`,checklist:`<span id="ta-chk-btn"></span>`,turnos:`<button class="btn btn-primary" onclick="openModal('m-turno');initTurnoForm()">+ Agregar Turno</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">+ Nuevo EPP</button>`,costos:`<button class="btn btn-ghost" onclick="exportCostosExcel()">📊 Exportar Excel</button>`,productividad:``,dashboard:`<button class="btn btn-ghost btn-sm" onclick="openModal('m-backup')">💾 Backup / Exportar</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -1159,11 +907,6 @@ window.nav = function(v) {
   if(v==='entradas')renderEntradas();
   if(v==='notas'){renderNotas();renderNotasAdminBtn();}
   if(v==='compras')renderCompras();
-  if(v==='checklist'){renderChecklist();renderChkAdminBtn();}
-  if(v==='turnos')renderTurnos();
-  if(v==='epp'){renderEPP();updateEPPBadge();}
-  if(v==='costos')renderCostos();
-  if(v==='productividad')renderProductividad();
 };
 
 // HELPERS
@@ -1267,7 +1010,6 @@ function renderMaquinas(){
         ${m.notas?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${m.notas}</div>`:''}
       </div>
       <div class="ea">
-        <button class="ab" onclick="UI.verHistMaq('${m._id}')" title="Historial completo" style="color:var(--purple)">📋</button>
         <button class="ab qr-btn" onclick="UI.showQR('${m._id}','maq')" title="QR">⊡</button>
         <button class="ab ed" onclick="UI.editMaq('${m._id}')" title="Editar">✎</button>
         <button class="ab del" onclick="UI.delMaq('${m._id}')" title="Eliminar">✕</button>
@@ -1611,9 +1353,6 @@ window.UI={
     document.getElementById('mt-maq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
     if(id){const m=mantenimientos.find(x=>x._id===id);document.getElementById('mt-maq').value=m.maqId||'';document.getElementById('mt-tipo').value=m.tipo||'Preventivo';document.getElementById('mt-fecha').value=m.fecha||'';document.getElementById('mt-desc').value=m.desc||'';document.getElementById('mt-resp').value=m.resp||'';document.getElementById('mt-est').value=m.estado||'Programado';document.getElementById('mt-notas').value=m.notas||'';}
     else{['mt-desc','mt-resp','mt-notas'].forEach(i=>document.getElementById(i).value='');document.getElementById('mt-maq').value='';document.getElementById('mt-tipo').value='Preventivo';document.getElementById('mt-est').value='Programado';const d=new Date();d.setDate(d.getDate()+30);document.getElementById('mt-fecha').value=d.toISOString().split('T')[0];}
-    const isComp = document.getElementById('mt-est').value==='Completado';
-    document.getElementById('firma-mant-wrap').style.display=isComp?'':'none';
-    document.getElementById('mt-est').onchange=function(){ document.getElementById('firma-mant-wrap').style.display=this.value==='Completado'?'':'none'; if(this.value==='Completado') setTimeout(()=>initFirma('mant'),50); };
     document.getElementById('m-mant').classList.add('open');
   },
   editMant(id){this.openMant(id);},
@@ -1640,15 +1379,10 @@ window.UI={
   async devolver(id){const p=prestamos.find(x=>x._id===id);const item=stock.find(s=>s._id===p.itemId);await fbUpd('prestamos',id,{estado:'devuelto'});if(item)await fbUpd('stock',item._id,{qty:item.qty+p.cantidad});await logH('prestamo',`Devolución: ${item?.nombre||'ítem'} x${p.cantidad} — ${p.responsable}`);toast('✓ Devolución registrada');},
   async delPrest(id){if(!canDo('eliminar'))return;await fbDel('prestamos',id);toast('Préstamo eliminado');},
   openOrd(id=null){
-    eIds.ord=id;currentOrdId=id;document.getElementById('mo-title').textContent=id?'Editar Orden':'Nueva Orden';
+    eIds.ord=id;document.getElementById('mo-title').textContent=id?'Editar Orden':'Nueva Orden';
     document.getElementById('or-eq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
-    ordFotos=[];renderFotoGrid('ord');
-    if(id){const o=ordenes.find(x=>x._id===id);document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';if(o.fotos)ordFotos=[...o.fotos];renderFotoGrid('ord');}
+    if(id){const o=ordenes.find(x=>x._id===id);document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';}
     else{['or-desc','or-resp','or-notas'].forEach(i=>document.getElementById(i).value='');document.getElementById('or-eq').value='';document.getElementById('or-pr').value='Alta';document.getElementById('or-est').value='Pendiente';}
-    const est=document.getElementById('or-est').value;
-    document.getElementById('firma-ord-wrap').style.display=est==='Completada'?'':'none';
-    document.getElementById('ord-comments-section').style.display=id?'':'none';
-    if(id){renderOrdComments(id);setTimeout(()=>{if(est==='Completada')initFirma('ord');},50);}
     document.getElementById('m-ord').classList.add('open');
   },
   editOrd(id){this.openOrd(id);},
@@ -1700,19 +1434,8 @@ window.saveMaq=async function(){
 window.saveMant=async function(){
   const desc=document.getElementById('mt-desc').value.trim();if(!desc){toast('⚠ Completá la descripción','warn');return;}
   const maqId=document.getElementById('mt-maq').value;
-  const estado=document.getElementById('mt-est').value;
-  let firmaData=null;
-  if(estado==='Completado'){
-    const canvas=document.getElementById('firma-mant-canvas');
-    const ctx=canvas.getContext('2d');
-    const blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
-    if(canvas.toDataURL()!==blank.toDataURL()){
-      firmaData={img:canvas.toDataURL(),tecnico:currentUser?.username||'—',fecha:new Date().toLocaleString('es-AR')};
-    }
-  }
-  const obj={maqId,tipo:document.getElementById('mt-tipo').value,fecha:document.getElementById('mt-fecha').value,desc,resp:document.getElementById('mt-resp').value.trim()||'—',estado,notas:document.getElementById('mt-notas').value.trim(),...(firmaData?{firma:firmaData}:{})};
+  const obj={maqId,tipo:document.getElementById('mt-tipo').value,fecha:document.getElementById('mt-fecha').value,desc,resp:document.getElementById('mt-resp').value.trim()||'—',estado:document.getElementById('mt-est').value,notas:document.getElementById('mt-notas').value.trim()};
   if(eIds.mant){await fbSet('mantenimientos',eIds.mant,obj);}else{await fbAdd('mantenimientos',obj);const maq=maquinas.find(m=>m._id===maqId);await logH('mantenimiento',`Mantenim. programado: ${maq?.nombre||'equipo'} — ${obj.tipo}`);}
-  if(estado==='Completado'&&maqId){const maq=maquinas.find(m=>m._id===maqId);if(maq)await fbUpd('maquinas',maqId,{ultMant:new Date().toISOString().split('T')[0]});await logH('mantenimiento',`Mantenimiento completado: ${maq?.nombre||'equipo'} — firmado: ${firmaData?'Sí':'No'}`);}
   closeModal('m-mant');toast('✓ Mantenimiento guardado');
 };
 window.saveStock=async function(){
@@ -1821,14 +1544,7 @@ window.saveBaja=async function(){
 window.saveOrden=async function(){
   const desc=document.getElementById('or-desc').value.trim();if(!desc){toast('⚠ Completá la descripción','warn');return;}
   const eqId=document.getElementById('or-eq').value;const maq=maquinas.find(m=>m._id===eqId);
-  const estado=document.getElementById('or-est').value;
-  let firmaData=null;
-  if(estado==='Completada'){
-    const canvas=document.getElementById('firma-ord-canvas');
-    if(canvas){const blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
-    if(canvas.toDataURL()!==blank.toDataURL()){firmaData={img:canvas.toDataURL(),tecnico:currentUser?.username||'—',fecha:new Date().toLocaleString('es-AR')};}}
-  }
-  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',prio:document.getElementById('or-pr').value,estado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),fotos:ordFotos,...(firmaData?{firma:firmaData}:{})};
+  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',prio:document.getElementById('or-pr').value,estado:document.getElementById('or-est').value,resp:document.getElementById('or-resp').value.trim()||'—',fecha:new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim()};
   if(eIds.ord){await fbSet('ordenes',eIds.ord,obj);await logH('orden',`Orden editada: ${desc}`);}else{await fbAdd('ordenes',obj);await logH('orden',`Orden creada: ${desc}`);}
   closeModal('m-ord');toast('✓ Orden guardada');
 };
@@ -2243,498 +1959,6 @@ function renderCompraList(cid, list, isDone=false){
 // UI para notas y compras
 Object.assign(window.UI, {
   openNota(id=null){
-    if(!canDo('crear')) return;
-    eIdNota=id;
-    document.getElementById('mnota-title').textContent=id?'Editar Nota':'Nueva Nota';
-    notaPrioActual='general';
-    document.querySelectorAll('.nota-prio-opt').forEach(b=>{b.classList.remove('sel');if(b.dataset.p==='general')b.classList.add('sel');});
-    document.getElementById('nota-prio').value='general';
-    if(id){
-      const n=notas.find(x=>x._id===id);
-      document.getElementById('nota-titulo').value=n.titulo||'';
-      document.getElementById('nota-body').value=n.body||'';
-      notaPrioActual=n.prio||'general';
-      document.getElementById('nota-prio').value=notaPrioActual;
-      document.querySelectorAll('.nota-prio-opt').forEach(b=>{b.classList.remove('sel');if(b.dataset.p===notaPrioActual)b.classList.add('sel');});
-    } else {
-      document.getElementById('nota-titulo').value='';
-      document.getElementById('nota-body').value='';
-    }
-    document.getElementById('m-nota').classList.add('open');
-  },
-  editNota(id){ this.openNota(id); },
-  async delNota(id){
-    if(!canDo('eliminar')) return;
-    if(!confirm('¿Eliminar esta nota?')) return;
-    await fbDel('notas',id);
-    toast('Nota eliminada');
-  },
-  openCompra(id=null){
-    eIdCompra=id;
-    document.getElementById('mcompra-title').textContent=id?'Editar Compra':'Nueva Compra';
-    if(id){
-      const c=compras.find(x=>x._id===id);
-      document.getElementById('cp-nombre').value=c.nombre||'';
-      document.getElementById('cp-cant').value=c.cantidad||1;
-      document.getElementById('cp-uni').value=c.unidad||'Unidad';
-      document.getElementById('cp-prio').value=c.prio||'Normal';
-      document.getElementById('cp-prov').value=c.prov||'';
-      document.getElementById('cp-precio').value=c.precio||'';
-      document.getElementById('cp-notas').value=c.notas||'';
-    } else {
-      ['cp-nombre','cp-prov','cp-precio','cp-notas'].forEach(i=>document.getElementById(i).value='');
-      document.getElementById('cp-cant').value=1;
-      document.getElementById('cp-uni').value='Unidad';
-      document.getElementById('cp-prio').value='Normal';
-    }
-    document.getElementById('m-compra').classList.add('open');
-  },
-  editCompra(id){ this.openCompra(id); },
-  async delCompra(id){
-    if(!canDo('eliminar')) return;
-    if(!confirm('¿Eliminar este ítem de compra?')) return;
-    await fbDel('compras',id);
-    toast('Ítem eliminado');
-  },
-  async toggleCompra(id, estado){
-    const next = estado==='pendiente'?'solicitado':estado==='solicitado'?'comprado':'pendiente';
-    await fbUpd('compras',id,{estado:next});
-    toast(`✓ Estado: ${next}`);
-  },
-  async avanzarCompra(id){ await fbUpd('compras',id,{estado:'solicitado'}); toast('→ Marcado como solicitado'); },
-  async completarCompra(id){ await fbUpd('compras',id,{estado:'comprado'}); toast('✓ Marcado como comprado'); },
-  // EPP
-  openEPP(id=null){
-    if(!canDo('crear'))return;
-    eIds.epp=id;
-    document.getElementById('mepp-title').textContent=id?'Editar EPP':'Nuevo EPP';
-    if(id){const e=eppItems.find(x=>x._id===id);document.getElementById('epp-tipo').value=e.tipo||'Casco';document.getElementById('epp-talle').value=e.talle||'';document.getElementById('epp-usuario').value=e.usuario||'';document.getElementById('epp-entrega').value=e.entrega||'';document.getElementById('epp-vence').value=e.vence||'';document.getElementById('epp-serie').value=e.serie||'';document.getElementById('epp-prov').value=e.prov||'';document.getElementById('epp-obs').value=e.obs||'';}
-    else{['epp-talle','epp-usuario','epp-entrega','epp-vence','epp-serie','epp-prov','epp-obs'].forEach(i=>document.getElementById(i).value='');document.getElementById('epp-entrega').value=new Date().toISOString().split('T')[0];}
-    document.getElementById('m-epp').classList.add('open');
-  },
-  async delEPP(id){if(!canDo('eliminar'))return;if(!confirm('¿Eliminar este EPP?'))return;await fbDel('epp',id);toast('EPP eliminado');},
-  // Historial máquina
-  verHistMaq(id){
-    const m=maquinas.find(x=>x._id===id);
-    document.getElementById('mhist-nombre').textContent=m?.nombre||'—';
-    renderMaqHist(id);
-    document.getElementById('m-maq-hist').classList.add('open');
-  },
-});
-
-window.saveEPP=async function(){
-  const usuario=document.getElementById('epp-usuario').value.trim();
-  const vence=document.getElementById('epp-vence').value;
-  if(!usuario){toast('⚠ Indicá a quién está asignado','warn');return;}
-  const obj={tipo:document.getElementById('epp-tipo').value,talle:document.getElementById('epp-talle').value.trim(),usuario,entrega:document.getElementById('epp-entrega').value,vence,serie:document.getElementById('epp-serie').value.trim(),prov:document.getElementById('epp-prov').value.trim(),obs:document.getElementById('epp-obs').value.trim(),ts:serverTimestamp()};
-  if(eIds.epp){await fbSet('epp',eIds.epp,obj);toast('✓ EPP actualizado');}
-  else{await fbAdd('epp',obj);toast('✓ EPP registrado');}
-  closeModal('m-epp');
-};
-
-function renderEPP(){
-  const el=document.getElementById('epp-container');
-  const resEl=document.getElementById('epp-resumen');
-  if(!el)return;
-  const today=new Date();today.setHours(0,0,0,0);
-  const items=eppItems.map(e=>{
-    const vd=e.vence?new Date(e.vence):null;
-    if(vd)vd.setHours(0,0,0,0);
-    const diff=vd?Math.round((vd-today)/86400000):999;
-    return{...e,diff};
-  }).sort((a,b)=>a.diff-b.diff);
-  const vencidos=items.filter(e=>e.diff<0).length;
-  const proximos=items.filter(e=>e.diff>=0&&e.diff<=30).length;
-  if(resEl){resEl.innerHTML=`
-    <div class="sc d"><div class="sl">Vencidos</div><div class="sv cd">${vencidos}</div><div class="ss">requieren reposición</div></div>
-    <div class="sc w"><div class="sl">Por vencer (30d)</div><div class="sv cw">${proximos}</div><div class="ss">atención pronto</div></div>
-    <div class="sc g"><div class="sl">Vigentes</div><div class="sv cg">${items.length-vencidos-proximos}</div><div class="ss">al día</div></div>`;}
-  if(!items.length){el.innerHTML='<div class="empty">No hay EPP registrados. Usá el botón + para agregar.</div>';return;}
-  const eppIco={'Casco':'⛑','Arnés':'🪢','Guantes':'🧤','Calzado de seguridad':'👢','Lentes':'🥽','Protector auditivo':'🎧','Ropa de trabajo':'🦺','Máscara/Respirador':'😷','Otro':'🛡'};
-  el.innerHTML=items.map(e=>{
-    const ico=eppIco[e.tipo]||'🛡';
-    const cls=e.diff<0?'epp-exp':e.diff<=30?'epp-warn':'epp-ok';
-    const badge=e.diff<0?`<span class="badge b-d">Vencido hace ${Math.abs(e.diff)}d</span>`:e.diff<=7?`<span class="badge b-d">Vence en ${e.diff}d</span>`:e.diff<=30?`<span class="badge b-w">Vence en ${e.diff}d</span>`:`<span class="badge b-g">Vigente</span>`;
-    return`<div class="epp-card">
-      <div class="epp-icon ${cls}">${ico}</div>
-      <div>
-        <div style="font-weight:600;font-size:13px">${e.tipo} ${e.talle?'('+e.talle+')':''}</div>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px">👤 ${e.usuario} ${e.serie?'· SN:'+e.serie:''}</div>
-        <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">${badge}<span class="badge b-x">Entregado: ${e.entrega||'—'}</span><span class="badge b-x">Vence: ${e.vence||'S/D'}</span>${e.obs?`<span class="badge b-x">${e.obs}</span>`:''}</div>
-      </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
-        <button class="ab ed" onclick="UI.openEPP('${e._id}')" title="Editar">✎</button>
-        <button class="ab del" onclick="UI.delEPP('${e._id}')" title="Eliminar">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function updateEPPBadge(){
-  const today=new Date();today.setHours(0,0,0,0);
-  const urgentes=eppItems.filter(e=>{if(!e.vence)return false;const d=new Date(e.vence);d.setHours(0,0,0,0);return Math.round((d-today)/86400000)<=7;}).length;
-  const b=document.getElementById('badge-epp');if(!b)return;
-  if(urgentes>0){b.textContent='!';b.style.display='';}else b.style.display='none';
-}
-
-// ═══════════ CHECKLIST DIARIO ═══════════
-const CHK_DAY_KEY='chk_last_day';
-function getChkTodayKey(){ return new Date().toISOString().split('T')[0]; }
-
-function renderChecklist(){
-  const el=document.getElementById('checklist-container');
-  const info=document.getElementById('chk-reset-info');
-  if(!el)return;
-  renderChkAdminBtn();
-  const today=getChkTodayKey();
-  if(info) info.textContent=`Estas tareas se resetean cada día. Hoy: ${today}`;
-  if(!chkTareas.length){el.innerHTML='<div class="empty" style="padding:40px">No hay tareas configuradas. El admin agrega las tareas desde el botón "+". Los técnicos las tildan al completarlas.</div>';return;}
-  const orden=['Mañana','Tarde','Noche',''];
-  const sorted=[...chkTareas].sort((a,b)=>orden.indexOf(a.turno||'')-orden.indexOf(b.turno||''));
-  const getState=(tid)=>{const st=chkStates.find(s=>s.tareaId===tid&&s.dia===today);return st;};
-  el.innerHTML=sorted.map(t=>{
-    const st=getState(t._id);
-    const done=!!st?.done;
-    const turnoLabel=t.turno?`<span class="badge b-b" style="font-size:9px">${t.turno}</span>`:'';
-    return`<div class="check-item ${done?'done-chk':''}">
-      <div class="check-cb ${done?'checked':''}" onclick="toggleChkTask('${t._id}','${today}','${done}')">${done?'✓':''}</div>
-      <div class="check-label">
-        <div>${t.desc}</div>
-        <div class="check-meta">${t.resp?'👤 '+t.resp+' · ':''} ${turnoLabel?turnoLabel.replace(/<[^>]+>/g,t.turno+' '):''}${done&&st?'✓ Completado por '+st.usuario+' a las '+(st.hora||'—'):'Pendiente'}</div>
-      </div>
-      ${currentUser?.rol==='admin'?`<button class="ab del" onclick="delChkTarea('${t._id}')" title="Eliminar tarea">✕</button>`:''}
-    </div>`;
-  }).join('');
-  updateChkBadge();
-}
-
-window.toggleChkTask=async function(tareaId,dia,wasDone){
-  const done=wasDone==='true';
-  const existing=chkStates.find(s=>s.tareaId===tareaId&&s.dia===dia);
-  const hora=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-  if(!done){
-    const obj={tareaId,dia,done:true,usuario:currentUser?.username||'—',hora,ts:serverTimestamp()};
-    if(existing)await fbSet('chkStates',existing._id,obj);
-    else await fbAdd('chkStates',obj);
-    toast('✓ Tarea completada');
-  } else {
-    if(existing)await fbDel('chkStates',existing._id);
-    toast('↩ Tarea desmarcada');
-  }
-};
-
-function updateChkBadge(){
-  const today=getChkTodayKey();
-  const pendientes=chkTareas.filter(t=>!chkStates.find(s=>s.tareaId===t._id&&s.dia===today&&s.done)).length;
-  const b=document.getElementById('badge-chk');if(!b)return;
-  if(pendientes>0){b.textContent=pendientes;b.style.display='';}else b.style.display='none';
-}
-
-function renderChkAdminBtn(){
-  const el=document.getElementById('ta-chk-btn');
-  if(!el)return;
-  el.innerHTML=currentUser?.rol==='admin'?`<button class="btn btn-primary" onclick="openModal('m-chk')">+ Nueva tarea</button>`:'';
-}
-
-window.saveChkTarea=async function(){
-  const desc=document.getElementById('chk-desc').value.trim();
-  if(!desc){toast('⚠ Escribí la descripción','warn');return;}
-  const obj={desc,turno:document.getElementById('chk-turno').value||'',resp:document.getElementById('chk-resp').value.trim(),ts:serverTimestamp()};
-  if(eIds.chk){await fbSet('chkTareas',eIds.chk,obj);toast('✓ Tarea actualizada');}
-  else{await fbAdd('chkTareas',obj);toast('✓ Tarea agregada al checklist');}
-  eIds.chk=null;closeModal('m-chk');document.getElementById('chk-desc').value='';
-};
-
-window.delChkTarea=async function(id){
-  if(!canDo('eliminar'))return;
-  if(!confirm('¿Eliminar esta tarea del checklist?'))return;
-  await fbDel('chkTareas',id);toast('Tarea eliminada');
-};
-
-// ═══════════ TURNOS ═══════════
-function renderTurnos(){
-  const el=document.getElementById('turnos-container');
-  if(!el)return;
-  if(!turnos.length){el.innerHTML='<div class="empty">No hay turnos registrados.</div>';return;}
-  const today=new Date().toISOString().split('T')[0];
-  // Agrupar por fecha
-  const grupos={};
-  [...turnos].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).forEach(t=>{
-    const k=t.fecha||'Sin fecha';
-    if(!grupos[k])grupos[k]=[];
-    grupos[k].push(t);
-  });
-  el.innerHTML=Object.keys(grupos).sort().map(dia=>{
-    const isHoy=dia===today;
-    return`<div class="turno-card" style="${isHoy?'border-color:var(--accent)':''}">
-      <div class="turno-header">
-        <div class="turno-day">${isHoy?'⭐ HOY — ':''} ${dia} <span style="font-size:11px;font-weight:400;color:var(--muted)">·  ${new Date(dia+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long'})}</span></div>
-        <button class="ab del" onclick="delTurnosDelDia('${dia}')" title="Eliminar día">✕</button>
-      </div>
-      <div class="turno-list">${grupos[dia].map(t=>`
-        <div class="turno-item">
-          <span class="turno-hora">${t.turno.split('(')[1]?.replace(')','')|| t.turno}</span>
-          <span style="font-weight:500">👤 ${t.tecnico}</span>
-          ${t.maq?`<span class="badge b-b">🏭 ${t.maq}</span>`:''}
-          ${t.obs?`<span style="color:var(--muted);font-size:11px">${t.obs}</span>`:''}
-          <button class="ab del" onclick="delTurno('${t._id}')" title="Eliminar" style="margin-left:auto">✕</button>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-window.initTurnoForm=function(){ document.getElementById('trn-fecha').value=new Date().toISOString().split('T')[0]; };
-window.saveTurno=async function(){
-  const tec=document.getElementById('trn-tec').value.trim();
-  if(!tec){toast('⚠ Indicá el técnico','warn');return;}
-  const obj={tecnico:tec,fecha:document.getElementById('trn-fecha').value,turno:document.getElementById('trn-turno').value,maq:document.getElementById('trn-maq').value.trim(),obs:document.getElementById('trn-obs').value.trim(),ts:serverTimestamp()};
-  await fbAdd('turnos',obj);
-  closeModal('m-turno');toast('✓ Turno registrado');
-  ['trn-tec','trn-maq','trn-obs'].forEach(i=>document.getElementById(i).value='');
-};
-window.delTurno=async function(id){if(!canDo('eliminar'))return;await fbDel('turnos',id);toast('Turno eliminado');};
-window.delTurnosDelDia=async function(dia){
-  if(!canDo('eliminar'))return;
-  if(!confirm(`¿Eliminar todos los turnos del ${dia}?`))return;
-  const del=turnos.filter(t=>t.fecha===dia);
-  await Promise.all(del.map(t=>fbDel('turnos',t._id)));
-  toast('Turnos del día eliminados');
-};
-
-// ═══════════ FIRMA DIGITAL ═══════════
-window.initFirma=function(tipo){
-  const canvas=document.getElementById('firma-'+tipo+'-canvas');
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d');
-  ctx.strokeStyle='#0a0c12';ctx.lineWidth=2;ctx.lineCap='round';
-  firmaCtx[tipo]=ctx;
-  let drawing=false;let lx=0,ly=0;
-  const getPos=(e)=>{const r=canvas.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(canvas.width/r.width),y:(t.clientY-r.top)*(canvas.height/r.height)};};
-  canvas.onmousedown=canvas.ontouchstart=(e)=>{drawing=true;const p=getPos(e);lx=p.x;ly=p.y;e.preventDefault();};
-  canvas.onmousemove=canvas.ontouchmove=(e)=>{if(!drawing)return;const p=getPos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;e.preventDefault();};
-  canvas.onmouseup=canvas.ontouchend=()=>{drawing=false;updateFirmaMeta(tipo);};
-  document.getElementById('firma-'+tipo+'-meta').textContent=`Firmado por: ${currentUser?.username||'—'} · ${new Date().toLocaleString('es-AR')}`;
-};
-window.clearFirma=function(tipo){
-  const canvas=document.getElementById('firma-'+tipo+'-canvas');
-  if(!canvas)return;
-  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-  document.getElementById('firma-'+tipo+'-meta').textContent='Firma borrada';
-};
-function updateFirmaMeta(tipo){ document.getElementById('firma-'+tipo+'-meta').textContent=`Firmado por: ${currentUser?.username||'—'} · ${new Date().toLocaleString('es-AR')}`; }
-window.toggleFirmaOrd=function(val){
-  const w=document.getElementById('firma-ord-wrap');
-  if(!w)return;
-  w.style.display=val==='Completada'?'':'none';
-  if(val==='Completada') setTimeout(()=>initFirma('ord'),50);
-};
-
-// ═══════════ FOTOS EN ÓRDENES ═══════════
-window.handleFotoUpload=function(tipo,input){
-  const files=Array.from(input.files);
-  files.forEach(file=>{
-    if(!file.type.startsWith('image/'))return;
-    const reader=new FileReader();
-    reader.onload=(e)=>{
-      ordFotos.push(e.target.result);
-      renderFotoGrid(tipo);
-    };
-    reader.readAsDataURL(file);
-  });
-  input.value='';
-};
-function renderFotoGrid(tipo){
-  const el=document.getElementById(tipo+'-fotos');
-  if(!el)return;
-  el.innerHTML=ordFotos.map((src,i)=>`
-    <div class="foto-wrap">
-      <img class="foto-preview" src="${src}" onclick="verFoto('${i}')" title="Ver foto">
-      <button class="foto-del" onclick="delFoto(${i})">✕</button>
-    </div>`).join('')+`<div class="foto-add" onclick="document.getElementById('${tipo}-foto-input').click()" title="Agregar foto">📷</div>`;
-}
-window.delFoto=function(i){ordFotos.splice(i,1);renderFotoGrid('ord');};
-window.verFoto=function(i){
-  const w=window.open('','_blank','width=800,height=600');
-  w.document.write(`<img src="${ordFotos[i]}" style="max-width:100%;max-height:100vh">`);
-};
-
-// ═══════════ COMENTARIOS EN ÓRDENES ═══════════
-function renderOrdComments(ordId){
-  const el=document.getElementById('ord-comment-list');
-  if(!el)return;
-  const items=ordComments.filter(c=>c.ordId===ordId).sort((a,b)=>(a.ts?.seconds||0)-(b.ts?.seconds||0));
-  if(!items.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px">Sin comentarios todavía.</div>';return;}
-  el.innerHTML=items.map(c=>`
-    <div class="comment-item">
-      <div><span class="comment-author">${c.autor}</span><span class="comment-time">${c.fecha||''}</span></div>
-      <div class="comment-text">${c.texto}</div>
-    </div>`).join('');
-  el.scrollTop=el.scrollHeight;
-}
-window.addOrdComment=async function(){
-  const input=document.getElementById('ord-comment-input');
-  const texto=input.value.trim();
-  if(!texto||!currentOrdId){toast('⚠ Escribí un comentario','warn');return;}
-  await fbAdd('ordComments',{ordId:currentOrdId,texto,autor:currentUser?.username||'—',fecha:new Date().toLocaleString('es-AR'),ts:serverTimestamp()});
-  input.value='';
-  toast('✓ Comentario enviado');
-};
-
-// ═══════════ HISTORIAL MÁQUINA ═══════════
-window.swMaqHist=function(tid,el){
-  document.querySelectorAll('#m-maq-hist .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  ['mh-mant','mh-ord'].forEach(t=>document.getElementById(t).style.display=t===tid?'block':'none');
-};
-function renderMaqHist(maqId){
-  const mants=mantenimientos.filter(m=>m.maqId===maqId).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-  const ords=ordenes.filter(o=>o.equipoId===maqId).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-  const mantEl=document.getElementById('mh-mant-list');
-  const ordEl=document.getElementById('mh-ord-list');
-  if(mantEl){
-    if(!mants.length){mantEl.innerHTML='<div class="empty">Sin mantenimientos registrados</div>';return;}
-    mantEl.innerHTML=`<div class="maq-hist-timeline">${mants.map(m=>`
-      <div class="maq-hist-item">
-        <div class="maq-hist-fecha">${m.fecha} · ${m.tipo}</div>
-        <div style="font-weight:500;font-size:13px">${m.desc}</div>
-        <div style="font-size:11px;color:var(--muted)">Resp: ${m.resp||'—'} · <span class="badge ${m.estado==='Completado'?'b-g':'b-w'}" style="font-size:9px">${m.estado}</span>${m.firma?` · <span style="color:var(--accent)">✍ Firmado: ${m.firma.tecnico}</span>`:''}</div>
-      </div>`).join('')}</div>`;
-  }
-  if(ordEl){
-    if(!ords.length){ordEl.innerHTML='<div class="empty">Sin órdenes registradas</div>';return;}
-    ordEl.innerHTML=`<div class="maq-hist-timeline">${ords.map(o=>`
-      <div class="maq-hist-item">
-        <div class="maq-hist-fecha">${o.fecha} · <span class="badge b-x" style="font-size:9px">${o.prio}</span></div>
-        <div style="font-weight:500;font-size:13px">${o.desc}</div>
-        <div style="font-size:11px;color:var(--muted)">Resp: ${o.resp||'—'} · <span class="badge ${eC(o.estado)}" style="font-size:9px">${o.estado}</span></div>
-      </div>`).join('')}</div>`;
-  }
-}
-
-// ═══════════ REPORTE DE COSTOS ═══════════
-window.renderCostos=function(){
-  const mes=document.getElementById('f-cost-mes')?.value||'';
-  const catFil=document.getElementById('f-cost-cat')?.value||'';
-  // Populate cat filter
-  const cats=[...new Set(entradas.map(e=>e.categoria).filter(Boolean))];
-  const selC=document.getElementById('f-cost-cat');
-  if(selC){const cv=selC.value;selC.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${c}"${c===cv?' selected':''}>${c}</option>`).join('');}
-  const f=entradas.filter(e=>e.precio&&(!mes||(e.fecha||'').startsWith(mes))&&(!catFil||e.categoria===catFil));
-  const resEl=document.getElementById('costos-resumen');
-  const totalCosto=f.reduce((a,e)=>a+(e.precio||0)*e.cantidad,0);
-  const totalUnidades=f.reduce((a,e)=>a+e.cantidad,0);
-  const provCount=[...new Set(f.map(e=>e.proveedor).filter(Boolean))].length;
-  const catCount=[...new Set(f.map(e=>e.categoria).filter(Boolean))].length;
-  if(resEl)resEl.innerHTML=`
-    <div class="sc g"><div class="sl">Costo total</div><div class="sv cg">$${totalCosto.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="ss">${f.length} entradas</div></div>
-    <div class="sc b"><div class="sl">Unidades ingresadas</div><div class="sv cb">${totalUnidades}</div><div class="ss">del período</div></div>
-    <div class="sc w"><div class="sl">Proveedores</div><div class="sv cw">${provCount}</div><div class="ss">distintos</div></div>
-    <div class="sc p"><div class="sl">Categorías</div><div class="sv cp">${catCount}</div><div class="ss">de artículos</div></div>`;
-  const rowsEl=document.getElementById('costos-rows');
-  if(!rowsEl)return;
-  if(!f.length){rowsEl.innerHTML='<div class="empty">Sin entradas con precio en este período.</div>';return;}
-  // Agrupar por artículo
-  const porArt={};
-  f.forEach(e=>{
-    const k=e.nombre||'Sin nombre';
-    if(!porArt[k])porArt[k]={nombre:k,cat:e.categoria||'—',qty:0,precio:e.precio,total:0};
-    porArt[k].qty+=e.cantidad;
-    porArt[k].total+=(e.precio||0)*e.cantidad;
-  });
-  const arr=Object.values(porArt).sort((a,b)=>b.total-a.total);
-  rowsEl.innerHTML=arr.map(a=>`<div class="costo-row">
-    <div><div style="font-weight:500">${a.nombre}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${a.cat}</div></div>
-    <div style="text-align:right;font-family:var(--mono);font-size:12px">${a.qty}</div>
-    <div style="text-align:right;font-family:var(--mono);font-size:12px">$${(a.precio||0).toLocaleString('es-AR')}</div>
-    <div style="text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">$${a.total.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
-  </div>`).join('');
-};
-
-window.exportCostosExcel=function(){
-  if(!window.XLSX){toast('⚠ XLSX no disponible','err');return;}
-  const mes=document.getElementById('f-cost-mes')?.value||'';
-  const f=entradas.filter(e=>e.precio&&(!mes||(e.fecha||'').startsWith(mes)));
-  const data=[['Fecha','Artículo','Categoría','Cantidad','Precio Unit.','Total','Proveedor'],...f.map(e=>[e.fecha,e.nombre,e.categoria,e.cantidad,e.precio,(e.precio||0)*e.cantidad,e.proveedor])];
-  const ws=XLSX.utils.aoa_to_sheet(data);
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Costos');
-  XLSX.writeFile(wb,`costos-${mes||'todo'}.xlsx`);
-  toast('✓ Excel de costos descargado');
-};
-
-// ═══════════ PRODUCTIVIDAD ═══════════
-function renderProductividad(){
-  const el=document.getElementById('prod-container');
-  if(!el)return;
-  const tecnicos=[...new Set([...ordenes.map(o=>o.resp),...mantenimientos.map(m=>m.resp)].filter(Boolean).filter(r=>r!=='—'))];
-  if(!tecnicos.length){el.innerHTML='<div class="empty">Sin datos de técnicos todavía.</div>';return;}
-  const maxOrd=Math.max(...tecnicos.map(t=>ordenes.filter(o=>o.resp===t&&o.estado==='Completada').length),1);
-  el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px">
-      <div class="sc g"><div class="sl">Órdenes completadas</div><div class="sv cg">${ordenes.filter(o=>o.estado==='Completada').length}</div><div class="ss">de ${ordenes.length} totales</div></div>
-      <div class="sc b"><div class="sl">Técnicos activos</div><div class="sv cb">${tecnicos.length}</div><div class="ss">con registros</div></div>
-    </div>
-    <div class="sh"><div class="st">👷 Rendimiento por técnico</div></div>
-    ${tecnicos.map(t=>{
-      const completadas=ordenes.filter(o=>o.resp===t&&o.estado==='Completada').length;
-      const enProg=ordenes.filter(o=>o.resp===t&&o.estado==='En progreso').length;
-      const pendientes=ordenes.filter(o=>o.resp===t&&o.estado==='Pendiente').length;
-      const mants=mantenimientos.filter(m=>m.resp===t&&m.estado==='Completado').length;
-      const pct=maxOrd>0?Math.round((completadas/maxOrd)*100):0;
-      return`<div class="prod-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-weight:600;font-size:14px">👤 ${t}</div>
-          <div style="display:flex;gap:6px">
-            <span class="badge b-g">${completadas} completadas</span>
-            ${enProg?`<span class="badge b-w">${enProg} en prog.</span>`:''}
-            ${pendientes?`<span class="badge b-x">${pendientes} pendientes</span>`:''}
-            <span class="badge b-b">${mants} mant.</span>
-          </div>
-        </div>
-        <div class="prod-bar"><div class="prod-fill" style="width:${pct}%"></div></div>
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">${completadas} órdenes completadas · ${mants} mantenimientos · Eficiencia: ${ordenes.filter(o=>o.resp===t).length>0?Math.round((completadas/ordenes.filter(o=>o.resp===t).length)*100):0}%</div>
-      </div>`;
-    }).join('')}`;
-}
-
-// ═══════════ EXPORTAR TODO A EXCEL ═══════════
-window.exportAllExcel=function(){
-  if(!window.XLSX){toast('⚠ XLSX no disponible','err');return;}
-  const wb=XLSX.utils.book_new();
-  // Stock
-  const stockData=[['Código','Nombre','Categoría','Stock','Mínimo','Unidad','Depósito','Posición'],...stock.map(s=>[s.codigo,s.nombre,s.categoria,s.qty,s.min,s.unidad,s.deposito,s.posicion])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(stockData),'Stock');
-  // Entradas
-  const entData=[['Fecha','Artículo','Categoría','Cantidad','Precio','Total','Proveedor','Remito'],...entradas.map(e=>[e.fecha,e.nombre,e.categoria,e.cantidad,e.precio,(e.precio||0)*e.cantidad,e.proveedor,e.remito])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(entData),'Entradas');
-  // Órdenes
-  const ordData=[['ID','Descripción','Equipo','Prioridad','Responsable','Fecha','Estado'],...ordenes.map(o=>[o._id.slice(-6),o.desc,o.equipoNombre,o.prio,o.resp,o.fecha,o.estado])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ordData),'Órdenes');
-  // Mantenimientos
-  const mantData=[['Equipo','Tipo','Fecha','Descripción','Responsable','Estado'],...mantenimientos.map(m=>{const maq=maquinas.find(q=>q._id===m.maqId);return[maq?.nombre||'—',m.tipo,m.fecha,m.desc,m.resp,m.estado];})];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(mantData),'Mantenimientos');
-  // EPP
-  const eppData=[['Tipo','Talle','Usuario','Entrega','Vence','Serie','Proveedor','Obs'],...eppItems.map(e=>[e.tipo,e.talle,e.usuario,e.entrega,e.vence,e.serie,e.prov,e.obs])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(eppData),'EPP');
-  XLSX.writeFile(wb,'mantenipro-exportacion-completa.xlsx');
-  closeModal('m-backup');toast('✓ Excel completo descargado');
-};
-
-// ═══════════ BACKUP A JSON ═══════════
-window.backupJSON=function(){
-  const backup={
-    fecha:new Date().toISOString(),
-    version:'ManteniPro v5',
-    maquinas,mantenimientos,stock,prestamos,ordenes,historial,bajas,entradas,notas,compras,chkTareas,turnos,eppItems
-  };
-  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`mantenipro-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
-  closeModal('m-backup');toast('✓ Backup JSON descargado');
-};
-
-// ═══════════ HELPER MODALS ═══════════
-window.openModal=function(id){document.getElementById(id)?.classList.add('open');};
-
-
     if(!canDo('crear')) return;
     eIdNota=id;
     document.getElementById('mnota-title').textContent=id?'Editar Nota':'Nueva Nota';
