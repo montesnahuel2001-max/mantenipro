@@ -378,6 +378,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ng">Registro</div>
     <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
     <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
+    <div class="ni" onclick="exportarJSON()"><span class="ic">💾</span><span>Backup JSON</span></div>
   </nav>
   <div class="sf">
     <div class="user-row">
@@ -2057,7 +2058,34 @@ window.saveCompra = async function(){
   else { await fbAdd('compras',obj); toast('✓ Compra agregada a la lista'); }
   closeModal('m-compra');
 };
-
+// ==========================================
+// BACKUP MANUAL A JSON
+// ==========================================
+window.exportarJSON = function() {
+  // 1. Agrupamos todos tus arrays de memoria en un solo objeto
+  const datos = { 
+    maquinas, mantenimientos, stock, prestamos, 
+    ordenes, historial, bajas, entradas, notas, compras 
+  };
+  
+  // 2. Lo convertimos a formato texto JSON
+  const jsonStr = JSON.stringify(datos, null, 2);
+  
+  // 3. Creamos un archivo virtual y forzamos la descarga en el navegador
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  
+  // Le pone la fecha de hoy al nombre del archivo
+  a.download = `Mantenipro_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  
+  // Limpiamos la memoria y mostramos tu notificación nativa
+  URL.revokeObjectURL(url);
+  toast('✓ Backup JSON descargado correctamente');
+};
+  
 </script>
 </body>
 </html>
