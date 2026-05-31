@@ -294,6 +294,34 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
+/* NOTAS PRACTICANTES */
+.nota-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px;position:relative;border-left:3px solid var(--accent);}
+.nota-card.urgente{border-left-color:var(--danger);}
+.nota-card.info{border-left-color:var(--blue);}
+.nota-card.aviso{border-left-color:var(--warn);}
+.nota-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.nota-titulo{font-weight:600;font-size:14px;}
+.nota-body{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;}
+.nota-footer{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:10px;color:var(--muted);font-family:var(--mono);}
+.nota-prio-sel{display:flex;gap:8px;margin-bottom:13px;}
+.nota-prio-opt{flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--sans);font-weight:500;transition:all .15s;text-align:center;}
+.nota-prio-opt.sel{font-weight:700;}
+.nota-prio-opt[data-p="general"].sel{background:rgba(0,229,160,.12);color:var(--accent);border-color:var(--accent);}
+.nota-prio-opt[data-p="info"].sel{background:rgba(77,159,255,.12);color:var(--blue);border-color:var(--blue);}
+.nota-prio-opt[data-p="aviso"].sel{background:rgba(255,184,0,.12);color:var(--warn);border-color:var(--warn);}
+.nota-prio-opt[data-p="urgente"].sel{background:rgba(255,68,102,.12);color:var(--danger);border-color:var(--danger);}
+
+/* COMPRAS */
+.compra-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:13px 16px;margin-bottom:9px;display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;transition:border-color .15s;}
+.compra-item.comprado{opacity:.55;}
+.compra-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .15s;}
+.compra-check.done{background:var(--accent);border-color:var(--accent);color:#0a0c12;}
+.compra-nombre{font-weight:500;font-size:13px;margin-bottom:2px;}
+.compra-meta{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.compra-acciones{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.compras-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+
+
 @media(max-width:900px){
   .sidebar{width:50px;}
   .logo-text,.logo-sub,.ng,.sf .user-row span,.sf .sync-row span,.ni span:not(.ic),.nbadge,.logout-btn{display:none;}
@@ -344,6 +372,9 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('calendario')"><span class="ic">📆</span><span>Calendario</span></div>
     <div class="ni" onclick="nav('graficos')"><span class="ic">📈</span><span>Gráficos</span></div>
     <div class="ni" onclick="nav('kpis')"><span class="ic">📊</span><span>KPIs & MTBF</span></div>
+    <div class="ng">Equipo</div>
+    <div class="ni" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
+    <div class="ni" onclick="nav('compras')"><span class="ic">🛒</span><span>Compras</span><span class="nbadge" id="badge-compras" style="background:var(--warn);display:none">0</span></div>
     <div class="ng">Registro</div>
     <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
     <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
@@ -502,6 +533,31 @@ textarea.fi{resize:vertical;min-height:56px;}
 
     <div class="view" id="view-historial">
       <div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Usuario</th></tr></thead><tbody id="t-hist"></tbody></table></div>
+    </div>
+
+    <!-- NOTAS PRACTICANTES -->
+    <div class="view" id="view-notas">
+      <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:var(--rl);padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:22px;flex-shrink:0">📋</span>
+        <div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:3px">Tablero de notas para practicantes</div>
+          <div style="font-size:12px;color:var(--muted)">Consultá estas instrucciones si no sabés qué hacer. El administrador las actualiza con las tareas del día y guías de trabajo.</div>
+        </div>
+      </div>
+      <div id="notas-container"><div class="empty">Cargando notas...</div></div>
+    </div>
+
+    <!-- COMPRAS -->
+    <div class="view" id="view-compras">
+      <div class="compras-resumen" id="compras-resumen"></div>
+      <div class="tabs">
+        <div class="tab active" onclick="swTabCompras('cp-pend',this)">Pendientes</div>
+        <div class="tab" onclick="swTabCompras('cp-prog',this)">Solicitadas</div>
+        <div class="tab" onclick="swTabCompras('cp-done',this)">Compradas</div>
+      </div>
+      <div id="cp-pend"><div id="l-cp-pend"></div></div>
+      <div id="cp-prog" style="display:none"><div id="l-cp-prog"></div></div>
+      <div id="cp-done" style="display:none"><div id="l-cp-done"></div></div>
     </div>
 
   </div>
@@ -690,6 +746,38 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL NOTA -->
+<div class="ov" id="m-nota">
+  <div class="modal">
+    <div class="mt">📝 <span id="mnota-title">Nueva Nota</span></div>
+    <div class="fg"><label class="fl">Título</label><input class="fi" id="nota-titulo" placeholder="Ej: ¿Qué hacer si no hay trabajo?"></div>
+    <div class="fg"><label class="fl">Contenido / Instrucciones</label><textarea class="fi" id="nota-body" style="min-height:110px" placeholder="Escribí aquí las instrucciones detalladas para los practicantes..."></textarea></div>
+    <div class="fg">
+      <label class="fl">Tipo</label>
+      <div class="nota-prio-sel">
+        <button class="nota-prio-opt sel" data-p="general" onclick="selNotaPrio('general',this)">📋 General</button>
+        <button class="nota-prio-opt" data-p="info" onclick="selNotaPrio('info',this)">ℹ️ Info</button>
+        <button class="nota-prio-opt" data-p="aviso" onclick="selNotaPrio('aviso',this)">⚠️ Aviso</button>
+        <button class="nota-prio-opt" data-p="urgente" onclick="selNotaPrio('urgente',this)">🚨 Urgente</button>
+      </div>
+    </div>
+    <input type="hidden" id="nota-prio" value="general">
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-nota')">Cancelar</button><button class="btn btn-primary" onclick="saveNota()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL COMPRA -->
+<div class="ov" id="m-compra">
+  <div class="modal">
+    <div class="mt">🛒 <span id="mcompra-title">Nueva Compra</span></div>
+    <div class="fr"><div class="fg"><label class="fl">Artículo / Descripción</label><input class="fi" id="cp-nombre" placeholder="Ej: Guantes de nitrilo talle M"></div><div class="fg"><label class="fl">Cantidad</label><input class="fi" type="number" id="cp-cant" placeholder="1" min="1" value="1"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Unidad</label><select class="fss" id="cp-uni"><option>Unidad</option><option>Par</option><option>Caja</option><option>Litro</option><option>Metro</option><option>Kg</option><option>Rollo</option><option>Paquete</option></select></div><div class="fg"><label class="fl">Prioridad</label><select class="fss" id="cp-prio"><option>Normal</option><option>Urgente</option><option>Cuando se pueda</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Proveedor sugerido</label><input class="fi" id="cp-prov" placeholder="Opcional"></div><div class="fg"><label class="fl">Precio estimado ($)</label><input class="fi" type="number" id="cp-precio" placeholder="0" min="0" step="0.01"></div></div>
+    <div class="fg"><label class="fl">Notas / Motivo</label><input class="fi" id="cp-notas" placeholder="¿Para qué se necesita? ¿Dónde comprarlo?"></div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-compra')">Cancelar</button><button class="btn btn-primary" onclick="saveCompra()">Guardar</button></div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════
 // USUARIOS Y ROLES
@@ -759,7 +847,7 @@ const app = initializeApp(FC);
 const db = getFirestore(app);
 
 // STATE
-let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[];
+let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[];
 let eIds={maq:null,mant:null,stock:null,ord:null};
 let loaded=0, listenersInit=false;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
@@ -777,6 +865,8 @@ function initListeners() {
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
   onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); });
   onSnapshot(collection(db,'entradas'), s=>{ entradas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('entradas'))renderEntradas(); });
+  onSnapshot(collection(db,'notas'), s=>{ notas=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('notas'))renderNotas(); });
+  onSnapshot(collection(db,'compras'), s=>{ compras=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('compras'))renderCompras();updateBadgeCompras(); });
 }
 window._initListeners = initListeners;
 function chk(){ loaded++; if(loaded>=7){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
@@ -791,8 +881,8 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -815,6 +905,8 @@ window.nav = function(v) {
   if(v==='graficos')rCharts();
   if(v==='bajas')renderBajas();
   if(v==='entradas')renderEntradas();
+  if(v==='notas'){renderNotas();renderNotasAdminBtn();}
+  if(v==='compras')renderCompras();
 };
 
 // HELPERS
@@ -1741,6 +1833,230 @@ if('serviceWorker' in navigator){
 }
 
 setTimeout(()=>{if(loaded<7&&listenersInit){document.getElementById('ls').classList.add('hidden');setSynced('er');toast('⚠ No se pudo conectar a Firebase','err');}},10000);
+
+// ═══════════════════════════════════
+// NOTAS PRACTICANTES
+// ═══════════════════════════════════
+let eIdNota = null;
+let notaPrioActual = 'general';
+
+function renderNotas(){
+  const el = document.getElementById('notas-container');
+  if(!el) return;
+  renderNotasAdminBtn();
+  if(!notas.length){ el.innerHTML='<div class="empty" style="padding:50px">📋 No hay notas todavía. El administrador agregará instrucciones aquí.</div>'; return; }
+  const orden = ['urgente','aviso','info','general'];
+  const sorted = [...notas].sort((a,b)=>orden.indexOf(a.prio)-orden.indexOf(b.prio)||(b.ts?.seconds||0)-(a.ts?.seconds||0));
+  const icons = {general:'📋',info:'ℹ️',aviso:'⚠️',urgente:'🚨'};
+  const labels = {general:'General',info:'Info',info:'Información',aviso:'Aviso',urgente:'Urgente'};
+  el.innerHTML = sorted.map(n=>`
+    <div class="nota-card ${n.prio||'general'}">
+      <div class="nota-card-header">
+        <div class="nota-titulo">${icons[n.prio]||'📋'} ${n.titulo}</div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          ${currentUser?.rol==='admin'?`<button class="ab ed" onclick="UI.editNota('${n._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delNota('${n._id}')" title="Eliminar">✕</button>`:''}
+        </div>
+      </div>
+      <div class="nota-body">${n.body||''}</div>
+      <div class="nota-footer">
+        <span class="badge ${n.prio==='urgente'?'b-d':n.prio==='aviso'?'b-w':n.prio==='info'?'b-b':'b-g'}">${n.prio||'general'}</span>
+        <span>${n.autor||'Admin'}</span>
+        <span>·</span>
+        <span>${n.fecha||''}</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderNotasAdminBtn(){
+  const el = document.getElementById('ta-notas-btn');
+  if(!el) return;
+  if(currentUser?.rol==='admin'){
+    el.innerHTML = `<button class="btn btn-primary" onclick="UI.openNota()">+ Nueva nota</button>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+window.selNotaPrio = function(prio, el){
+  notaPrioActual = prio;
+  document.getElementById('nota-prio').value = prio;
+  document.querySelectorAll('.nota-prio-opt').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+};
+
+// ═══════════════════════════════════
+// COMPRAS
+// ═══════════════════════════════════
+let eIdCompra = null;
+window.swTabCompras = function(tid, el){
+  document.querySelectorAll('#view-compras .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['cp-pend','cp-prog','cp-done'].forEach(t=>document.getElementById(t)&&(document.getElementById(t).style.display=t===tid?'block':'none'));
+};
+
+function updateBadgeCompras(){
+  const pend = compras.filter(c=>c.estado==='pendiente').length;
+  const badge = document.getElementById('badge-compras');
+  if(!badge) return;
+  if(pend>0){ badge.textContent=pend; badge.style.display=''; }
+  else { badge.style.display='none'; }
+}
+
+function renderCompras(){
+  const pend = compras.filter(c=>c.estado==='pendiente');
+  const prog = compras.filter(c=>c.estado==='solicitado');
+  const done = compras.filter(c=>c.estado==='comprado');
+  // Resumen
+  const resEl = document.getElementById('compras-resumen');
+  if(resEl){
+    const tot = compras.length;
+    const totalEst = compras.filter(c=>c.precio&&c.estado!=='comprado').reduce((a,b)=>a+(b.precio||0)*(b.cantidad||1),0);
+    resEl.innerHTML=`
+      <div class="sc w"><div class="sl">Pendientes</div><div class="sv cw">${pend.length}</div><div class="ss">artículos a comprar</div></div>
+      <div class="sc b"><div class="sl">Solicitados</div><div class="sv cb">${prog.length}</div><div class="ss">en gestión</div></div>
+      <div class="sc g"><div class="sl">Comprados</div><div class="sv cg">${done.length}</div><div class="ss">de ${tot} totales</div></div>`;
+  }
+  renderCompraList('l-cp-pend', pend);
+  renderCompraList('l-cp-prog', prog);
+  renderCompraList('l-cp-done', done, true);
+  updateBadgeCompras();
+}
+
+function renderCompraList(cid, list, isDone=false){
+  const el = document.getElementById(cid);
+  if(!el) return;
+  if(!list.length){ el.innerHTML='<div class="empty">No hay artículos en esta categoría</div>'; return; }
+  const prioCls = {Urgente:'b-d',Normal:'b-b','Cuando se pueda':'b-x'};
+  const sorted = [...list].sort((a,b)=>(['Urgente','Normal','Cuando se pueda'].indexOf(a.prio||'Normal'))-(['Urgente','Normal','Cuando se pueda'].indexOf(b.prio||'Normal')));
+  el.innerHTML = sorted.map(c=>`
+    <div class="compra-item ${isDone?'comprado':''}">
+      <div class="compra-check ${isDone?'done':''}" onclick="UI.toggleCompra('${c._id}','${c.estado}')" title="Marcar estado">
+        ${isDone?'✓':''}
+      </div>
+      <div>
+        <div class="compra-nombre">${c.nombre}</div>
+        <div class="compra-meta">
+          ${c.cantidad} ${c.unidad||'Unidad'}
+          ${c.prov?'· '+c.prov:''}
+          ${c.precio?'· $'+Number(c.precio).toLocaleString('es-AR'):''}
+          ${c.notas?'<br>'+c.notas:''}
+        </div>
+        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">
+          <span class="badge ${prioCls[c.prio]||'b-x'}">${c.prio||'Normal'}</span>
+          <span class="badge b-x">${c.autor||'—'}</span>
+          <span class="badge b-x">${c.fecha||''}</span>
+          ${!isDone&&c.estado==='pendiente'?`<button class="btn btn-sm btn-blue" style="padding:2px 8px;font-size:10px" onclick="UI.avanzarCompra('${c._id}')">→ Solicitada</button>`:''}
+          ${c.estado==='solicitado'?`<button class="btn btn-sm btn-primary" style="padding:2px 8px;font-size:10px" onclick="UI.completarCompra('${c._id}')">✓ Comprado</button>`:''}
+        </div>
+      </div>
+      <div class="compra-acciones">
+        <button class="ab ed" onclick="UI.editCompra('${c._id}')" title="Editar">✎</button>
+        <button class="ab del" onclick="UI.delCompra('${c._id}')" title="Eliminar">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// UI para notas y compras
+Object.assign(window.UI, {
+  openNota(id=null){
+    if(!canDo('crear')) return;
+    eIdNota=id;
+    document.getElementById('mnota-title').textContent=id?'Editar Nota':'Nueva Nota';
+    notaPrioActual='general';
+    document.querySelectorAll('.nota-prio-opt').forEach(b=>{b.classList.remove('sel');if(b.dataset.p==='general')b.classList.add('sel');});
+    document.getElementById('nota-prio').value='general';
+    if(id){
+      const n=notas.find(x=>x._id===id);
+      document.getElementById('nota-titulo').value=n.titulo||'';
+      document.getElementById('nota-body').value=n.body||'';
+      notaPrioActual=n.prio||'general';
+      document.getElementById('nota-prio').value=notaPrioActual;
+      document.querySelectorAll('.nota-prio-opt').forEach(b=>{b.classList.remove('sel');if(b.dataset.p===notaPrioActual)b.classList.add('sel');});
+    } else {
+      document.getElementById('nota-titulo').value='';
+      document.getElementById('nota-body').value='';
+    }
+    document.getElementById('m-nota').classList.add('open');
+  },
+  editNota(id){ this.openNota(id); },
+  async delNota(id){
+    if(!canDo('eliminar')) return;
+    if(!confirm('¿Eliminar esta nota?')) return;
+    await fbDel('notas',id);
+    toast('Nota eliminada');
+  },
+  openCompra(id=null){
+    eIdCompra=id;
+    document.getElementById('mcompra-title').textContent=id?'Editar Compra':'Nueva Compra';
+    if(id){
+      const c=compras.find(x=>x._id===id);
+      document.getElementById('cp-nombre').value=c.nombre||'';
+      document.getElementById('cp-cant').value=c.cantidad||1;
+      document.getElementById('cp-uni').value=c.unidad||'Unidad';
+      document.getElementById('cp-prio').value=c.prio||'Normal';
+      document.getElementById('cp-prov').value=c.prov||'';
+      document.getElementById('cp-precio').value=c.precio||'';
+      document.getElementById('cp-notas').value=c.notas||'';
+    } else {
+      ['cp-nombre','cp-prov','cp-precio','cp-notas'].forEach(i=>document.getElementById(i).value='');
+      document.getElementById('cp-cant').value=1;
+      document.getElementById('cp-uni').value='Unidad';
+      document.getElementById('cp-prio').value='Normal';
+    }
+    document.getElementById('m-compra').classList.add('open');
+  },
+  editCompra(id){ this.openCompra(id); },
+  async delCompra(id){
+    if(!canDo('eliminar')) return;
+    if(!confirm('¿Eliminar este ítem de compra?')) return;
+    await fbDel('compras',id);
+    toast('Ítem eliminado');
+  },
+  async toggleCompra(id, estado){
+    const next = estado==='pendiente'?'solicitado':estado==='solicitado'?'comprado':'pendiente';
+    await fbUpd('compras',id,{estado:next});
+    toast(`✓ Estado: ${next}`);
+  },
+  async avanzarCompra(id){ await fbUpd('compras',id,{estado:'solicitado'}); toast('→ Marcado como solicitado'); },
+  async completarCompra(id){ await fbUpd('compras',id,{estado:'comprado'}); toast('✓ Marcado como comprado'); },
+});
+
+window.saveNota = async function(){
+  const titulo = document.getElementById('nota-titulo').value.trim();
+  if(!titulo){ toast('⚠ Completá el título','warn'); return; }
+  const obj = {
+    titulo,
+    body: document.getElementById('nota-body').value.trim(),
+    prio: document.getElementById('nota-prio').value||'general',
+    autor: currentUser?.username||'admin',
+    fecha: new Date().toLocaleDateString('es-AR'),
+    ts: serverTimestamp()
+  };
+  if(eIdNota){ await fbSet('notas',eIdNota,obj); toast('✓ Nota actualizada'); }
+  else { await fbAdd('notas',obj); toast('✓ Nota publicada'); }
+  closeModal('m-nota');
+};
+
+window.saveCompra = async function(){
+  const nombre = document.getElementById('cp-nombre').value.trim();
+  if(!nombre){ toast('⚠ Completá el artículo','warn'); return; }
+  const obj = {
+    nombre,
+    cantidad: parseInt(document.getElementById('cp-cant').value)||1,
+    unidad: document.getElementById('cp-uni').value,
+    prio: document.getElementById('cp-prio').value,
+    prov: document.getElementById('cp-prov').value.trim()||'',
+    precio: parseFloat(document.getElementById('cp-precio').value)||null,
+    notas: document.getElementById('cp-notas').value.trim(),
+    autor: currentUser?.username||'—',
+    fecha: new Date().toLocaleDateString('es-AR'),
+    estado: eIdCompra ? (compras.find(c=>c._id===eIdCompra)?.estado||'pendiente') : 'pendiente',
+    ts: serverTimestamp()
+  };
+  if(eIdCompra){ await fbSet('compras',eIdCompra,obj); toast('✓ Compra actualizada'); }
+  else { await fbAdd('compras',obj); toast('✓ Compra agregada a la lista'); }
+  closeModal('m-compra');
+};
 
 </script>
 </body>
