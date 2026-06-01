@@ -322,6 +322,40 @@ textarea.fi{resize:vertical;min-height:56px;}
 .compras-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
 
 
+/* CONSUMO INSUMOS */
+.consumo-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.consumo-period{display:flex;gap:6px;}
+.consumo-period .cp-btn{background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 13px;font-size:11px;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.consumo-period .cp-btn.active{background:var(--ag);border-color:var(--accent);color:var(--accent);}
+.consumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;}
+.consumo-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:18px;position:relative;overflow:hidden;}
+.consumo-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
+.consumo-card.blue::before{background:var(--blue);}
+.consumo-card.warn::before{background:var(--warn);}
+.consumo-card.purple::before{background:var(--purple);}
+.consumo-card-title{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(37,45,69,.5);}
+.rank-item:last-child{border-bottom:none;}
+.rank-num{font-family:var(--mono);font-size:11px;color:var(--muted);width:18px;text-align:center;flex-shrink:0;}
+.rank-num.top1{color:#ffd700;font-weight:700;font-size:13px;}
+.rank-num.top2{color:#c0c0c0;font-weight:700;}
+.rank-num.top3{color:#cd7f32;font-weight:700;}
+.rank-name{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rank-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+.rank-bar-wrap{width:80px;flex-shrink:0;}
+.rank-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:3px;}
+.rank-bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s ease;}
+.rank-bar-fill.blue{background:var(--blue);}
+.rank-bar-fill.warn{background:var(--warn);}
+.rank-val{font-family:var(--mono);font-size:11px;color:var(--accent);text-align:right;}
+.rank-val.blue{color:var(--blue);}
+.rank-val.warn{color:var(--warn);}
+.consumo-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.consumo-chart-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:20px;}
+.consumo-chart-wrap canvas{max-height:220px;}
+.periodo-label{font-family:var(--mono);font-size:10px;color:var(--accent);background:var(--ag);border:1px solid rgba(0,229,160,.2);border-radius:5px;padding:2px 8px;margin-left:auto;}
+@media(max-width:900px){.consumo-grid{grid-template-columns:1fr;}.consumo-stats{grid-template-columns:1fr 1fr;}}
+
 @media(max-width:900px){
   .sidebar{width:50px;}
   .logo-text,.logo-sub,.ng,.sf .user-row span,.sf .sync-row span,.ni span:not(.ic),.nbadge,.logout-btn{display:none;}
@@ -372,6 +406,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('calendario')"><span class="ic">📆</span><span>Calendario</span></div>
     <div class="ni" onclick="nav('graficos')"><span class="ic">📈</span><span>Gráficos</span></div>
     <div class="ni" onclick="nav('kpis')"><span class="ic">📊</span><span>KPIs & MTBF</span></div>
+    <div class="ni" onclick="nav('consumo')"><span class="ic">🔥</span><span>Top Insumos</span></div>
     <div class="ng">Equipo</div>
     <div class="ni" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
     <div class="ni" onclick="nav('compras')"><span class="ic">🛒</span><span>Compras</span><span class="nbadge" id="badge-compras" style="background:var(--warn);display:none">0</span></div>
@@ -546,6 +581,48 @@ textarea.fi{resize:vertical;min-height:56px;}
         </div>
       </div>
       <div id="notas-container"><div class="empty">Cargando notas...</div></div>
+    </div>
+
+    <!-- TOP INSUMOS / CONSUMO RANKING -->
+    <div class="view" id="view-consumo">
+      <div class="consumo-header">
+        <div class="consumo-period">
+          <button class="cp-btn active" onclick="setConsumoPeriod('semana',this)">Esta semana</button>
+          <button class="cp-btn" onclick="setConsumoPeriod('mes',this)">Este mes</button>
+          <button class="cp-btn" onclick="setConsumoPeriod('3meses',this)">Últimos 3 meses</button>
+          <button class="cp-btn" onclick="setConsumoPeriod('todo',this)">Todo</button>
+        </div>
+        <span class="periodo-label" id="consumo-periodo-label">Esta semana</span>
+      </div>
+      <!-- Stats resumen -->
+      <div class="consumo-stats" id="consumo-stats"></div>
+      <!-- Grilla de rankings -->
+      <div class="consumo-grid">
+        <div class="consumo-card">
+          <div class="consumo-card-title">🏆 Top insumos consumidos <span style="margin-left:auto;font-size:9px">(por cantidad)</span></div>
+          <div id="rank-consumo-qty"></div>
+        </div>
+        <div class="consumo-card blue">
+          <div class="consumo-card-title" style="color:var(--blue)">📦 Top insumos consumidos <span style="margin-left:auto;font-size:9px">(por frecuencia)</span></div>
+          <div id="rank-consumo-freq"></div>
+        </div>
+        <div class="consumo-card warn">
+          <div class="consumo-card-title" style="color:var(--warn)">⬇ Top insumos dados de baja <span style="margin-left:auto;font-size:9px">(bajas/roturas)</span></div>
+          <div id="rank-bajas-qty"></div>
+        </div>
+        <div class="consumo-card purple">
+          <div class="consumo-card-title" style="color:var(--purple)">🗂 Consumo por categoría</div>
+          <div id="rank-categorias"></div>
+        </div>
+      </div>
+      <!-- Gráfico tendencia -->
+      <div class="consumo-chart-wrap">
+        <div class="consumo-card-title" style="margin-bottom:12px">📈 Tendencia de consumo — últimas semanas</div>
+        <canvas id="ch-consumo-trend" style="max-height:200px"></canvas>
+      </div>
+      <!-- Tabla detalle -->
+      <div class="sh"><div class="st">📋 Detalle de consumos en el período</div></div>
+      <div class="tw"><table><thead><tr><th>Fecha</th><th>Insumo</th><th>Categoría</th><th>Cantidad</th><th>Responsable</th><th>Sector</th><th>Tipo</th></tr></thead><tbody id="t-consumo-detalle"></tbody></table></div>
     </div>
 
     <!-- COMPRAS -->
@@ -861,10 +938,10 @@ function initListeners() {
   onSnapshot(collection(db,'maquinas'), s=>{ maquinas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('maquinas'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'mantenimientos'), s=>{ mantenimientos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('mantenimiento'); rDash(); rAlerts(); rKPIs(); rCal(); });
   onSnapshot(collection(db,'stock'), s=>{ stock=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('stock'); rDash(); rAlerts(); rKPIs(); });
-  onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); });
+  onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); if(isActive('consumo'))renderConsumo(); });
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
-  onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); });
+  onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); if(isActive('consumo'))renderConsumo(); });
   onSnapshot(collection(db,'entradas'), s=>{ entradas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('entradas'))renderEntradas(); });
   onSnapshot(collection(db,'notas'), s=>{ notas=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('notas'))renderNotas(); });
   onSnapshot(collection(db,'compras'), s=>{ compras=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('compras'))renderCompras();updateBadgeCompras(); });
@@ -882,7 +959,7 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'}};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'}};
 const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`};
 
 window.nav = function(v) {
@@ -908,6 +985,7 @@ window.nav = function(v) {
   if(v==='entradas')renderEntradas();
   if(v==='notas'){renderNotas();renderNotasAdminBtn();}
   if(v==='compras')renderCompras();
+  if(v==='consumo')renderConsumo();
 };
 
 // HELPERS
@@ -2058,6 +2136,245 @@ window.saveCompra = async function(){
   else { await fbAdd('compras',obj); toast('✓ Compra agregada a la lista'); }
   closeModal('m-compra');
 };
+// ==========================================
+// TOP INSUMOS / CONSUMO RANKING
+// ==========================================
+let consumoPeriod = 'mes';
+let consumoChart = null;
+
+window.setConsumoPeriod = function(period, btn) {
+  consumoPeriod = period;
+  document.querySelectorAll('.cp-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const labels = {semana:'Esta semana', mes:'Este mes', '3meses':'Últimos 3 meses', todo:'Histórico completo'};
+  document.getElementById('consumo-periodo-label').textContent = labels[period] || period;
+  renderConsumo();
+};
+
+function getConsumoPeriodStart(period) {
+  const now = new Date();
+  if (period === 'semana') { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
+  if (period === 'mes') { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
+  if (period === '3meses') { const d = new Date(now); d.setDate(d.getDate() - 90); return d; }
+  return new Date('2000-01-01');
+}
+
+function parseDate(str) {
+  if (!str) return null;
+  // Intenta varios formatos: dd/mm/yyyy, yyyy-mm-dd, dd/mm/yyyy hh:mm
+  const parts = str.split(/[\/\-\s]/);
+  if (!parts.length) return null;
+  try {
+    if (str.includes('/') && parts[0].length <= 2) {
+      return new Date(parts[2], parts[1]-1, parts[0]);
+    }
+    return new Date(str);
+  } catch(e) { return null; }
+}
+
+window.renderConsumo = function() {
+  const desde = getConsumoPeriodStart(consumoPeriod);
+
+  // Filtrar consumos (préstamos sin devolución = consumibles)
+  const consumos = prestamos.filter(p => {
+    if (!p.sinDevolucion) return false;
+    const fecha = parseDate(p.fechaSalida);
+    return fecha && fecha >= desde;
+  });
+
+  // Filtrar bajas de insumos
+  const bajasInsumos = bajas.filter(b => {
+    if (b.categoria !== 'Insumo') return false;
+    const fecha = parseDate(b.fecha);
+    return fecha && fecha >= desde;
+  });
+
+  // === STATS RESUMEN ===
+  const totalConsumos = consumos.reduce((a, p) => a + (parseInt(p.cantidad) || 0), 0);
+  const itemsUnicos = new Set(consumos.map(p => p.itemId)).size;
+  const totalBajas = bajasInsumos.reduce((a, b) => a + (parseInt(b.cantidad) || 0), 0);
+  const personas = new Set(consumos.map(p => p.responsable).filter(Boolean)).size;
+
+  document.getElementById('consumo-stats').innerHTML = `
+    <div class="sc g"><div class="sl">Unidades consumidas</div><div class="sv cg">${totalConsumos}</div><div class="ss">en el período</div></div>
+    <div class="sc b"><div class="sl">Insumos distintos</div><div class="sv cb">${itemsUnicos}</div><div class="ss">artículos diferentes</div></div>
+    <div class="sc w"><div class="sl">Bajas de insumos</div><div class="sv cw">${totalBajas}</div><div class="ss">unidades dadas de baja</div></div>
+    <div class="sc p"><div class="sl">Personas involucradas</div><div class="sv cp">${personas}</div><div class="ss">responsables distintos</div></div>
+  `;
+
+  // === RANKING POR CANTIDAD ===
+  const porQty = {};
+  consumos.forEach(p => {
+    const item = stock.find(s => s._id === p.itemId);
+    const nom = item ? item.nombre : (p.itemNombre || 'Artículo eliminado');
+    const cat = item ? (item.categoria || '—') : '—';
+    if (!porQty[nom]) porQty[nom] = { qty: 0, cat };
+    porQty[nom].qty += parseInt(p.cantidad) || 0;
+  });
+  const rankQty = Object.entries(porQty).sort((a,b) => b[1].qty - a[1].qty).slice(0, 8);
+  const maxQty = rankQty[0]?.[1]?.qty || 1;
+  document.getElementById('rank-consumo-qty').innerHTML = rankQty.length ? rankQty.map(([nom, d], i) => `
+    <div class="rank-item">
+      <div class="rank-num ${i===0?'top1':i===1?'top2':i===2?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="rank-name">${nom}</div>
+        <div class="rank-sub">${d.cat}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.round((d.qty/maxQty)*100)}%"></div></div>
+        <div class="rank-val">${d.qty} ud.</div>
+      </div>
+    </div>`).join('') : '<div class="empty" style="padding:20px">Sin consumos en este período</div>';
+
+  // === RANKING POR FRECUENCIA (veces que se pidió) ===
+  const porFreq = {};
+  consumos.forEach(p => {
+    const item = stock.find(s => s._id === p.itemId);
+    const nom = item ? item.nombre : (p.itemNombre || 'Artículo eliminado');
+    const cat = item ? (item.categoria || '—') : '—';
+    if (!porFreq[nom]) porFreq[nom] = { freq: 0, cat };
+    porFreq[nom].freq += 1;
+  });
+  const rankFreq = Object.entries(porFreq).sort((a,b) => b[1].freq - a[1].freq).slice(0, 8);
+  const maxFreq = rankFreq[0]?.[1]?.freq || 1;
+  document.getElementById('rank-consumo-freq').innerHTML = rankFreq.length ? rankFreq.map(([nom, d], i) => `
+    <div class="rank-item">
+      <div class="rank-num ${i===0?'top1':i===1?'top2':i===2?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="rank-name">${nom}</div>
+        <div class="rank-sub">${d.cat}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar"><div class="rank-bar-fill blue" style="width:${Math.round((d.freq/maxFreq)*100)}%"></div></div>
+        <div class="rank-val blue">${d.freq} vez${d.freq!==1?'es':''}</div>
+      </div>
+    </div>`).join('') : '<div class="empty" style="padding:20px">Sin consumos en este período</div>';
+
+  // === RANKING BAJAS ===
+  const porBaja = {};
+  bajasInsumos.forEach(b => {
+    const nom = b.nombre || 'Sin nombre';
+    if (!porBaja[nom]) porBaja[nom] = { qty: 0, motivo: b.motivo || '—' };
+    porBaja[nom].qty += parseInt(b.cantidad) || 0;
+  });
+  const rankBajas = Object.entries(porBaja).sort((a,b) => b[1].qty - a[1].qty).slice(0, 8);
+  const maxBajas = rankBajas[0]?.[1]?.qty || 1;
+  document.getElementById('rank-bajas-qty').innerHTML = rankBajas.length ? rankBajas.map(([nom, d], i) => `
+    <div class="rank-item">
+      <div class="rank-num ${i===0?'top1':i===1?'top2':i===2?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="rank-name">${nom}</div>
+        <div class="rank-sub">${d.motivo}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar"><div class="rank-bar-fill warn" style="width:${Math.round((d.qty/maxBajas)*100)}%"></div></div>
+        <div class="rank-val warn">${d.qty} ud.</div>
+      </div>
+    </div>`).join('') : '<div class="empty" style="padding:20px">Sin bajas en este período</div>';
+
+  // === RANKING POR CATEGORÍA ===
+  const porCat = {};
+  consumos.forEach(p => {
+    const item = stock.find(s => s._id === p.itemId);
+    const cat = item ? (item.categoria || 'Sin categoría') : 'Sin categoría';
+    if (!porCat[cat]) porCat[cat] = 0;
+    porCat[cat] += parseInt(p.cantidad) || 0;
+  });
+  const rankCat = Object.entries(porCat).sort((a,b) => b[1] - a[1]).slice(0, 8);
+  const maxCat = rankCat[0]?.[1] || 1;
+  const purpleColors = ['#a78bfa','#8b5cf6','#7c3aed','#6d28d9','#c4b5fd','#ddd6fe'];
+  document.getElementById('rank-categorias').innerHTML = rankCat.length ? rankCat.map(([cat, qty], i) => `
+    <div class="rank-item">
+      <div class="rank-num">${i+1}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="rank-name">${cat}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.round((qty/maxCat)*100)}%;background:${purpleColors[i]||'var(--purple)'}"></div></div>
+        <div class="rank-val" style="color:var(--purple)">${qty} ud.</div>
+      </div>
+    </div>`).join('') : '<div class="empty" style="padding:20px">Sin datos</div>';
+
+  // === GRÁFICO TENDENCIA (últimas 8 semanas) ===
+  const semanas = [];
+  const semLabels = [];
+  for (let i = 7; i >= 0; i--) {
+    const fin = new Date(); fin.setDate(fin.getDate() - i * 7);
+    const ini = new Date(fin); ini.setDate(ini.getDate() - 7);
+    semanas.push({ ini, fin });
+    const label = `${ini.getDate()}/${ini.getMonth()+1}`;
+    semLabels.push(label);
+  }
+  const semData = semanas.map(({ini, fin}) =>
+    prestamos.filter(p => {
+      if (!p.sinDevolucion) return false;
+      const f = parseDate(p.fechaSalida);
+      return f && f >= ini && f < fin;
+    }).reduce((a, p) => a + (parseInt(p.cantidad) || 0), 0)
+  );
+
+  if (consumoChart) consumoChart.destroy();
+  const ctx = document.getElementById('ch-consumo-trend');
+  if (ctx) {
+    consumoChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: semLabels,
+        datasets: [{
+          label: 'Unidades consumidas',
+          data: semData,
+          backgroundColor: 'rgba(0,229,160,0.25)',
+          borderColor: '#00e5a0',
+          borderWidth: 2,
+          borderRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#5a6282', font: { size: 11, family: 'JetBrains Mono' } } } },
+        scales: {
+          x: { ticks: { color: '#5a6282', font: { size: 10 } }, grid: { color: 'rgba(37,45,69,.4)' } },
+          y: { ticks: { color: '#5a6282', font: { size: 10 } }, grid: { color: 'rgba(37,45,69,.4)' } }
+        }
+      }
+    });
+  }
+
+  // === TABLA DETALLE ===
+  const detalleAll = consumos.map(p => {
+    const item = stock.find(s => s._id === p.itemId);
+    return {
+      fecha: p.fechaSalida || '—',
+      nombre: item ? item.nombre : 'Artículo eliminado',
+      cat: item ? (item.categoria || '—') : '—',
+      cantidad: p.cantidad || 0,
+      responsable: p.responsable || '—',
+      sector: p.sector || '—',
+      tipo: 'Consumo'
+    };
+  }).concat(bajasInsumos.map(b => ({
+    fecha: b.fecha || '—',
+    nombre: b.nombre || '—',
+    cat: 'Insumo',
+    cantidad: b.cantidad || 0,
+    responsable: b.responsable || '—',
+    sector: '—',
+    tipo: b.motivo || 'Baja'
+  }))).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+  document.getElementById('t-consumo-detalle').innerHTML = detalleAll.length ?
+    detalleAll.map(r => `<tr>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.fecha}</td>
+      <td style="font-weight:500">${r.nombre}</td>
+      <td><span class="badge b-x">${r.cat}</span></td>
+      <td style="font-family:var(--mono);font-size:13px;color:var(--accent)">${r.cantidad}</td>
+      <td style="font-size:12px;color:var(--muted)">${r.responsable}</td>
+      <td style="font-size:12px;color:var(--muted)">${r.sector}</td>
+      <td><span class="badge ${r.tipo==='Consumo'?'b-g':'b-w'}">${r.tipo}</span></td>
+    </tr>`).join('') :
+    '<tr><td colspan="7"><div class="empty">Sin registros en este período</div></td></tr>';
+};
+
 // ==========================================
 // BACKUP MANUAL A JSON
 // ==========================================
