@@ -144,6 +144,33 @@ tbody tr:hover td{background:var(--s2);}
 .sbar{width:70px;height:4px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px;}
 .sf-g{background:var(--accent);} .sf-w{background:var(--warn);} .sf-d{background:var(--danger);}
 
+/* FACTURAS */
+.fact-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px;}
+.fact-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:15px;transition:border-color .2s;position:relative;overflow:hidden;}
+.fact-card:hover{border-color:var(--faint);}
+.fact-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--purple);}
+.fact-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.fact-card-icon{width:38px;height:38px;border-radius:9px;background:var(--pdim);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.fact-card-title{font-size:13px;font-weight:600;line-height:1.3;}
+.fact-card-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px;}
+.fact-card-body{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+.fact-card-footer{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.fact-preview{width:100%;max-height:120px;object-fit:cover;border-radius:7px;border:1px solid var(--border);margin-bottom:10px;cursor:pointer;transition:opacity .15s;}
+.fact-preview:hover{opacity:.85;}
+.fact-pdf-thumb{width:100%;height:80px;background:var(--ddim);border-radius:7px;border:1px solid rgba(255,68,102,.2);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--danger);font-family:var(--mono);margin-bottom:10px;cursor:pointer;}
+.fact-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.fact-drop{border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2);}
+.fact-drop:hover,.fact-drop.over{border-color:var(--purple);background:var(--pdim);}
+.fact-drop-icon{font-size:28px;margin-bottom:6px;}
+.fact-drop-text{font-size:13px;color:var(--muted);}
+.fact-drop-sub{font-size:11px;color:var(--faint);margin-top:3px;font-family:var(--mono);}
+.fact-img-preview{max-width:100%;max-height:200px;border-radius:8px;border:1px solid var(--border);display:block;margin:0 auto;}
+.fact-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.fact-lightbox.open{display:flex;}
+.fact-lightbox img{max-width:90vw;max-height:85vh;border-radius:10px;box-shadow:0 0 60px rgba(0,0,0,.8);}
+.fact-lightbox-close{position:absolute;top:18px;right:22px;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:var(--sans);}
+.fact-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+
 /* SEARCH */
 .si{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-size:13px;font-family:var(--sans);width:200px;outline:none;transition:border .15s;}
 .si:focus{border-color:var(--accent);} .si::placeholder{color:var(--muted);}
@@ -509,6 +536,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
     <div class="ni" onclick="nav('epp')"><span class="ic">🦺</span><span>Control EPP</span><span class="nbadge" id="badge-epp" style="display:none;background:var(--danger)">0</span></div>
     <div class="ni" onclick="nav('compras')"><span class="ic">🛒</span><span>Compras</span><span class="nbadge" id="badge-compras" style="background:var(--warn);display:none">0</span></div>
+    <div class="ni" onclick="nav('compras');setTimeout(()=>{swTabCompras('cp-fact',document.querySelectorAll('#view-compras .tab')[3])},100)"><span class="ic">🧾</span><span>Facturas</span><span class="nbadge" id="badge-facturas" style="background:var(--purple);display:none">0</span></div>
     <div class="ng">Registro</div>
     <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
     <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
@@ -846,10 +874,34 @@ textarea.fi{resize:vertical;min-height:56px;}
         <div class="tab active" onclick="swTabCompras('cp-pend',this)">Pendientes</div>
         <div class="tab" onclick="swTabCompras('cp-prog',this)">Solicitadas</div>
         <div class="tab" onclick="swTabCompras('cp-done',this)">Compradas</div>
+        <div class="tab" onclick="swTabCompras('cp-fact',this)">🧾 Facturas</div>
       </div>
       <div id="cp-pend"><div id="l-cp-pend"></div></div>
       <div id="cp-prog" style="display:none"><div id="l-cp-prog"></div></div>
       <div id="cp-done" style="display:none"><div id="l-cp-done"></div></div>
+      <div id="cp-fact" style="display:none">
+        <div class="fact-filters">
+          <input class="si" id="f-fact-q" placeholder="🔍 Buscar proveedor, descripción..." oninput="renderFacturas()" style="width:230px">
+          <input class="fi" type="month" id="f-fact-mes" onchange="renderFacturas()" style="width:160px;padding:7px 9px;font-size:12px">
+          <select class="fs" id="f-fact-tipo" onchange="renderFacturas()">
+            <option value="">Todos los tipos</option>
+            <option>Insumo / Repuesto</option>
+            <option>Máquina / Equipo</option>
+            <option>Servicio</option>
+            <option>Otro</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="exportFacturasPDF()">⬇ Exportar listado</button>
+        </div>
+        <div class="fact-resumen" id="fact-resumen"></div>
+        <div class="fact-grid" id="fact-grid"></div>
+      </div>
+    </div>
+
+    <!-- LIGHTBOX FACTURAS -->
+    <div class="fact-lightbox" id="fact-lightbox" onclick="closeLightbox()">
+      <button class="fact-lightbox-close" onclick="closeLightbox()">✕ Cerrar</button>
+      <img id="fact-lightbox-img" src="" alt="Factura">
+      <div style="font-size:12px;color:rgba(255,255,255,.5);font-family:var(--mono)">Clic en cualquier lado para cerrar</div>
     </div>
 
     <!-- EPP -->
@@ -941,6 +993,52 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
+<!-- MODAL FACTURA -->
+<div class="ov" id="m-factura">
+  <div class="modal" style="width:580px">
+    <div class="mt">🧾 <span id="mfact-title">Nueva Factura</span></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Proveedor</label><input class="fi" id="fact-prov" placeholder="Nombre del proveedor"></div>
+      <div class="fg"><label class="fl">N° Factura / Remito</label><input class="fi" id="fact-num" placeholder="FAC-0001, B-000123..."></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Fecha</label><input class="fi" type="date" id="fact-fecha"></div>
+      <div class="fg"><label class="fl">Tipo de compra</label>
+        <select class="fss" id="fact-tipo">
+          <option>Insumo / Repuesto</option>
+          <option>Máquina / Equipo</option>
+          <option>Servicio</option>
+          <option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Monto total ($)</label><input class="fi" type="number" id="fact-monto" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="fg"><label class="fl">Asociar a compra (opcional)</label>
+        <select class="fss" id="fact-compra-link"><option value="">— Sin vincular —</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Descripción / Detalle</label><textarea class="fi" id="fact-desc" style="min-height:52px" placeholder="Qué se compró, para qué sector, detalles importantes..."></textarea></div>
+    <!-- Adjunto -->
+    <div class="fg">
+      <label class="fl">Archivo de factura (PDF o imagen)</label>
+      <div class="fact-drop" id="fact-drop-zone" onclick="document.getElementById('fact-file-input').click()" ondragover="factDragOver(event)" ondragleave="factDragLeave(event)" ondrop="factDrop(event)">
+        <div class="fact-drop-icon">📎</div>
+        <div class="fact-drop-text">Clic para adjuntar o arrastrar aquí</div>
+        <div class="fact-drop-sub">PDF, JPG, PNG — máx. 4 MB</div>
+      </div>
+      <input type="file" id="fact-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none" onchange="factFileSelected(this)">
+      <div id="fact-file-preview" style="margin-top:10px;display:none"></div>
+      <div id="fact-file-info" style="font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:4px"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-factura')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFactura()">💾 Guardar factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FACTURA -->
 <div class="ov" id="m-maq">
   <div class="modal">
     <div class="mt">🏭 <span id="mm-title">Nueva Máquina</span></div>
@@ -1262,7 +1360,7 @@ async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',
 
 // NAVIGATION
 const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos y asignaciones'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button><button class="btn btn-primary" style="background:var(--purple);color:#fff;margin-left:6px" onclick="openFacturaModal()">🧾 + Factura</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -2271,11 +2369,7 @@ window.selNotaPrio = function(prio, el){
 // COMPRAS
 // ═══════════════════════════════════
 let eIdCompra = null;
-window.swTabCompras = function(tid, el){
-  document.querySelectorAll('#view-compras .tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  ['cp-pend','cp-prog','cp-done'].forEach(t=>document.getElementById(t)&&(document.getElementById(t).style.display=t===tid?'block':'none'));
-};
+// swTabCompras is defined in the Facturas section below (supports 4 tabs)
 
 function updateBadgeCompras(){
   const pend = compras.filter(c=>c.estado==='pendiente').length;
@@ -3320,6 +3414,277 @@ window.saveEPP = async function(){
   else { await fbAdd('epp', obj); toast('✓ EPP registrado'); }
   closeModal('m-epp');
 };
+
+// ═══════════════════════════════════
+// FACTURAS DE COMPRA
+// ═══════════════════════════════════
+// Las facturas se guardan en localStorage como base64
+// (Firebase Storage requiere plan Blaze — evitamos costo)
+const FACT_KEY = 'mp_facturas_v2';
+let facturas = [];
+let eIdFactura = null;
+let factFileData = null; // {name, type, size, b64}
+
+function loadFacturasLocal(){
+  try { facturas = JSON.parse(localStorage.getItem(FACT_KEY)||'[]'); } catch(e){ facturas=[]; }
+}
+function saveFacturasLocal(){
+  try { localStorage.setItem(FACT_KEY, JSON.stringify(facturas)); } catch(e){ toast('⚠ No hay espacio suficiente para guardar el archivo. Intentá con una imagen más pequeña.','err'); }
+}
+loadFacturasLocal();
+
+function renderFacturas(){
+  const q = (document.getElementById('f-fact-q')?.value||'').toLowerCase();
+  const mes = document.getElementById('f-fact-mes')?.value||'';
+  const tipo = document.getElementById('f-fact-tipo')?.value||'';
+
+  let list = [...facturas];
+  if(q) list = list.filter(f=> (f.prov||'').toLowerCase().includes(q)||(f.desc||'').toLowerCase().includes(q)||(f.num||'').toLowerCase().includes(q));
+  if(mes) list = list.filter(f=> (f.fecha||'').startsWith(mes));
+  if(tipo) list = list.filter(f=> f.tipo===tipo);
+  list.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+
+  // Resumen
+  const resEl = document.getElementById('fact-resumen');
+  if(resEl){
+    const tot = facturas.length;
+    const totMonto = facturas.reduce((a,f)=>a+(parseFloat(f.monto)||0),0);
+    const conArch = facturas.filter(f=>f.archivo).length;
+    resEl.innerHTML=`
+      <div class="sc p"><div class="sl">Total facturas</div><div class="sv cp">${tot}</div><div class="ss">registradas</div></div>
+      <div class="sc g"><div class="sl">Monto total</div><div class="sv cg">$${totMonto.toLocaleString('es-AR',{minimumFractionDigits:0})}</div><div class="ss">acumulado</div></div>
+      <div class="sc b"><div class="sl">Con archivo</div><div class="sv cb">${conArch}</div><div class="ss">con PDF / imagen</div></div>`;
+  }
+
+  // Badge sidebar
+  const badge = document.getElementById('badge-facturas');
+  if(badge){ if(facturas.length){ badge.textContent=facturas.length; badge.style.display=''; } else badge.style.display='none'; }
+
+  const grid = document.getElementById('fact-grid');
+  if(!grid) return;
+  if(!list.length){ grid.innerHTML='<div class="empty" style="padding:40px">No hay facturas registradas. Usá el botón "+ Nueva factura" para agregar una.</div>'; return; }
+
+  const tipoCls = {'Insumo / Repuesto':'b-g','Máquina / Equipo':'b-b','Servicio':'b-p','Otro':'b-x'};
+  grid.innerHTML = list.map(f=>{
+    let previewHtml = '';
+    if(f.archivo){
+      if(f.archivo.type && f.archivo.type.startsWith('image/')){
+        previewHtml = `<img class="fact-preview" src="${f.archivo.b64}" alt="Factura" onclick="openLightbox('${f._id}')">`;
+      } else {
+        previewHtml = `<div class="fact-pdf-thumb" onclick="downloadFactura('${f._id}')">📄 ${f.archivo.name||'Factura.pdf'}<br><span style="font-size:10px;opacity:.6">Clic para descargar</span></div>`;
+      }
+    }
+    const compraLink = compras.find(c=>c._id===f.compraId);
+    return `
+    <div class="fact-card">
+      <div class="fact-card-header">
+        <div style="display:flex;gap:10px;align-items:flex-start;flex:1">
+          <div class="fact-card-icon">${f.archivo?(f.archivo.type?.startsWith('image/')?'🖼':'📄'):'🧾'}</div>
+          <div>
+            <div class="fact-card-title">${f.prov||'Sin proveedor'}</div>
+            <div class="fact-card-sub">${f.num?'N° '+f.num:''} ${f.fecha||''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="ab ed" onclick="editFactura('${f._id}')" title="Editar">✎</button>
+          <button class="ab del" onclick="delFactura('${f._id}')" title="Eliminar">✕</button>
+        </div>
+      </div>
+      ${previewHtml}
+      <div class="fact-card-body">${f.desc||'Sin descripción'}</div>
+      <div class="fact-card-footer">
+        <span class="badge ${tipoCls[f.tipo]||'b-x'}">${f.tipo||'Otro'}</span>
+        ${f.monto?`<span class="badge b-g">$${parseFloat(f.monto).toLocaleString('es-AR')}</span>`:''}
+        ${compraLink?`<span class="badge b-p" title="Vinculada a compra">🔗 ${compraLink.nombre}</span>`:''}
+        ${f.autor?`<span class="badge b-x">${f.autor}</span>`:''}
+        ${f.archivo?`<button class="btn btn-sm btn-ghost" onclick="downloadFactura('${f._id}')">⬇ Descargar</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openLightbox = function(id){
+  const f = facturas.find(x=>x._id===id);
+  if(!f?.archivo?.b64) return;
+  document.getElementById('fact-lightbox-img').src = f.archivo.b64;
+  document.getElementById('fact-lightbox').classList.add('open');
+};
+window.closeLightbox = function(){
+  document.getElementById('fact-lightbox').classList.remove('open');
+};
+
+window.downloadFactura = function(id){
+  const f = facturas.find(x=>x._id===id);
+  if(!f?.archivo?.b64) return;
+  const a = document.createElement('a');
+  a.href = f.archivo.b64;
+  a.download = f.archivo.name || 'factura';
+  a.click();
+};
+
+// Drag & drop handlers
+window.factDragOver = function(e){ e.preventDefault(); document.getElementById('fact-drop-zone').classList.add('over'); };
+window.factDragLeave = function(){ document.getElementById('fact-drop-zone').classList.remove('over'); };
+window.factDrop = function(e){
+  e.preventDefault();
+  document.getElementById('fact-drop-zone').classList.remove('over');
+  const file = e.dataTransfer.files?.[0];
+  if(file) processFactFile(file);
+};
+window.factFileSelected = function(input){
+  const file = input.files?.[0];
+  if(file) processFactFile(file);
+};
+
+function processFactFile(file){
+  const maxMB = 4;
+  if(file.size > maxMB*1024*1024){ toast(`⚠ El archivo supera ${maxMB} MB. Comprimí la imagen o el PDF.`,'warn'); return; }
+  const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
+  if(!allowed.includes(file.type)){ toast('⚠ Solo se aceptan PDF, JPG, PNG o WEBP','warn'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    factFileData = { name: file.name, type: file.type, size: file.size, b64: ev.target.result };
+    const preview = document.getElementById('fact-file-preview');
+    const info = document.getElementById('fact-file-info');
+    preview.style.display = 'block';
+    if(file.type.startsWith('image/')){
+      preview.innerHTML = `<img class="fact-img-preview" src="${ev.target.result}">`;
+    } else {
+      preview.innerHTML = `<div class="fact-pdf-thumb" style="cursor:default">📄 ${file.name}<br><span style="font-size:10px;opacity:.6">${(file.size/1024).toFixed(0)} KB</span></div>`;
+    }
+    info.textContent = `${file.name} — ${(file.size/1024).toFixed(0)} KB`;
+    document.getElementById('fact-drop-zone').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function openFacturaModal(id=null){
+  eIdFactura = id;
+  factFileData = null;
+  document.getElementById('mfact-title').textContent = id ? 'Editar Factura' : 'Nueva Factura';
+  document.getElementById('fact-drop-zone').style.display='';
+  document.getElementById('fact-file-preview').style.display='none';
+  document.getElementById('fact-file-preview').innerHTML='';
+  document.getElementById('fact-file-info').textContent='';
+  document.getElementById('fact-file-input').value='';
+
+  // Llenar select de compras
+  const sel = document.getElementById('fact-compra-link');
+  sel.innerHTML = '<option value="">— Sin vincular —</option>' +
+    compras.filter(c=>c.estado==='comprado').map(c=>`<option value="${c._id}">${c.nombre} (${c.fecha||''})</option>`).join('');
+
+  if(id){
+    const f = facturas.find(x=>x._id===id);
+    document.getElementById('fact-prov').value = f.prov||'';
+    document.getElementById('fact-num').value = f.num||'';
+    document.getElementById('fact-fecha').value = f.fecha||'';
+    document.getElementById('fact-tipo').value = f.tipo||'Insumo / Repuesto';
+    document.getElementById('fact-monto').value = f.monto||'';
+    document.getElementById('fact-desc').value = f.desc||'';
+    document.getElementById('fact-compra-link').value = f.compraId||'';
+    if(f.archivo){
+      factFileData = f.archivo;
+      const preview = document.getElementById('fact-file-preview');
+      preview.style.display='block';
+      if(f.archivo.type?.startsWith('image/')){
+        preview.innerHTML=`<img class="fact-img-preview" src="${f.archivo.b64}">`;
+      } else {
+        preview.innerHTML=`<div class="fact-pdf-thumb" style="cursor:default">📄 ${f.archivo.name}</div>`;
+      }
+      document.getElementById('fact-file-info').textContent=f.archivo.name;
+      document.getElementById('fact-drop-zone').style.display='none';
+    }
+  } else {
+    document.getElementById('fact-prov').value='';
+    document.getElementById('fact-num').value='';
+    document.getElementById('fact-fecha').value=new Date().toISOString().split('T')[0];
+    document.getElementById('fact-tipo').value='Insumo / Repuesto';
+    document.getElementById('fact-monto').value='';
+    document.getElementById('fact-desc').value='';
+    document.getElementById('fact-compra-link').value='';
+  }
+  document.getElementById('m-factura').classList.add('open');
+}
+
+window.saveFactura = function(){
+  const prov = document.getElementById('fact-prov').value.trim();
+  if(!prov){ toast('⚠ Completá el proveedor','warn'); return; }
+  const id = eIdFactura || ('f'+Date.now()+Math.random().toString(36).slice(2,6));
+  const obj = {
+    _id: id,
+    prov,
+    num: document.getElementById('fact-num').value.trim(),
+    fecha: document.getElementById('fact-fecha').value,
+    tipo: document.getElementById('fact-tipo').value,
+    monto: parseFloat(document.getElementById('fact-monto').value)||null,
+    desc: document.getElementById('fact-desc').value.trim(),
+    compraId: document.getElementById('fact-compra-link').value||null,
+    autor: currentUser?.username||'—',
+    creadoEn: new Date().toLocaleDateString('es-AR'),
+    archivo: factFileData || (eIdFactura ? (facturas.find(x=>x._id===eIdFactura)?.archivo||null) : null),
+  };
+  if(eIdFactura){
+    const idx = facturas.findIndex(x=>x._id===eIdFactura);
+    if(idx>=0) facturas[idx]=obj; else facturas.push(obj);
+    toast('✓ Factura actualizada');
+  } else {
+    facturas.unshift(obj);
+    toast('✓ Factura guardada');
+  }
+  saveFacturasLocal();
+  closeModal('m-factura');
+  renderFacturas();
+};
+
+window.editFactura = function(id){ openFacturaModal(id); };
+
+window.delFactura = function(id){
+  if(!canDo('eliminar')) return;
+  if(!confirm('¿Eliminar esta factura? Esta acción no se puede deshacer.')) return;
+  facturas = facturas.filter(x=>x._id!==id);
+  saveFacturasLocal();
+  renderFacturas();
+  toast('🗑 Factura eliminada');
+};
+
+window.exportFacturasPDF = function(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text('Listado de Facturas — ManteniPro', 14, 18);
+  doc.setFontSize(9);
+  doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, 14, 25);
+  let y = 35;
+  facturas.forEach((f,i)=>{
+    if(y>270){ doc.addPage(); y=20; }
+    doc.setFontSize(10);
+    doc.setTextColor(0,229,160);
+    doc.text(`${i+1}. ${f.prov||'Sin proveedor'} — ${f.num||''}`, 14, y);
+    y+=5;
+    doc.setTextColor(180,180,180);
+    doc.setFontSize(8);
+    doc.text(`Fecha: ${f.fecha||'—'} | Tipo: ${f.tipo||'—'} | Monto: ${f.monto?'$'+f.monto:'—'} | Autor: ${f.autor||'—'}`, 14, y);
+    y+=4;
+    if(f.desc){ doc.text(`Detalle: ${f.desc.slice(0,100)}${f.desc.length>100?'...':''}`, 14, y); y+=4; }
+    y+=3;
+  });
+  doc.save('facturas-mantenipro.pdf');
+  toast('✓ PDF exportado');
+};
+
+// Hook nav compras para renderizar facturas al cambiar de tab
+window.swTabCompras = function(tid, el){
+  document.querySelectorAll('#view-compras .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['cp-pend','cp-prog','cp-done','cp-fact'].forEach(t=>document.getElementById(t)&&(document.getElementById(t).style.display=t===tid?'block':'none'));
+  if(tid==='cp-fact') renderFacturas();
+};
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded',()=>{
+  loadFacturasLocal();
+});
 
 // ═══════════════════════════════════
 // API KEY MANAGEMENT — GROQ
