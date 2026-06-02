@@ -294,6 +294,32 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
+/* EPP */
+.epp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;margin-top:4px;}
+.epp-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:15px 16px;display:flex;flex-direction:column;gap:8px;position:relative;transition:border-color .2s;}
+.epp-card.vencido{border-color:var(--danger);background:rgba(255,68,102,.04);}
+.epp-card.proximo{border-color:var(--warn);background:rgba(255,184,0,.04);}
+.epp-card.ok{border-color:var(--border);}
+.epp-card-header{display:flex;align-items:flex-start;gap:10px;}
+.epp-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.epp-nombre{font-weight:600;font-size:14px;line-height:1.3;}
+.epp-titular{font-size:12px;color:var(--muted);margin-top:1px;}
+.epp-dates{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px;}
+.epp-date-box{background:var(--s2);border-radius:7px;padding:7px 10px;}
+.epp-date-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono);margin-bottom:3px;}
+.epp-date-val{font-size:12px;font-family:var(--mono);font-weight:600;}
+.epp-dias-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);font-weight:700;margin-top:2px;}
+.epp-dias-badge.vencido{background:rgba(255,68,102,.15);color:var(--danger);}
+.epp-dias-badge.proximo{background:rgba(255,184,0,.12);color:var(--warn);}
+.epp-dias-badge.ok{background:rgba(0,229,160,.1);color:var(--accent);}
+.epp-barra{height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-top:4px;}
+.epp-barra-fill{height:100%;border-radius:2px;transition:width .4s;}
+.epp-resumen{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.epp-filtros{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.epp-tab-wrap{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:3px;margin-bottom:16px;width:fit-content;}
+.epp-tab{padding:6px 14px;border-radius:7px;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;font-family:var(--mono);}
+.epp-tab.active{background:var(--s3);color:var(--text);font-weight:600;}
+
 /* NOTAS PRACTICANTES */
 .nota-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px;position:relative;border-left:3px solid var(--accent);}
 .nota-card.urgente{border-left-color:var(--danger);}
@@ -480,6 +506,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('ia')"><span class="ic">🤖</span><span>IA & Asistente</span></div>
     <div class="ng">Equipo</div>
     <div class="ni" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
+    <div class="ni" onclick="nav('epp')"><span class="ic">🦺</span><span>Control EPP</span><span class="nbadge" id="badge-epp" style="display:none;background:var(--danger)">0</span></div>
     <div class="ni" onclick="nav('compras')"><span class="ic">🛒</span><span>Compras</span><span class="nbadge" id="badge-compras" style="background:var(--warn);display:none">0</span></div>
     <div class="ng">Registro</div>
     <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
@@ -824,6 +851,68 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="cp-done" style="display:none"><div id="l-cp-done"></div></div>
     </div>
 
+    <!-- EPP -->
+    <div class="view" id="view-epp">
+      <div class="epp-resumen" id="epp-resumen"></div>
+      <div class="epp-filtros">
+        <div class="epp-tab-wrap">
+          <div class="epp-tab active" onclick="swEppTab('todos',this)">Todos</div>
+          <div class="epp-tab" onclick="swEppTab('vencido',this)">⚠ Vencidos</div>
+          <div class="epp-tab" onclick="swEppTab('proximo',this)">🔶 Próximos a vencer</div>
+          <div class="epp-tab" onclick="swEppTab('ok',this)">✓ Vigentes</div>
+        </div>
+        <input class="si" id="f-epp-titular" placeholder="🔍 Filtrar por titular..." oninput="renderEPP()" style="width:200px">
+        <select class="fs" id="f-epp-tipo" onchange="renderEPP()">
+          <option value="">Todos los tipos</option>
+          <option>Casco</option><option>Arnés</option><option>Guantes</option>
+          <option>Calzado</option><option>Protección ocular</option>
+          <option>Protección auditiva</option><option>Ropa de trabajo</option>
+          <option>Máscara respiratoria</option><option>Chaleco</option><option>Otro</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportEPPAlert()">⬇ Exportar vencimientos</button>
+      </div>
+      <div class="epp-grid" id="epp-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL EPP -->
+<div class="ov" id="m-epp">
+  <div class="modal">
+    <div class="mt">🦺 <span id="mepp-title">Nuevo EPP</span></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Tipo de EPP</label>
+        <select class="fss" id="epp-tipo">
+          <option>Casco</option><option>Arnés</option><option>Guantes</option>
+          <option>Calzado</option><option>Protección ocular</option>
+          <option>Protección auditiva</option><option>Ropa de trabajo</option>
+          <option>Máscara respiratoria</option><option>Chaleco</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Marca / Modelo</label><input class="fi" id="epp-marca" placeholder="Ej: 3M V-Guard"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Titular (persona asignada)</label><input class="fi" id="epp-titular" placeholder="Nombre del trabajador"></div>
+      <div class="fg"><label class="fl">N° de serie / Código</label><input class="fi" id="epp-codigo" placeholder="Opcional"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Fecha de entrega</label><input class="fi" type="date" id="epp-entrega"></div>
+      <div class="fg"><label class="fl">Fecha de vencimiento</label><input class="fi" type="date" id="epp-venc"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Vida útil (días)</label><input class="fi" type="number" id="epp-vida" placeholder="365" min="1"></div>
+      <div class="fg"><label class="fl">Estado</label>
+        <select class="fss" id="epp-estado">
+          <option>En uso</option><option>En depósito</option><option>Para reponer</option><option>Dado de baja</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Notas</label><input class="fi" id="epp-notas" placeholder="Observaciones, condiciones especiales..."></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-epp')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEPP()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -1111,9 +1200,10 @@ const app = initializeApp(FC);
 const db = getFirestore(app);
 
 // STATE
-let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[];
+let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[];
 let eIds={maq:null,mant:null,stock:null,ord:null};
 let loaded=0, listenersInit=false;
+let eppTabActual='todos';
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let charts={};
 
@@ -1131,6 +1221,7 @@ function initListeners() {
   onSnapshot(collection(db,'entradas'), s=>{ entradas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('entradas'))renderEntradas(); });
   onSnapshot(collection(db,'notas'), s=>{ notas=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('notas'))renderNotas(); });
   onSnapshot(collection(db,'compras'), s=>{ compras=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('compras'))renderCompras();updateBadgeCompras(); });
+  onSnapshot(collection(db,'epp'), s=>{ eppItems=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('epp'))renderEPP();updateBadgeEPP(); });
 }
 window._initListeners = initListeners;
 function chk(){ loaded++; if(loaded>=7){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
@@ -1145,8 +1236,8 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos y asignaciones'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -1171,6 +1262,7 @@ window.nav = function(v) {
   if(v==='entradas')renderEntradas();
   if(v==='notas'){renderNotas();renderNotasAdminBtn();}
   if(v==='compras')renderCompras();
+  if(v==='epp')renderEPP();
   if(v==='consumo')renderConsumo();
   if(v==='ia')initIA();
 };
@@ -2602,6 +2694,29 @@ window.toggleChip = function(el, texto) {
   }
 };
 
+// ═══════════════════════════════════
+// HELPER IA CENTRALIZADO
+// ═══════════════════════════════════
+async function callIA(messages, system = null) {
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    messages
+  };
+  if (system) body.system = system;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Error HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || 'Sin respuesta.';
+}
+
 window.runDiagnostico = async function() {
   const equipo = document.getElementById('diag-equipo').value;
   const sintoma = document.getElementById('diag-sintoma').value.trim();
@@ -2649,20 +2764,10 @@ Respondé con estas secciones usando exactamente estos títulos:
 Sé específico, práctico y conciso. Usá el contexto del equipo si está disponible.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'No se pudo obtener respuesta.';
+    const text = await callIA([{ role: 'user', content: prompt }]);
     response.innerHTML = formatAIResponse(text);
   } catch(e) {
-    response.innerHTML = '<div style="color:var(--danger);font-family:var(--mono);font-size:12px">⚠ Error al conectar con la IA. Verificá tu conexión.</div>';
+    response.innerHTML = '<div style="color:var(--danger);font-family:var(--mono);font-size:12px">⚠ ' + (e.message||'Error al conectar con la IA.') + '</div>';
   }
 };
 
@@ -2749,22 +2854,12 @@ Redactá un informe ejecutivo con:
 Usá un tono profesional, directo. Formato con títulos claros.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'No se pudo generar el informe.';
+    const text = await callIA([{ role: 'user', content: prompt }]);
     response.innerHTML = formatAIResponse(text);
     actions.style.display = 'flex';
     window._lastTurnoText = text;
   } catch(e) {
-    response.innerHTML = '<div style="color:var(--danger);font-family:var(--mono);font-size:12px">⚠ Error al conectar con la IA.</div>';
+    response.innerHTML = '<div style="color:var(--danger);font-family:var(--mono);font-size:12px">⚠ ' + (e.message||'Error al conectar con la IA.') + '</div>';
   }
 };
 
@@ -2815,32 +2910,19 @@ window.sendChat = async function() {
   }
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: `Sos el asistente inteligente de ManteniPro, un sistema de gestión de mantenimiento industrial. 
+    const sysPrompt = `Sos el asistente inteligente de ManteniPro, un sistema de gestión de mantenimiento industrial. 
 Respondés en español argentino, de forma concisa y útil. 
 Tenés acceso a los datos del sistema que el usuario te provee en el contexto.
-Cuando des listas, usá formato limpio. Sé directo y práctico.`,
-        messages: msgs
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'No pude procesar esa consulta.';
+Cuando des listas, usá formato limpio. Sé directo y práctico.`;
+    const text = await callIA(msgs, sysPrompt);
 
-    // Remover typing y agregar respuesta
     document.getElementById(typingId)?.remove();
     appendChatMsg(formatChatResponse(text), 'ai');
     chatHistory.push({ role: 'assistant', content: text });
-
-    // Limitar historial a 20 mensajes
     if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
   } catch(e) {
     document.getElementById(typingId)?.remove();
-    appendChatMsg('⚠ Error al conectar. Verificá tu conexión.', 'ai');
+    appendChatMsg('⚠ ' + (e.message||'Error al conectar con la IA.'), 'ai');
   }
 
   document.getElementById('chat-send').disabled = false;
@@ -2945,6 +3027,259 @@ window.exportarJSON = function() {
   toast('✓ Backup JSON descargado correctamente');
 };
   
+// ═══════════════════════════════════
+// CONTROL DE EPP
+// ═══════════════════════════════════
+const EPP_ICONS = {
+  'Casco':'⛑','Arnés':'🔗','Guantes':'🧤','Calzado':'👟',
+  'Protección ocular':'🥽','Protección auditiva':'🎧',
+  'Ropa de trabajo':'🥼','Máscara respiratoria':'😷',
+  'Chaleco':'🦺','Otro':'📦'
+};
+const EPP_COLORES = {
+  'Casco':'var(--warn)','Arnés':'var(--blue)','Guantes':'var(--accent)',
+  'Calzado':'var(--purple)','Protección ocular':'var(--blue)',
+  'Protección auditiva':'var(--orange)','Ropa de trabajo':'var(--accent)',
+  'Máscara respiratoria':'var(--danger)','Chaleco':'var(--warn)','Otro':'var(--muted)'
+};
+let eIdEPP = null;
+
+function eppDiasRestantes(fechaVenc) {
+  if(!fechaVenc) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const venc = new Date(fechaVenc + 'T00:00:00');
+  return Math.round((venc - hoy) / 86400000);
+}
+
+function eppEstadoVenc(dias) {
+  if(dias === null) return 'ok';
+  if(dias < 0) return 'vencido';
+  if(dias <= 30) return 'proximo';
+  return 'ok';
+}
+
+function updateBadgeEPP() {
+  const badge = document.getElementById('badge-epp');
+  if(!badge) return;
+  const criticos = eppItems.filter(e => {
+    const d = eppDiasRestantes(e.venc);
+    return d !== null && d <= 30 && e.estado !== 'Dado de baja';
+  }).length;
+  if(criticos > 0){ badge.textContent = criticos; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+window.swEppTab = function(tab, el) {
+  eppTabActual = tab;
+  document.querySelectorAll('.epp-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderEPP();
+};
+
+function renderEPP() {
+  // Resumen
+  const res = document.getElementById('epp-resumen');
+  if(res) {
+    const total = eppItems.length;
+    const vencidos = eppItems.filter(e => eppEstadoVenc(eppDiasRestantes(e.venc)) === 'vencido' && e.estado !== 'Dado de baja').length;
+    const proximos = eppItems.filter(e => eppEstadoVenc(eppDiasRestantes(e.venc)) === 'proximo' && e.estado !== 'Dado de baja').length;
+    const ok = eppItems.filter(e => eppEstadoVenc(eppDiasRestantes(e.venc)) === 'ok' && e.estado !== 'Dado de baja').length;
+    res.innerHTML = `
+      <div class="sc"><div class="sl">Total registrados</div><div class="sv">${total}</div><div class="ss">EPP en el sistema</div></div>
+      <div class="sc d"><div class="sl">Vencidos</div><div class="sv cd">${vencidos}</div><div class="ss">requieren reposición</div></div>
+      <div class="sc w"><div class="sl">Próximos a vencer</div><div class="sv cw">${proximos}</div><div class="ss">en los próximos 30 días</div></div>
+      <div class="sc g"><div class="sl">Vigentes</div><div class="sv cg">${ok}</div><div class="ss">en condiciones</div></div>`;
+  }
+
+  // Filtros
+  const fTitular = (document.getElementById('f-epp-titular')?.value || '').toLowerCase();
+  const fTipo = document.getElementById('f-epp-tipo')?.value || '';
+  let lista = eppItems.filter(e => e.estado !== 'Dado de baja');
+  if(fTitular) lista = lista.filter(e => (e.titular||'').toLowerCase().includes(fTitular));
+  if(fTipo) lista = lista.filter(e => e.tipo === fTipo);
+  if(eppTabActual !== 'todos') lista = lista.filter(e => eppEstadoVenc(eppDiasRestantes(e.venc)) === eppTabActual);
+
+  // Ordenar: vencidos primero, luego próximos, luego ok
+  lista.sort((a,b) => {
+    const da = eppDiasRestantes(a.venc) ?? 9999;
+    const db = eppDiasRestantes(b.venc) ?? 9999;
+    return da - db;
+  });
+
+  const grid = document.getElementById('epp-grid');
+  if(!grid) return;
+  if(!lista.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1;padding:40px">No hay EPP en esta categoría</div>'; return; }
+
+  grid.innerHTML = lista.map(e => {
+    const dias = eppDiasRestantes(e.venc);
+    const estado = eppEstadoVenc(dias);
+    const icon = EPP_ICONS[e.tipo] || '📦';
+    const color = EPP_COLORES[e.tipo] || 'var(--muted)';
+    let diasLabel, pct;
+    if(dias === null) {
+      diasLabel = `<span class="epp-dias-badge ok">Sin vencimiento</span>`;
+      pct = 100;
+    } else if(dias < 0) {
+      diasLabel = `<span class="epp-dias-badge vencido">⚠ Vencido hace ${Math.abs(dias)} días</span>`;
+      pct = 0;
+    } else if(dias === 0) {
+      diasLabel = `<span class="epp-dias-badge vencido">⚠ Vence HOY</span>`;
+      pct = 0;
+    } else if(dias <= 30) {
+      diasLabel = `<span class="epp-dias-badge proximo">🔶 Vence en ${dias} días</span>`;
+      pct = Math.round((dias/30)*100);
+    } else {
+      diasLabel = `<span class="epp-dias-badge ok">✓ ${dias} días restantes</span>`;
+      pct = 100;
+    }
+    const barColor = estado==='vencido'?'var(--danger)':estado==='proximo'?'var(--warn)':'var(--accent)';
+    return `<div class="epp-card ${estado}">
+      <div class="epp-card-header">
+        <div class="epp-icon" style="background:rgba(0,0,0,.3);border:1px solid var(--border)">${icon}</div>
+        <div style="flex:1;min-width:0">
+          <div class="epp-nombre">${e.tipo}${e.marca?' — '+e.marca:''}</div>
+          <div class="epp-titular">👤 ${e.titular||'Sin asignar'}</div>
+          ${e.codigo?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">${e.codigo}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <button class="ab ed" onclick="UI.editEPP('${e._id}')" title="Editar">✎</button>
+          <button class="ab del" onclick="UI.delEPP('${e._id}')" title="Eliminar">✕</button>
+        </div>
+      </div>
+      <div class="epp-dates">
+        <div class="epp-date-box">
+          <div class="epp-date-label">Entrega</div>
+          <div class="epp-date-val">${e.entrega||'—'}</div>
+        </div>
+        <div class="epp-date-box" style="${estado==='vencido'?'background:rgba(255,68,102,.08)':estado==='proximo'?'background:rgba(255,184,0,.08)':''}">
+          <div class="epp-date-label">Vencimiento</div>
+          <div class="epp-date-val" style="color:${barColor}">${e.venc||'—'}</div>
+        </div>
+      </div>
+      ${diasLabel}
+      <div class="epp-barra"><div class="epp-barra-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      ${e.notas?`<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:7px;margin-top:2px">${e.notas}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+        <span class="badge b-x">${e.estado||'En uso'}</span>
+        ${estado==='vencido'||estado==='proximo'?`<button class="btn btn-sm btn-warn" style="font-size:10px;padding:3px 8px" onclick="UI.reponerEPP('${e._id}')">🔄 Reponer</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  updateBadgeEPP();
+}
+
+window.exportEPPAlert = function() {
+  const criticos = eppItems.filter(e => {
+    const d = eppDiasRestantes(e.venc);
+    return d !== null && d <= 30;
+  });
+  if(!criticos.length){ toast('✓ No hay EPP próximos a vencer','ok'); return; }
+  let txt = 'REPORTE EPP - VENCIMIENTOS PRÓXIMOS\n' + new Date().toLocaleDateString('es-AR') + '\n\n';
+  criticos.sort((a,b)=>(eppDiasRestantes(a.venc)||0)-(eppDiasRestantes(b.venc)||0));
+  criticos.forEach(e=>{
+    const d = eppDiasRestantes(e.venc);
+    txt += `${e.tipo} — ${e.titular||'Sin asignar'}\n  Vencimiento: ${e.venc||'—'}  (${d<0?'VENCIDO hace '+Math.abs(d):'en '+d} días)\n  Marca: ${e.marca||'—'}  Código: ${e.codigo||'—'}\n\n`;
+  });
+  const blob = new Blob([txt],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='EPP_vencimientos_'+new Date().toLocaleDateString('es-AR').replace(/\//g,'-')+'.txt';
+  a.click();
+  toast('⬇ Reporte exportado');
+};
+
+let eIdEPP_edit = null;
+Object.assign(window.UI, {
+  openEPP(id=null){
+    eIdEPP_edit = id;
+    document.getElementById('mepp-title').textContent = id ? 'Editar EPP' : 'Nuevo EPP';
+    if(id){
+      const e = eppItems.find(x=>x._id===id);
+      if(!e) return;
+      document.getElementById('epp-tipo').value = e.tipo||'Casco';
+      document.getElementById('epp-marca').value = e.marca||'';
+      document.getElementById('epp-titular').value = e.titular||'';
+      document.getElementById('epp-codigo').value = e.codigo||'';
+      document.getElementById('epp-entrega').value = e.entrega||'';
+      document.getElementById('epp-venc').value = e.venc||'';
+      document.getElementById('epp-vida').value = e.vida||'';
+      document.getElementById('epp-estado').value = e.estado||'En uso';
+      document.getElementById('epp-notas').value = e.notas||'';
+    } else {
+      ['epp-marca','epp-titular','epp-codigo','epp-entrega','epp-venc','epp-vida','epp-notas'].forEach(i=>document.getElementById(i).value='');
+      document.getElementById('epp-tipo').value='Casco';
+      document.getElementById('epp-estado').value='En uso';
+      // Auto-fill entrega con hoy
+      document.getElementById('epp-entrega').value = new Date().toISOString().split('T')[0];
+    }
+    document.getElementById('m-epp').classList.add('open');
+  },
+  editEPP(id){ this.openEPP(id); },
+  async delEPP(id){
+    if(!canDo('eliminar')) return;
+    if(!confirm('¿Eliminar este EPP?')) return;
+    await fbDel('epp', id);
+    toast('EPP eliminado');
+  },
+  async reponerEPP(id){
+    const e = eppItems.find(x=>x._id===id);
+    if(!e) return;
+    // Abrir modal pre-llenado para el mismo tipo/titular, fecha nueva
+    eIdEPP_edit = null;
+    document.getElementById('mepp-title').textContent = '🔄 Reponer EPP';
+    document.getElementById('epp-tipo').value = e.tipo||'Casco';
+    document.getElementById('epp-marca').value = e.marca||'';
+    document.getElementById('epp-titular').value = e.titular||'';
+    document.getElementById('epp-codigo').value = '';
+    document.getElementById('epp-entrega').value = new Date().toISOString().split('T')[0];
+    document.getElementById('epp-venc').value = '';
+    document.getElementById('epp-vida').value = e.vida||'';
+    document.getElementById('epp-estado').value = 'En uso';
+    document.getElementById('epp-notas').value = '';
+    document.getElementById('m-epp').classList.add('open');
+    // Marcar el viejo como dado de baja
+    await fbUpd('epp', id, {estado:'Dado de baja'});
+    toast('📦 EPP anterior marcado como dado de baja');
+  }
+});
+
+window.saveEPP = async function(){
+  const titular = document.getElementById('epp-titular').value.trim();
+  const tipo = document.getElementById('epp-tipo').value;
+  if(!titular){ toast('⚠ Completá el titular','warn'); return; }
+
+  const entrega = document.getElementById('epp-entrega').value;
+  let venc = document.getElementById('epp-venc').value;
+
+  // Si no se especificó vencimiento pero hay vida útil, calcularlo
+  if(!venc && document.getElementById('epp-vida').value && entrega) {
+    const d = new Date(entrega + 'T00:00:00');
+    d.setDate(d.getDate() + parseInt(document.getElementById('epp-vida').value));
+    venc = d.toISOString().split('T')[0];
+    document.getElementById('epp-venc').value = venc;
+  }
+
+  const obj = {
+    tipo,
+    marca: document.getElementById('epp-marca').value.trim(),
+    titular,
+    codigo: document.getElementById('epp-codigo').value.trim(),
+    entrega,
+    venc,
+    vida: document.getElementById('epp-vida').value ? parseInt(document.getElementById('epp-vida').value) : null,
+    estado: document.getElementById('epp-estado').value,
+    notas: document.getElementById('epp-notas').value.trim(),
+    autor: currentUser?.username||'—',
+    ts: serverTimestamp()
+  };
+
+  if(eIdEPP_edit){ await fbSet('epp', eIdEPP_edit, obj); toast('✓ EPP actualizado'); }
+  else { await fbAdd('epp', obj); toast('✓ EPP registrado'); }
+  closeModal('m-epp');
+};
+
+
 </script>
 </body>
 </html>
