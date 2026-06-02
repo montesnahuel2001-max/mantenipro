@@ -504,6 +504,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('kpis')"><span class="ic">📊</span><span>KPIs & MTBF</span></div>
     <div class="ni" onclick="nav('consumo')"><span class="ic">🔥</span><span>Top Insumos</span></div>
     <div class="ni" onclick="nav('ia')"><span class="ic">🤖</span><span>IA & Asistente</span></div>
+    <div class="ni" onclick="showApiKeyModal()" id="ni-apikey"><span class="ic">🔑</span><span>Config. API Key</span><span id="apikey-dot" style="width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:auto;flex-shrink:0"></span></div>
     <div class="ng">Equipo</div>
     <div class="ni" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
     <div class="ni" onclick="nav('epp')"><span class="ic">🦺</span><span>Control EPP</span><span class="nbadge" id="badge-epp" style="display:none;background:var(--danger)">0</span></div>
@@ -878,6 +879,30 @@ textarea.fi{resize:vertical;min-height:56px;}
 </div>
 
 <!-- MODAL EPP -->
+<!-- MODAL API KEY GROQ -->
+<div class="ov" id="m-apikey">
+  <div class="modal" style="max-width:440px">
+    <div class="mt">🔑 Configurar API Key de Groq</div>
+    <div style="background:rgba(77,159,255,.08);border:1px solid rgba(77,159,255,.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.7;color:var(--text)">
+      Groq es <strong>100% gratis</strong>, sin tarjeta de crédito. Usa <strong>Llama 3.3 70B</strong> — uno de los mejores modelos open source disponibles.<br><br>
+      📋 <strong>Cómo obtener la key:</strong><br>
+      1. Entrá a <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a> → Sign up with Google<br>
+      2. <strong>API Keys → Create API Key</strong><br>
+      3. Copiá la clave (empieza con <code style="color:var(--accent)">gsk_...</code>) y pegala acá
+    </div>
+    <div class="fg">
+      <label class="fl">API Key de Groq</label>
+      <input class="fi" id="input-apikey" type="password" placeholder="gsk_...">
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;font-family:var(--mono)" id="apikey-status"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-apikey')">Cancelar</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" style="color:var(--danger);border-color:var(--danger)">🗑 Borrar clave</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Guardar y probar</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="m-epp">
   <div class="modal">
     <div class="mt">🦺 <span id="mepp-title">Nuevo EPP</span></div>
@@ -2695,26 +2720,40 @@ window.toggleChip = function(el, texto) {
 };
 
 // ═══════════════════════════════════
-// HELPER IA CENTRALIZADO
+// HELPER IA — GROQ (gratis, sin tarjeta)
 // ═══════════════════════════════════
+const GROQ_MODEL = 'llama-3.3-70b-versatile'; // Llama 3.3 70B — el más capaz de Groq gratis
+
 async function callIA(messages, system = null) {
-  const body = {
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1000,
-    messages
-  };
-  if (system) body.system = system;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const apiKey = window._groqApiKey || localStorage.getItem('mp_groq_key') || '';
+  if (!apiKey) throw new Error('API_KEY_REQUIRED');
+
+  // Groq usa el formato OpenAI: system va como primer mensaje con role 'system'
+  const msgs = system
+    ? [{ role: 'system', content: system }, ...messages]
+    : messages;
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      max_tokens: 1024,
+      messages: msgs,
+      temperature: 0.7
+    })
   });
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error('API_KEY_REQUIRED');
     throw new Error(err?.error?.message || `Error HTTP ${res.status}`);
   }
   const data = await res.json();
-  return data.content?.[0]?.text || 'Sin respuesta.';
+  return data.choices?.[0]?.message?.content || 'Sin respuesta.';
 }
 
 window.runDiagnostico = async function() {
@@ -2767,6 +2806,7 @@ Sé específico, práctico y conciso. Usá el contexto del equipo si está dispo
     const text = await callIA([{ role: 'user', content: prompt }]);
     response.innerHTML = formatAIResponse(text);
   } catch(e) {
+    if(e.message === 'API_KEY_REQUIRED') { showApiKeyModal(); response.innerHTML = ''; return; }
     response.innerHTML = '<div style="color:var(--danger);font-family:var(--mono);font-size:12px">⚠ ' + (e.message||'Error al conectar con la IA.') + '</div>';
   }
 };
@@ -2859,6 +2899,7 @@ Usá un tono profesional, directo. Formato con títulos claros.`;
     actions.style.display = 'flex';
     window._lastTurnoText = text;
   } catch(e) {
+    if(e.message === 'API_KEY_REQUIRED') { showApiKeyModal(); response.innerHTML = ''; return; }
     response.innerHTML = '<div style="color:var(--danger);font-family:var(--mono);font-size:12px">⚠ ' + (e.message||'Error al conectar con la IA.') + '</div>';
   }
 };
@@ -2922,6 +2963,7 @@ Cuando des listas, usá formato limpio. Sé directo y práctico.`;
     if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
   } catch(e) {
     document.getElementById(typingId)?.remove();
+    if(e.message === 'API_KEY_REQUIRED') { showApiKeyModal(); return; }
     appendChatMsg('⚠ ' + (e.message||'Error al conectar con la IA.'), 'ai');
   }
 
@@ -3279,6 +3321,80 @@ window.saveEPP = async function(){
   closeModal('m-epp');
 };
 
+// ═══════════════════════════════════
+// API KEY MANAGEMENT — GROQ
+// ═══════════════════════════════════
+function loadApiKey() {
+  const k = localStorage.getItem('mp_groq_key') || '';
+  window._groqApiKey = k;
+  const dot = document.getElementById('apikey-dot');
+  if(dot) dot.style.background = k ? 'var(--accent)' : 'var(--danger)';
+  return k;
+}
+
+function showApiKeyModal() {
+  const k = localStorage.getItem('mp_groq_key') || '';
+  document.getElementById('input-apikey').value = k;
+  document.getElementById('apikey-status').textContent = k ? '✓ Clave guardada. Podés probarla o reemplazarla.' : 'No hay clave configurada.';
+  document.getElementById('apikey-status').style.color = k ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('m-apikey').classList.add('open');
+}
+
+window.saveApiKey = async function() {
+  const k = document.getElementById('input-apikey').value.trim();
+  if(!k.startsWith('gsk_')) {
+    document.getElementById('apikey-status').textContent = '⚠ La clave de Groq debe empezar con gsk_...';
+    document.getElementById('apikey-status').style.color = 'var(--danger)';
+    return;
+  }
+  document.getElementById('apikey-status').textContent = '⏳ Probando conexión con Groq...';
+  document.getElementById('apikey-status').style.color = 'var(--muted)';
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${k}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 5,
+        messages: [{ role: 'user', content: 'ping' }]
+      })
+    });
+    if(res.ok) {
+      localStorage.setItem('mp_groq_key', k);
+      window._groqApiKey = k;
+      document.getElementById('apikey-status').textContent = '✓ Conexión exitosa con Groq. Clave guardada.';
+      document.getElementById('apikey-status').style.color = 'var(--accent)';
+      const dot = document.getElementById('apikey-dot');
+      if(dot) dot.style.background = 'var(--accent)';
+      toast('✓ Groq conectado — IA lista para usar');
+      setTimeout(()=>closeModal('m-apikey'), 1200);
+    } else {
+      const err = await res.json().catch(()=>({}));
+      document.getElementById('apikey-status').textContent = '⚠ ' + (err?.error?.message || 'Clave inválida.');
+      document.getElementById('apikey-status').style.color = 'var(--danger)';
+    }
+  } catch(e) {
+    document.getElementById('apikey-status').textContent = '⚠ No se pudo conectar. Verificá tu internet.';
+    document.getElementById('apikey-status').style.color = 'var(--danger)';
+  }
+};
+
+window.clearApiKey = function() {
+  localStorage.removeItem('mp_groq_key');
+  window._groqApiKey = '';
+  document.getElementById('input-apikey').value = '';
+  document.getElementById('apikey-status').textContent = 'Clave eliminada.';
+  document.getElementById('apikey-status').style.color = 'var(--muted)';
+  const dot = document.getElementById('apikey-dot');
+  if(dot) dot.style.background = 'var(--danger)';
+  toast('🗑 API Key eliminada');
+};
+
+// Cargar key al iniciar
+document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(loadApiKey, 500); });
 
 </script>
 </body>
