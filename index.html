@@ -140,6 +140,18 @@ tbody tr:hover td{background:var(--s2);}
 .b-p{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
 .b-x{background:rgba(90,98,130,.12);color:var(--muted);border:1px solid var(--border);}
 
+/* DASH PERIOD FILTER */
+.dash-period-bar{display:flex;align-items:center;gap:8px;margin-bottom:18px;background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:10px 14px;flex-wrap:wrap;}
+.dash-period-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-right:4px;flex-shrink:0;}
+.dp-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s;font-weight:500;}
+.dp-btn:hover{color:var(--text);border-color:var(--muted);}
+.dp-btn.active{background:var(--ag);color:var(--accent);border-color:var(--accent);}
+.dp-sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+.dp-custom{display:none;align-items:center;gap:6px;}
+.dp-custom.show{display:flex;}
+.dp-date{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-size:12px;font-family:var(--sans);outline:none;transition:border .15s;}
+.dp-date:focus{border-color:var(--accent);}
+.dash-period-info{margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--mono);}
 /* SBAR */
 .sbar{width:70px;height:4px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px;}
 .sf-g{background:var(--accent);} .sf-w{background:var(--warn);} .sf-d{background:var(--danger);}
@@ -597,6 +609,24 @@ textarea.fi{resize:vertical;min-height:56px;}
   <div class="content">
 
     <div class="view active" id="view-dashboard">
+      <!-- FILTRO DE PERÍODO -->
+      <div class="dash-period-bar">
+        <span class="dash-period-label">Período</span>
+        <button class="dp-btn active" onclick="setDashPeriod('hoy',this)">Hoy</button>
+        <button class="dp-btn" onclick="setDashPeriod('semana',this)">Esta semana</button>
+        <button class="dp-btn" onclick="setDashPeriod('mes',this)">Este mes</button>
+        <button class="dp-btn" onclick="setDashPeriod('trimestre',this)">Trimestre</button>
+        <button class="dp-btn" onclick="setDashPeriod('todo',this)">Todo</button>
+        <button class="dp-btn" onclick="setDashPeriod('custom',this)">✎ Personalizado</button>
+        <div class="dp-sep"></div>
+        <div class="dp-custom" id="dp-custom-range">
+          <span style="font-size:11px;color:var(--muted)">Desde</span>
+          <input type="date" class="dp-date" id="dp-from" onchange="applyCustomPeriod()">
+          <span style="font-size:11px;color:var(--muted)">Hasta</span>
+          <input type="date" class="dp-date" id="dp-to" onchange="applyCustomPeriod()">
+        </div>
+        <div class="dash-period-info" id="dash-period-info">Mostrando todo el historial</div>
+      </div>
       <div class="sg">
         <div class="sc g"><div class="sl">Stock Total</div><div class="sv cg" id="d-stock">—</div><div class="ss">artículos</div></div>
         <div class="sc w"><div class="sl">Stock Bajo</div><div class="sv cw" id="d-low">—</div><div class="ss">bajo mínimo</div></div>
@@ -608,10 +638,10 @@ textarea.fi{resize:vertical;min-height:56px;}
         <div class="sc g"><div class="sl">Disponibilidad</div><div class="sv cg" id="d-dp">—%</div><div class="ss">equipos operativos</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-        <div><div class="sh"><div class="st">⚠ Mantenimientos próximos</div></div><div class="tw"><table><thead><tr><th>Equipo</th><th>Tipo</th><th>Fecha</th><th>Estado</th></tr></thead><tbody id="d-ml"></tbody></table></div></div>
+        <div><div class="sh"><div class="st" id="d-mant-title">⚠ Mantenimientos próximos</div></div><div class="tw"><table><thead><tr><th>Equipo</th><th>Tipo</th><th>Fecha</th><th>Estado</th></tr></thead><tbody id="d-ml"></tbody></table></div></div>
         <div><div class="sh"><div class="st">⚠ Stock crítico</div></div><div class="tw"><table><thead><tr><th>Artículo</th><th>Stock</th><th>Estado</th></tr></thead><tbody id="d-sc"></tbody></table></div></div>
       </div>
-      <div><div class="sh"><div class="st">≡ Órdenes recientes</div></div><div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Prioridad</th><th>Responsable</th><th>Estado</th></tr></thead><tbody id="d-ol"></tbody></table></div></div>
+      <div><div class="sh"><div class="st" id="d-ord-title">≡ Órdenes recientes</div></div><div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Prioridad</th><th>Responsable</th><th>Estado</th></tr></thead><tbody id="d-ol"></tbody></table></div></div>
       <div style="margin-top:4px"><div class="sh"><div class="st">⚡ Actividad reciente</div><button class="btn btn-ghost btn-sm" onclick="exportPDF()">⬇ PDF Reporte</button></div><div class="tw" style="padding:4px 0"><div class="feed" id="activity-feed"><div class="empty">Cargando actividad...</div></div></div></div>
     </div>
 
@@ -1558,25 +1588,108 @@ function rDash(){
   const al=calcAlerts().length;
   const op=maquinas.filter(m=>m.estado==='Operativo').length;
   const disp=maquinas.length?Math.round((op/maquinas.length)*100):100;
+
+  // Stats: period-sensitive where applicable
+  const hasPeriod = dashFrom && dashTo;
+  const ordenesPeriodo = hasPeriod ? ordenes.filter(o=>inPeriod(o.fecha)) : ordenes;
+  const mantenimientosPeriodo = hasPeriod ? mantenimientos.filter(m=>inPeriod(m.fecha)) : mantenimientos;
+  const prestamosPeriodo = hasPeriod ? prestamos.filter(p=>inPeriod(p.fechaSalida)) : prestamos;
+
   document.getElementById('d-stock').textContent=stock.length;
   document.getElementById('d-low').textContent=stock.filter(s=>s.qty<=s.min).length;
   document.getElementById('d-maq').textContent=maquinas.length;
-  document.getElementById('d-mv').textContent=mv;
-  document.getElementById('d-pr').textContent=prestamos.filter(p=>p.estado==='activo').length;
-  document.getElementById('d-or').textContent=ordenes.filter(o=>o.estado!=='Completada').length;
+  document.getElementById('d-mv').textContent=hasPeriod
+    ? mantenimientosPeriodo.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)<=0).length
+    : mv;
+  document.getElementById('d-pr').textContent=hasPeriod
+    ? prestamosPeriodo.filter(p=>p.estado==='activo').length
+    : prestamos.filter(p=>p.estado==='activo').length;
+  document.getElementById('d-or').textContent=ordenesPeriodo.filter(o=>o.estado!=='Completada').length;
   document.getElementById('d-al').textContent=al;
   document.getElementById('d-dp').textContent=disp+'%';
   document.getElementById('badge-al').textContent=al;
 
-  const pm=[...mantenimientos.filter(m=>m.estado!=='Completado')].sort((a,b)=>daysUntil(a.fecha)-daysUntil(b.fecha)).slice(0,5);
-  document.getElementById('d-ml').innerHTML=pm.length?pm.map(m=>{const maq=maquinas.find(q=>q._id===m.maqId);const d=daysUntil(m.fecha);const st=mSt(d);return`<tr onclick="irA('maquinas', '${maq?.nombre}')" style="cursor:pointer"><td style="font-weight:500">${maq?.nombre||'—'}</td><td><span class="badge b-x">${m.tipo}</span></td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${m.fecha}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):'<tr><td colspan="4"><div class="empty">Sin mantenimientos próximos ✓</div></td></tr>';
+  // Mantenimientos: filtrar por período si hay filtro activo
+  const mantBase = hasPeriod
+    ? mantenimientos.filter(m=>m.estado!=='Completado'&&inPeriod(m.fecha))
+    : mantenimientos.filter(m=>m.estado!=='Completado');
+  const pm=[...mantBase].sort((a,b)=>daysUntil(a.fecha)-daysUntil(b.fecha)).slice(0,5);
+  const mantLabel = hasPeriod ? `en el período` : 'próximos';
+  document.getElementById('d-ml').innerHTML=pm.length?pm.map(m=>{const maq=maquinas.find(q=>q._id===m.maqId);const d=daysUntil(m.fecha);const st=mSt(d);return`<tr onclick="irA('maquinas', '${maq?.nombre}')" style="cursor:pointer"><td style="font-weight:500">${maq?.nombre||'—'}</td><td><span class="badge b-x">${m.tipo}</span></td><td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${m.fecha}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):`<tr><td colspan="4"><div class="empty">Sin mantenimientos ${mantLabel} ✓</div></td></tr>`;
 
+  // Stock crítico: sin filtro de período (el stock es estado actual)
   const sc=stock.filter(s=>s.qty<=s.min).slice(0,5);
   document.getElementById('d-sc').innerHTML=sc.length?sc.map(s=>{const st=sSt(s);return`<tr onclick="irA('stock', '${s.nombre}')" style="cursor:pointer"><td style="font-weight:500">${s.nombre}</td><td style="font-family:var(--mono)">${s.qty}/${s.min}</td><td><span class="badge ${st.c}">${st.l}</span></td></tr>`;}).join(''):'<tr><td colspan="3"><div class="empty">Sin críticos ✓</div></td></tr>';
 
-  const ro=[...ordenes].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
-  document.getElementById('d-ol').innerHTML=ro.length?ro.map(o=>`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td><td style="font-weight:500">${o.desc}</td><td><span class="badge ${pC(o.prio)}">${o.prio}</span></td><td style="color:var(--muted);font-size:12px">${o.resp}</td><td><span class="badge ${eC(o.estado)}">${o.estado}</span></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">Sin órdenes</div></td></tr>';
+  // Órdenes: filtradas por período
+  const roBase = hasPeriod ? [...ordenesPeriodo] : [...ordenes];
+  const ro=roBase.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
+  document.getElementById('d-ol').innerHTML=ro.length?ro.map(o=>`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td><td style="font-weight:500">${o.desc}</td><td><span class="badge ${pC(o.prio)}">${o.prio}</span></td><td style="color:var(--muted);font-size:12px">${o.resp}</td><td><span class="badge ${eC(o.estado)}">${o.estado}</span></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">Sin órdenes en este período</div></td></tr>';
+
+  // Update section titles based on period
+  const mantTitleEl = document.getElementById('d-mant-title');
+  const ordTitleEl = document.getElementById('d-ord-title');
+  if (mantTitleEl) mantTitleEl.textContent = hasPeriod ? '📅 Mantenimientos en el período' : '⚠ Mantenimientos próximos';
+  if (ordTitleEl) ordTitleEl.textContent = hasPeriod ? '≡ Órdenes en el período' : '≡ Órdenes recientes';
+
   renderFeed();
+}
+
+// DASHBOARD PERIOD FILTER
+let dashPeriod = 'todo';
+let dashFrom = null, dashTo = null;
+
+window.setDashPeriod = function(period, el) {
+  dashPeriod = period;
+  document.querySelectorAll('.dp-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const customRange = document.getElementById('dp-custom-range');
+  if (period === 'custom') {
+    customRange.classList.add('show');
+    const today = new Date().toISOString().split('T')[0];
+    const monthAgo = new Date(Date.now() - 30*86400000).toISOString().split('T')[0];
+    if (!document.getElementById('dp-from').value) document.getElementById('dp-from').value = monthAgo;
+    if (!document.getElementById('dp-to').value) document.getElementById('dp-to').value = today;
+    applyCustomPeriod();
+    return;
+  } else {
+    customRange.classList.remove('show');
+  }
+  const now = new Date(); now.setHours(0,0,0,0);
+  if (period === 'hoy') { dashFrom = new Date(now); dashTo = new Date(now); dashTo.setHours(23,59,59,999); }
+  else if (period === 'semana') { dashFrom = new Date(now); dashFrom.setDate(now.getDate() - now.getDay()); dashTo = new Date(dashFrom); dashTo.setDate(dashFrom.getDate()+6); dashTo.setHours(23,59,59,999); }
+  else if (period === 'mes') { dashFrom = new Date(now.getFullYear(), now.getMonth(), 1); dashTo = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59, 999); }
+  else if (period === 'trimestre') { dashFrom = new Date(now.getFullYear(), now.getMonth()-2, 1); dashTo = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59, 999); }
+  else { dashFrom = null; dashTo = null; }
+  updateDashPeriodInfo();
+  rDash();
+};
+
+window.applyCustomPeriod = function() {
+  const f = document.getElementById('dp-from').value;
+  const t = document.getElementById('dp-to').value;
+  if (f && t) {
+    dashFrom = new Date(f + 'T00:00:00');
+    dashTo = new Date(t + 'T23:59:59');
+    updateDashPeriodInfo();
+    rDash();
+  }
+};
+
+function updateDashPeriodInfo() {
+  const el = document.getElementById('dash-period-info');
+  if (!el) return;
+  if (!dashFrom || !dashTo) { el.textContent = 'Mostrando todo el historial'; return; }
+  const fmt = d => d.toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+  const isSameDay = dashFrom.toDateString() === dashTo.toDateString();
+  el.textContent = isSameDay ? fmt(dashFrom) : `${fmt(dashFrom)} — ${fmt(dashTo)}`;
+}
+
+function inPeriod(dateStr) {
+  if (!dashFrom || !dashTo) return true;
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  return d >= dashFrom && d <= dashTo;
 }
 
 // ALERTAS
@@ -2186,15 +2299,29 @@ function timeAgo(ts){
 function renderFeed(){
   const el=document.getElementById('activity-feed');
   if(!el)return;
-  const items=historial.slice(0,12);
-  if(!items.length){el.innerHTML='<div class="empty">Sin actividad reciente</div>';return;}
+  // Filter by period if active
+  const hasPeriod = dashFrom && dashTo;
+  let filtered = historial;
+  if (hasPeriod) {
+    filtered = historial.filter(h => {
+      if (!h.fecha) return false;
+      // h.fecha is localeString like "7/6/2025, 14:30:00" — use ts if available
+      if (h.ts && h.ts.toDate) {
+        const d = h.ts.toDate();
+        return d >= dashFrom && d <= dashTo;
+      }
+      return false;
+    });
+  }
+  const items = filtered.slice(0, hasPeriod ? 50 : 12);
+  if(!items.length){el.innerHTML=`<div class="empty">${hasPeriod?'Sin actividad en el período seleccionado':'Sin actividad reciente'}</div>`;return;}
   const icons={stock:'📦',prestamo:'⇄',orden:'📋',maquina:'🏭',mantenimiento:'🔧'};
   el.innerHTML=items.map(h=>`
     <div class="feed-item">
       <div class="feed-dot ${h.tipo||'stock'}"></div>
       <div>
         <div class="feed-text">${icons[h.tipo]||'•'} ${h.desc}</div>
-        <div class="feed-time">${timeAgo(h.ts)} · ${h.usuario||'Sistema'}</div>
+        <div class="feed-time">${hasPeriod?(h.fecha||''):(timeAgo(h.ts))} · ${h.usuario||'Sistema'}</div>
       </div>
     </div>`).join('');
 }
