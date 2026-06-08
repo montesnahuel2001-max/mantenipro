@@ -471,6 +471,15 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 /* CHAT ASISTENTE */
 .chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 180px);max-height:680px;background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.chat-memory-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--border);gap:10px;flex-shrink:0;}
+.chat-memory-left{display:flex;align-items:center;gap:7px;}
+.chat-memory-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s;}
+.chat-memory-dot.active{background:var(--accent);box-shadow:0 0 5px var(--aglow);}
+.chat-memory-dot.busy{background:var(--warn);animation:blink 1s infinite;}
+.chat-memory-label{font-size:10px;color:var(--muted);font-family:var(--mono);}
+.chat-ctx-badge{font-size:10px;color:var(--blue);font-family:var(--mono);background:var(--bdim);border:1px solid rgba(77,159,255,.2);border-radius:4px;padding:2px 7px;}
+.chat-clear-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:var(--sans);transition:all .15s;}
+.chat-clear-btn:hover{color:var(--danger);border-color:var(--danger);}
 .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
 .chat-msg{display:flex;gap:10px;align-items:flex-start;animation:fadein .2s;}
 .chat-msg.user{flex-direction:row-reverse;}
@@ -863,17 +872,29 @@ textarea.fi{resize:vertical;min-height:56px;}
       <!-- CHAT ASISTENTE -->
       <div class="ai-panel" id="ai-chat">
         <div class="chat-wrap">
+          <!-- Barra de estado de memoria -->
+          <div class="chat-memory-bar" id="chat-memory-bar">
+            <div class="chat-memory-left">
+              <span class="chat-memory-dot" id="chat-memory-dot"></span>
+              <span class="chat-memory-label" id="chat-memory-label">Nueva sesión · Sin historial</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="chat-ctx-badge" id="chat-ctx-badge" title="Módulo activo"></span>
+              <button class="chat-clear-btn" onclick="clearChatHistory()" title="Limpiar memoria de esta sesión">🗑 Limpiar</button>
+            </div>
+          </div>
           <div class="chat-messages" id="chat-messages">
             <div class="chat-msg">
               <div class="chat-avatar ai">🤖</div>
               <div class="chat-bubble">
-                <p>¡Hola! Soy tu asistente de ManteniPro. Tengo acceso a todos los datos del sistema.</p>
+                <p>¡Hola! Soy el asistente de ManteniPro. Conozco todos los datos del sistema en tiempo real y <strong>recuerdo todo lo que hablemos</strong> durante esta sesión.</p>
                 <p>Podés preguntarme cosas como:</p>
                 <ul>
                   <li>¿Cuándo fue el último mantenimiento de la soldadora?</li>
                   <li>¿Qué insumos están por agotarse?</li>
                   <li>¿Qué órdenes están pendientes esta semana?</li>
                   <li>Resumime el estado general del taller</li>
+                  <li>Comparame el stock actual con el mínimo de cada artículo</li>
                 </ul>
               </div>
             </div>
@@ -883,9 +904,11 @@ textarea.fi{resize:vertical;min-height:56px;}
             <div class="chat-sug" onclick="chatSuggestion(this)">Estado general del taller</div>
             <div class="chat-sug" onclick="chatSuggestion(this)">¿Qué mantenimientos vencieron?</div>
             <div class="chat-sug" onclick="chatSuggestion(this)">Órdenes pendientes urgentes</div>
+            <div class="chat-sug" onclick="chatSuggestion(this)">¿Qué préstamos están vencidos?</div>
+            <div class="chat-sug" onclick="chatSuggestion(this)">Listame todos los equipos fuera de servicio</div>
           </div>
           <div class="chat-input-row">
-            <textarea class="chat-input" id="chat-input" placeholder="Preguntá lo que quieras sobre el sistema..." rows="1" onkeydown="chatKeydown(event)"></textarea>
+            <textarea class="chat-input" id="chat-input" placeholder="Preguntá lo que quieras... recuerdo toda la conversación" rows="1" onkeydown="chatKeydown(event)"></textarea>
             <button class="chat-send" id="chat-send" onclick="sendChat()">➤</button>
           </div>
         </div>
@@ -3060,6 +3083,7 @@ window.initIA = function() {
   const fd = document.getElementById('turno-fecha');
   if(fd) fd.value = new Date().toISOString().split('T')[0];
   updateTurnoPreview();
+  updateMemoryBar();
 };
 
 // ---- DIAGNÓSTICO ----
@@ -3095,7 +3119,7 @@ async function callIA(messages, system = null) {
     },
     body: JSON.stringify({
       model: GROQ_MODEL,
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: msgs,
       temperature: 0.7
     })
@@ -3264,7 +3288,7 @@ window.copyTurno = function() {
   }
 };
 
-// ---- CHAT ASISTENTE ----
+// ---- CHAT ASISTENTE — CON MEMORIA COMPLETA ----
 window.chatKeydown = function(e) {
   if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
 };
@@ -3274,15 +3298,57 @@ window.chatSuggestion = function(el) {
   sendChat();
 };
 
+// Actualiza la barra de estado de memoria
+function updateMemoryBar() {
+  const pairs = Math.floor(chatHistory.length / 2);
+  const dot = document.getElementById('chat-memory-dot');
+  const label = document.getElementById('chat-memory-label');
+  const ctx = document.getElementById('chat-ctx-badge');
+  if (!dot || !label) return;
+
+  if (pairs === 0) {
+    dot.className = 'chat-memory-dot';
+    label.textContent = 'Nueva sesión · Sin historial';
+  } else {
+    dot.className = 'chat-memory-dot active';
+    label.textContent = `Memoria activa · ${pairs} mensaje${pairs !== 1 ? 's' : ''} en contexto`;
+  }
+
+  // Mostrar módulo activo
+  const activeView = document.querySelector('.view.active')?.id?.replace('view-','') || '';
+  const modNames = {dashboard:'Dashboard',maquinas:'Equipos',stock:'Stock',ordenes:'Órdenes',mantenimiento:'Mantenimiento',prestamos:'Préstamos',kpis:'KPIs',ia:'IA',epp:'EPP',compras:'Compras',reportes:'Reportes',consumo:'Consumo',calendario:'Calendario'};
+  if (ctx && modNames[activeView]) ctx.textContent = '📍 ' + modNames[activeView];
+}
+
+window.clearChatHistory = function() {
+  chatHistory = [];
+  const wrap = document.getElementById('chat-messages');
+  wrap.innerHTML = `
+    <div class="chat-msg">
+      <div class="chat-avatar ai">🤖</div>
+      <div class="chat-bubble">
+        <p>Memoria limpiada. Empezamos de cero — ¿en qué te ayudo?</p>
+      </div>
+    </div>`;
+  document.getElementById('chat-suggestions').style.display = 'flex';
+  updateMemoryBar();
+  toast('🗑 Memoria del chat limpiada');
+};
+
 window.sendChat = async function() {
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
   if(!msg) return;
   input.value = '';
-  document.getElementById('chat-send').disabled = true;
+  const sendBtn = document.getElementById('chat-send');
+  sendBtn.disabled = true;
   document.getElementById('chat-suggestions').style.display = 'none';
 
-  // Agregar mensaje del usuario
+  // Marcar dot como ocupado
+  const dot = document.getElementById('chat-memory-dot');
+  if (dot) dot.className = 'chat-memory-dot busy';
+
+  // Agregar al historial y a la UI
   appendChatMsg(msg, 'user');
   chatHistory.push({ role: 'user', content: msg });
 
@@ -3290,74 +3356,120 @@ window.sendChat = async function() {
   const typingId = 'typing-' + Date.now();
   appendChatMsg('<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div>', 'ai', typingId);
 
-  // Contexto del sistema para el chat
-  const ctx = buildChatContext();
-
-  // Preparar mensajes: system context como primer user message si es la primera vez
-  let msgs = [...chatHistory];
-  if(chatHistory.length === 1) {
-    msgs = [
-      { role: 'user', content: ctx + '\n\n---\nPrimera pregunta del usuario: ' + msg },
-    ];
-  } else {
-    // Agregar contexto resumido
-    msgs[0] = { role: 'user', content: ctx + '\n\n---\nPrimera pregunta: ' + chatHistory[0].content };
-  }
-
   try {
-    const sysPrompt = `Sos el asistente inteligente de ManteniPro, un sistema de gestión de mantenimiento industrial. 
-Respondés en español argentino, de forma concisa y útil. 
-Tenés acceso a los datos del sistema que el usuario te provee en el contexto.
-Cuando des listas, usá formato limpio. Sé directo y práctico.`;
+    // System prompt con contexto completo y actualizado en cada mensaje
+    const sysPrompt = buildSystemPrompt();
+
+    // Si el historial es muy largo, resumir los mensajes más viejos para ahorrar tokens
+    let msgs = trimHistory(chatHistory);
+
     const text = await callIA(msgs, sysPrompt);
 
     document.getElementById(typingId)?.remove();
     appendChatMsg(formatChatResponse(text), 'ai');
     chatHistory.push({ role: 'assistant', content: text });
-    if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+
   } catch(e) {
     document.getElementById(typingId)?.remove();
-    if(e.message === 'API_KEY_REQUIRED') { showApiKeyModal(); return; }
+    if(e.message === 'API_KEY_REQUIRED') { showApiKeyModal(); chatHistory.pop(); return; }
     appendChatMsg('⚠ ' + (e.message||'Error al conectar con la IA.'), 'ai');
+    chatHistory.pop(); // sacar el user msg si falló
   }
 
-  document.getElementById('chat-send').disabled = false;
+  sendBtn.disabled = false;
   input.focus();
+  updateMemoryBar();
 };
 
-function buildChatContext() {
-  const op = maquinas.filter(m=>m.estado==='Operativo').length;
-  const mantVenc = mantenimientos.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)<=0).length;
-  const stockCrit = stock.filter(s=>s.qty<=s.min);
-  const ordPend = ordenes.filter(o=>o.estado!=='Completada');
-  const prestActivos = prestamos.filter(p=>p.estado==='activo');
-  const alertas = calcAlerts();
+// System prompt completo con contexto del taller — se regenera en CADA mensaje
+function buildSystemPrompt() {
+  const ahora = new Date().toLocaleString('es-AR');
+  const activeView = document.querySelector('.view.active')?.id?.replace('view-','') || 'dashboard';
+  const modNames = {dashboard:'Dashboard principal',maquinas:'Equipos y máquinas',stock:'Inventario / Stock',ordenes:'Órdenes de trabajo',mantenimiento:'Mantenimiento programado',prestamos:'Préstamos y consumos',kpis:'KPIs y análisis MTBF',epp:'Control de EPP',compras:'Lista de compras',reportes:'Reportes del equipo',consumo:'Ranking de consumo',calendario:'Calendario de mantenimientos'};
 
-  return `CONTEXTO DEL SISTEMA MANTENIPRO (datos actuales):
+  const op = maquinas.filter(m=>m.estado==='Operativo').length;
+  const fuera = maquinas.filter(m=>m.estado==='Fuera de servicio').length;
+  const enMant = maquinas.filter(m=>m.estado==='En mantenimiento').length;
+  const mantVenc = mantenimientos.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)<=0);
+  const mantProx = mantenimientos.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)>0&&daysUntil(m.fecha)<=7);
+  const stockCrit = stock.filter(s=>s.qty<=s.min);
+  const stockSinStock = stock.filter(s=>s.qty===0);
+  const ordPend = ordenes.filter(o=>o.estado!=='Completada');
+  const ordCrit = ordPend.filter(o=>o.prio==='Crítica');
+  const prestActivos = prestamos.filter(p=>p.estado==='activo');
+  const prestVencidos = prestamos.filter(p=>p.estado==='activo'&&daysUntil(p.fechaDevolucion)<0);
+  const alertas = calcAlerts();
+  const eppVenc = typeof eppItems !== 'undefined' ? eppItems.filter(e=>{if(!e.venc)return false;return daysUntil(e.venc)<0;}) : [];
+
+  return `Sos el asistente inteligente de ManteniPro, el sistema de gestión de mantenimiento industrial del taller.
+Respondés en español argentino, de forma concisa, directa y útil.
+Tenés MEMORIA COMPLETA de esta sesión de chat — recordás todo lo que se habló antes.
+Fecha y hora actual: ${ahora}
+El usuario está viendo ahora: ${modNames[activeView]||activeView}
+
+════════════════════════════════════
+DATOS ACTUALES DEL TALLER
+════════════════════════════════════
 
 EQUIPOS (${maquinas.length} total):
-${maquinas.map(m=>`- ${m.nombre} [${m.estado}] cat:${m.categoria||'—'} ubic:${m.ubicacion||'—'}`).join('\n')}
+• Operativos: ${op} | En mantenimiento: ${enMant} | Fuera de servicio: ${fuera}
+${maquinas.map(m=>`• ${m.nombre} [${m.estado}] — ${m.categoria||'General'}${m.ubicacion?' — '+m.ubicacion:''}${m.ultMant?' — Últ.mant:'+m.ultMant:''}`).join('\n')}
 
 MANTENIMIENTOS:
-- Vencidos/pendientes urgentes: ${mantVenc}
-- Total programados: ${mantenimientos.length}
-${mantenimientos.filter(m=>m.estado!=='Completado').slice(0,6).map(m=>{const mq=maquinas.find(q=>q._id===m.maqId);return`- ${mq?.nombre||'Equipo'}: ${m.tipo} (${m.fecha}) [${m.estado}]`;}).join('\n')}
+• Vencidos sin completar: ${mantVenc.length}
+${mantVenc.map(m=>{const mq=maquinas.find(q=>q._id===m.maqId);return`  ⚠ ${mq?.nombre||'Equipo'}: ${m.tipo} (venció ${m.fecha}) resp:${m.resp||'—'}`;}).join('\n')}
+• Próximos 7 días: ${mantProx.length}
+${mantProx.map(m=>{const mq=maquinas.find(q=>q._id===m.maqId);return`  📅 ${mq?.nombre||'Equipo'}: ${m.tipo} (${m.fecha}) resp:${m.resp||'—'}`;}).join('\n')}
+• Total programados: ${mantenimientos.length} | Completados: ${mantenimientos.filter(m=>m.estado==='Completado').length}
 
-STOCK CRÍTICO (${stockCrit.length} artículos bajo mínimo):
-${stockCrit.slice(0,8).map(s=>`- ${s.nombre}: ${s.qty}/${s.min} ${s.unidad} [${s.categoria}]`).join('\n')}
+STOCK (${stock.length} artículos):
+• Sin stock: ${stockSinStock.length} artículos
+• Bajo mínimo: ${stockCrit.length} artículos
+${stockCrit.map(s=>`  ⚠ ${s.nombre}: ${s.qty}/${s.min} ${s.unidad} [${s.categoria}]${s.deposito?' dep:'+s.deposito:''}`).join('\n')}
+• Stock disponible (todos):
+${stock.map(s=>`  ${s.nombre}: ${s.qty} ${s.unidad} (mín:${s.min}) [${s.categoria}]${s.deposito?' '+s.deposito:''}`).join('\n')}
 
-STOCK GENERAL (primeros 15):
-${stock.slice(0,15).map(s=>`- ${s.nombre}: ${s.qty} ${s.unidad}`).join('\n')}
+ÓRDENES DE TRABAJO:
+• Pendientes: ${ordPend.length} | Críticas: ${ordCrit.length}
+${ordPend.map(o=>{const mq=maquinas.find(q=>q._id===o.equipoId);return`  ${o.prio==='Crítica'?'🔴':'•'} ${o.desc} | ${o.prio} | ${mq?.nombre||'Sin equipo'} | Resp:${o.resp||'—'} | Estado:${o.estado}`;}).join('\n')}
+• Completadas: ${ordenes.filter(o=>o.estado==='Completada').length}
 
-ÓRDENES PENDIENTES (${ordPend.length}):
-${ordPend.slice(0,6).map(o=>{const mq=maquinas.find(q=>q._id===o.equipoId);return`- ${o.desc} | ${o.prio} | Equipo: ${mq?.nombre||o.equipoId||'—'} | Resp: ${o.resp||'—'}`;}).join('\n')}
+PRÉSTAMOS:
+• Activos: ${prestActivos.length} | Vencidos: ${prestVencidos.length}
+${prestActivos.map(p=>{const it=stock.find(s=>s._id===p.itemId);return`  • ${it?.nombre||'ítem'} x${p.cantidad} → ${p.responsable} (${p.sector||'—'}) dev:${p.fechaDevolucion||'—'}`;}).join('\n')}
 
-PRÉSTAMOS ACTIVOS: ${prestActivos.length}
-${prestActivos.slice(0,5).map(p=>{const it=stock.find(s=>s._id===p.itemId);return`- ${it?.nombre||'ítem'} x${p.cantidad} → ${p.responsable} (${p.sector})`;}).join('\n')}
+EPP: ${typeof eppItems!=='undefined'?eppItems.length:0} registros | Vencidos: ${eppVenc.length}
+${eppVenc.slice(0,5).map(e=>`  ⚠ ${e.tipo} — ${e.titular} (venció ${e.venc})`).join('\n')}
 
 ALERTAS ACTIVAS (${alertas.length}):
-${alertas.slice(0,6).map(a=>`- [${a.t}] ${a.ti}`).join('\n')}`;
+${alertas.map(a=>`  [${a.t}] ${a.ti} — ${a.su}`).join('\n')}
+
+════════════════════════════════════
+INSTRUCCIONES:
+- Cuando el usuario pregunte "¿de qué hablamos?" o similar, resumí la conversación
+- Si pregunta sobre un equipo específico, buscá en los datos de arriba
+- Si pregunta algo que no está en los datos, decilo claramente
+- Para recomendaciones, basate en los datos reales del taller
+- Podés hacer referencia a mensajes anteriores de la conversación
+════════════════════════════════════`;
 }
+
+// Recorta el historial para no exceder tokens (~40 pares máx, resumiendo los más viejos)
+function trimHistory(history) {
+  const MAX_PAIRS = 40;
+  if (history.length <= MAX_PAIRS * 2) return history;
+  // Conservar los últimos 30 pares, resumir el resto
+  const recent = history.slice(-(30 * 2));
+  const old = history.slice(0, history.length - (30 * 2));
+  const resumen = `[Resumen de ${Math.floor(old.length/2)} mensajes anteriores: el usuario preguntó sobre el taller y recibió información sobre equipos, stock, órdenes y mantenimientos.]`;
+  return [
+    { role: 'user', content: resumen },
+    { role: 'assistant', content: 'Entendido, tengo en cuenta esa conversación previa.' },
+    ...recent
+  ];
+}
+
+
 
 function appendChatMsg(content, role, id) {
   const wrap = document.getElementById('chat-messages');
