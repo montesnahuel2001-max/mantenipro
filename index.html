@@ -581,7 +581,6 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ni" onclick="nav('stock')"><span class="ic">▦</span><span>Stock</span></div>
     <div class="ni" onclick="nav('entradas')"><span class="ic">⬆</span><span>Entradas</span></div>
     <div class="ni" onclick="nav('prestamos')"><span class="ic">⇄</span><span>Préstamos</span></div>
-    <div class="ni" onclick="nav('herramientas')"><span class="ic">🔧</span><span>Herramientas</span><span class="nbadge" id="badge-herr" style="background:var(--warn);display:none">0</span></div>
     <div class="ni" onclick="nav('ordenes')"><span class="ic">≡</span><span>Órdenes</span></div>
     <div class="ng">Análisis</div>
     <div class="ni" onclick="nav('calendario')"><span class="ic">📆</span><span>Calendario</span></div>
@@ -710,30 +709,8 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div id="pr-c" style="display:none"><div id="lp-c"></div></div>
     </div>
 
-    <!-- HERRAMIENTAS -->
-    <div class="view" id="view-herramientas">
-      <div class="sg" id="herr-resumen" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px"></div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-        <input class="si" placeholder="🔍 Buscar herramienta, código..." id="s-herr" oninput="renderHerramientas()" style="width:240px">
-        <select class="fs" id="f-herr-cat" onchange="renderHerramientas()"><option value="">Todas las categorías</option></select>
-        <select class="fs" id="f-herr-dep" onchange="renderHerramientas()"><option value="">Todos los sectores</option></select>
-        <select class="fs" id="f-herr-est" onchange="renderHerramientas()">
-          <option value="">Todos los estados</option>
-          <option value="disponible">✅ Disponible</option>
-          <option value="prestada">🔴 Prestada</option>
-          <option value="mantenimiento">🟡 En mantenimiento</option>
-          <option value="baja">⬇ Baja</option>
-        </select>
-      </div>
-      <div class="tw">
-        <table><thead><tr>
-          <th>Código QR</th><th>Herramienta</th><th>Categoría</th><th>Sector / Ubicación</th>
-          <th>Estado</th><th>Quién la tiene</th><th>Desde</th><th>Acciones</th>
-        </tr></thead><tbody id="t-herr"></tbody></table>
-      </div>
-    </div>
-
     <div class="view" id="view-ordenes">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="si" placeholder="🔍 Buscar..." id="s-ord" oninput="renderOrdenes()">
         <select class="fs" id="f-or-est" onchange="renderOrdenes()"><option value="">Todos los estados</option><option>Pendiente</option><option>En progreso</option><option>Completada</option></select>
         <select class="fs" id="f-or-pr" onchange="renderOrdenes()"><option value="">Todas las prioridades</option><option>Baja</option><option>Media</option><option>Alta</option><option>Crítica</option></select>
@@ -1427,87 +1404,23 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- MODAL HERRAMIENTA -->
-<div class="ov" id="m-herr">
-  <div class="modal" style="width:520px">
-    <div class="mt">🔧 <span id="mherr-title">Nueva Herramienta</span></div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Nombre</label><input class="fi" id="herr-nombre" placeholder="Ej: Llave torquímetro 1/2&quot;"></div>
-      <div class="fg"><label class="fl">Código / N° inventario</label><input class="fi" id="herr-codigo" placeholder="HE-001"></div>
-    </div>
-    <div class="fr">
-      <div class="fg">
-        <label class="fl">Categoría</label>
-        <select class="fss" id="herr-cat">
-          <option>Llaves y torques</option>
-          <option>Medición</option>
-          <option>Corte y esmerilado</option>
-          <option>Electricidad</option>
-          <option>Neumáticas</option>
-          <option>Elevación e izaje</option>
-          <option>Seguridad</option>
-          <option>Otra</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label class="fl">Estado</label>
-        <select class="fss" id="herr-estado">
-          <option value="disponible">✅ Disponible</option>
-          <option value="mantenimiento">🟡 En mantenimiento</option>
-          <option value="baja">⬇ Baja</option>
-        </select>
-      </div>
-    </div>
-    <div class="fr">
-      <div class="fg"><label class="fl">Sector / Ubicación habitual</label><input class="fi" id="herr-sector" placeholder="Ej: Taller A, Depósito principal..."></div>
-      <div class="fg"><label class="fl">Marca / Modelo</label><input class="fi" id="herr-marca" placeholder="Ej: Stanley, Bahco..."></div>
-    </div>
-    <div class="fg"><label class="fl">Notas</label><input class="fi" id="herr-notas" placeholder="Observaciones, estado de conservación..."></div>
-    <input type="hidden" id="herr-edit-id">
-    <div class="mf">
-      <button class="btn btn-ghost" onclick="closeModal('m-herr')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveHerramienta()">💾 Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PRÉSTAMO RÁPIDO HERRAMIENTA -->
-<div class="ov" id="m-herr-prest">
+<!-- MODAL PRÉSTAMO RÁPIDO DESDE STOCK -->
+<div class="ov" id="m-stock-prest">
   <div class="modal" style="width:460px">
-    <div class="mt">🔑 <span id="mhprest-title">Registrar préstamo</span></div>
-    <div style="background:var(--ag);border:1px solid rgba(0,229,160,.2);border-radius:9px;padding:12px 14px;margin-bottom:14px;font-size:13px;font-family:var(--mono)" id="mhprest-info">—</div>
+    <div class="mt">🔑 Registrar préstamo</div>
+    <div style="background:var(--ag);border:1px solid rgba(0,229,160,.2);border-radius:9px;padding:11px 14px;margin-bottom:14px;font-size:13px;font-family:var(--mono)" id="msp-info">—</div>
     <div class="fr">
-      <div class="fg"><label class="fl">Quién la lleva</label><input class="fi" id="hp-responsable" placeholder="Nombre del técnico / operario"></div>
-      <div class="fg"><label class="fl">Sector de destino</label><input class="fi" id="hp-sector" placeholder="Ej: Línea 3, Sector eléctrico..."></div>
+      <div class="fg"><label class="fl">Quién lo lleva</label><input class="fi" id="sp-responsable" placeholder="Nombre del técnico / operario"></div>
+      <div class="fg"><label class="fl">Sector de destino</label><input class="fi" id="sp-sector" placeholder="Ej: Línea 3, Taller B..."></div>
     </div>
-    <div class="fg"><label class="fl">Fecha estimada de devolución</label><input class="fi" type="date" id="hp-devolucion"></div>
-    <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="hp-obs" placeholder="Opcional"></div>
-    <input type="hidden" id="hp-herr-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Cantidad</label><input class="fi" type="number" id="sp-cant" value="1" min="1"></div>
+      <div class="fg"><label class="fl">Fecha de devolución</label><input class="fi" type="date" id="sp-devolucion"></div>
+    </div>
+    <input type="hidden" id="sp-stock-id">
     <div class="mf">
-      <button class="btn btn-ghost" onclick="closeModal('m-herr-prest')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savePrestamoHerr()">✓ Confirmar préstamo</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL DEVOLUCIÓN HERRAMIENTA -->
-<div class="ov" id="m-herr-dev">
-  <div class="modal" style="width:420px">
-    <div class="mt">↩ Devolver herramienta</div>
-    <div style="background:var(--ag);border:1px solid rgba(0,229,160,.2);border-radius:9px;padding:12px 14px;margin-bottom:14px;font-size:13px;font-family:var(--mono)" id="mhdev-info">—</div>
-    <div class="fg">
-      <label class="fl">Estado al devolver</label>
-      <select class="fss" id="hd-estado-dev">
-        <option value="disponible">✅ OK — en buen estado</option>
-        <option value="mantenimiento">🟡 Necesita revisión / mantenimiento</option>
-        <option value="baja">⬇ Dar de baja (rota / perdida)</option>
-      </select>
-    </div>
-    <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="hd-obs" placeholder="Opcional — comentarios sobre el estado"></div>
-    <input type="hidden" id="hd-herr-id">
-    <div class="mf">
-      <button class="btn btn-ghost" onclick="closeModal('m-herr-dev')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarDevolucionHerr()">↩ Confirmar devolución</button>
+      <button class="btn btn-ghost" onclick="closeModal('m-stock-prest')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarStockPrest()">✓ Confirmar préstamo</button>
     </div>
   </div>
 </div>
@@ -1615,7 +1528,7 @@ const app = initializeApp(FC);
 const db = getFirestore(app);
 
 // STATE
-let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[], reportes=[], herramientas=[];
+let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[], reportes=[];
 let eIds={maq:null,mant:null,stock:null,ord:null};
 let loaded=0, listenersInit=false;
 let eppTabActual='todos';
@@ -1629,7 +1542,7 @@ function initListeners() {
   onSnapshot(collection(db,'maquinas'), s=>{ maquinas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('maquinas'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'mantenimientos'), s=>{ mantenimientos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('mantenimiento'); rDash(); rAlerts(); rKPIs(); rCal(); });
   onSnapshot(collection(db,'stock'), s=>{ stock=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('stock'); rDash(); rAlerts(); rKPIs(); });
-  onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); if(isActive('consumo'))renderConsumo(); });
+  onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); ref('stock'); rDash(); rAlerts(); rKPIs(); if(isActive('consumo'))renderConsumo(); });
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
   onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); if(isActive('consumo'))renderConsumo(); });
@@ -1638,7 +1551,6 @@ function initListeners() {
   onSnapshot(collection(db,'compras'), s=>{ compras=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('compras'))renderCompras();updateBadgeCompras(); });
   onSnapshot(collection(db,'epp'), s=>{ eppItems=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('epp'))renderEPP();updateBadgeEPP(); });
   onSnapshot(query(collection(db,'reportes'),orderBy('ts','desc'),limit(300)), s=>{ reportes=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('reportes'))renderReportes(); updateBadgeReportes(); });
-  onSnapshot(collection(db,'herramientas'), s=>{ herramientas=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('herramientas'))renderHerramientas(); updateBadgeHerr(); });
 }
 window._initListeners = initListeners;
 function chk(){ loaded++; if(loaded>=7){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
@@ -1653,8 +1565,8 @@ async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},herramientas:{t:'Herramientas',s:'¿Dónde está cada herramienta? — control de ubicación y préstamos'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos y asignaciones'},reportes:{t:'Reportes del equipo',s:'Notificaciones, pérdidas, tareas completadas e incidentes'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,herramientas:`<button class="btn btn-primary" onclick="openHerramientaModal()">🔧 + Nueva herramienta</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button><button class="btn btn-primary" style="background:var(--purple);color:#fff;margin-left:6px" onclick="openFacturaModal()">🧾 + Factura</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`,reportes:`<button class="btn btn-primary" onclick="openReporteModal()">📣 Nuevo reporte</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos y asignaciones'},reportes:{t:'Reportes del equipo',s:'Notificaciones, pérdidas, tareas completadas e incidentes'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button><button class="btn btn-primary" style="background:var(--purple);color:#fff;margin-left:6px" onclick="openFacturaModal()">🧾 + Factura</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`,reportes:`<button class="btn btn-primary" onclick="openReporteModal()">📣 Nuevo reporte</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -1683,7 +1595,6 @@ window.nav = function(v) {
   if(v==='consumo')renderConsumo();
   if(v==='ia')initIA();
   if(v==='reportes')renderReportes();
-  if(v==='herramientas')renderHerramientas();
 };
 
 // HELPERS
@@ -1934,6 +1845,28 @@ function renderStock(){
     const rows=items.map(s=>{
       const st=sSt(s);const pct=s.min===0?100:Math.min(100,Math.round((s.qty/(s.min*3))*100));
       const ctrl=s.ultControl?ctrlBadge(s.ultControl):'<span class="badge b-x" style="font-size:9px">Sin control</span>';
+
+      // ── UBICACIÓN / PRÉSTAMO ACTIVO ──
+      const prestAct = prestamos.find(p=>p.itemId===s._id && p.estado==='activo' && !p.sinDevolucion);
+      let ubicCell = '', ubicBtn = '';
+      if(prestAct){
+        const diasDev = prestAct.fechaDevolucion ? Math.round((new Date(prestAct.fechaDevolucion)-new Date())/(1000*60*60*24)) : null;
+        const vencWarn = diasDev!==null && diasDev<0
+          ? `<div style="font-size:9px;color:var(--danger);font-family:var(--mono);margin-top:2px">⚠ Dev. vencida hace ${Math.abs(diasDev)}d</div>`
+          : diasDev===0 ? `<div style="font-size:9px;color:var(--warn);font-family:var(--mono);margin-top:2px">⚠ Devuelve hoy</div>` : '';
+        ubicCell = `<td>
+          <span class="badge b-d" style="margin-bottom:3px">🔴 Prestada</span>
+          <div style="font-size:11px;font-weight:600;margin-top:3px">${prestAct.responsable||'—'}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${prestAct.sector||''}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">Desde: ${prestAct.fechaSalida||'—'}</div>
+          ${vencWarn}
+        </td>`;
+        ubicBtn = `<button class="ab" onclick="stockDevolverPrest('${prestAct._id}')" title="Registrar devolución" style="color:var(--accent);font-size:14px">↩</button>`;
+      } else {
+        ubicCell = `<td><span class="badge b-g">✅ En depósito</span><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px">${s.deposito||s.posicion||'—'}</div></td>`;
+        ubicBtn = `<button class="ab" onclick="stockPrestar('${s._id}')" title="Registrar préstamo rápido 🔑" style="color:var(--warn);font-size:14px">🔑</button>`;
+      }
+
       return`<tr>
         <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.codigo||'—'}</td>
         <td>
@@ -1944,11 +1877,13 @@ function renderStock(){
         <td><span class="sbar"><span style="width:${pct}%;height:100%;border-radius:3px;display:block;background:${s.qty===0?'var(--danger)':s.qty<=s.min?'var(--warn)':'var(--accent)'}"></span></span><span style="font-family:var(--mono);font-size:12px">${s.qty} ${s.unidad}</span></td>
         <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.min}</td>
         <td style="color:var(--muted);font-size:11px;font-family:var(--mono)">${s.posicion||'—'}</td>
+        ${ubicCell}
         <td style="min-width:110px">${ctrl}${s.ctrlResp?`<div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:2px">${s.ctrlResp}</div>`:''}</td>
         <td><span class="badge ${st.c}">${st.l}</span></td>
         <td style="white-space:nowrap">
           <button class="ab" onclick="UI.marcarControl('${s._id}')" title="Marcar controlado hoy ✓" style="color:var(--accent);font-size:14px">✓</button>
           <button class="ab" onclick="UI.openEntrada('${s._id}')" title="Registrar entrada de stock" style="color:var(--blue);font-size:13px">⬆</button>
+          ${ubicBtn}
           <button class="ab qr-btn" onclick="UI.showQR('${s._id}','stock')" title="QR">⊡</button>
           <button class="ab ed" onclick="UI.editStock('${s._id}')" title="Editar">✎</button>
           <button class="ab del" onclick="UI.delStock('${s._id}')" title="Eliminar">✕</button>
@@ -1961,10 +1896,62 @@ function renderStock(){
         <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)">${depKey}</span>
         <span style="font-size:10px;color:var(--muted);font-family:var(--mono)">${items.length} artículo${items.length!==1?'s':''}</span>
       </div>
-      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>Último control</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>¿Dónde está?</th><th>Último control</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
     </div>`;
   }).join('');
 }
+
+// PRÉSTAMO RÁPIDO DESDE STOCK
+window.stockPrestar = function(stockId){
+  if(!canDo('crear')) return;
+  const s = stock.find(x=>x._id===stockId);
+  if(!s) return;
+  document.getElementById('msp-info').innerHTML = `🔧 <strong>${s.nombre}</strong>${s.codigo?' · '+s.codigo:''}<br><span style="font-size:11px;color:var(--muted)">Stock actual: ${s.qty} ${s.unidad} · Depósito: ${s.deposito||s.posicion||'—'}</span>`;
+  document.getElementById('sp-responsable').value='';
+  document.getElementById('sp-sector').value='';
+  document.getElementById('sp-cant').value='1';
+  document.getElementById('sp-cant').max=s.qty;
+  document.getElementById('sp-devolucion').value='';
+  document.getElementById('sp-stock-id').value=stockId;
+  document.getElementById('m-stock-prest').classList.add('open');
+};
+
+window.confirmarStockPrest = async function(){
+  const stockId = document.getElementById('sp-stock-id').value;
+  const responsable = document.getElementById('sp-responsable').value.trim();
+  const cant = parseInt(document.getElementById('sp-cant').value)||1;
+  if(!responsable){ toast('⚠ Indicá quién se lo lleva','err'); return; }
+  const s = stock.find(x=>x._id===stockId);
+  if(!s) return;
+  if(cant > s.qty){ toast('⚠ No hay suficiente stock','err'); return; }
+  const hoy = new Date().toISOString().split('T')[0];
+  await fbAdd('prestamos',{
+    itemId: stockId,
+    cantidad: cant,
+    responsable,
+    sector: document.getElementById('sp-sector').value.trim(),
+    fechaSalida: hoy,
+    fechaDevolucion: document.getElementById('sp-devolucion').value || '',
+    estado: 'activo',
+    sinDevolucion: false,
+    origen: 'stock-directo',
+  });
+  await fbUpd('stock', stockId, { qty: s.qty - cant });
+  toast(`✓ Préstamo registrado — ${responsable} se llevó ${cant} ${s.unidad} de ${s.nombre}`);
+  logH('prestamo', `Préstamo rápido: ${s.nombre} ×${cant} → ${responsable}`);
+  closeModal('m-stock-prest');
+};
+
+window.stockDevolverPrest = async function(prestId){
+  const p = prestamos.find(x=>x._id===prestId);
+  if(!p) return;
+  const s = stock.find(x=>x._id===p.itemId);
+  if(!confirm(`¿Confirmar devolución de "${s?.nombre||'ítem'}" de ${p.responsable}?`)) return;
+  await fbUpd('prestamos', prestId, { estado:'devuelto' });
+  if(s) await fbUpd('stock', s._id, { qty: s.qty + p.cantidad });
+  toast(`↩ Devuelto — ${s?.nombre} volvió al depósito`);
+  logH('prestamo', `Devolución: ${s?.nombre} ×${p.cantidad} de ${p.responsable}`);
+};
 
 // PRESTAMOS
 function renderPrestamos(){
@@ -4410,243 +4397,7 @@ window.exportFacturasPDF = function(){
   toast('✓ PDF exportado');
 };
 
-// ═══════════════════════════════════
-// HERRAMIENTAS — ¿Dónde está cada herramienta?
-// ═══════════════════════════════════
-
-function updateBadgeHerr(){
-  const prestadas = herramientas.filter(h=>h.estado==='prestada').length;
-  const b = document.getElementById('badge-herr');
-  if(!b) return;
-  if(prestadas>0){ b.style.display='inline'; b.textContent=prestadas; }
-  else { b.style.display='none'; }
-}
-
-function renderHerramientas(){
-  const q = (document.getElementById('s-herr')?.value||'').toLowerCase();
-  const cat = document.getElementById('f-herr-cat')?.value||'';
-  const dep = document.getElementById('f-herr-dep')?.value||'';
-  const est = document.getElementById('f-herr-est')?.value||'';
-
-  // Poblar filtros dinámicos
-  const cats = [...new Set(herramientas.map(h=>h.categoria).filter(Boolean))].sort();
-  const deps = [...new Set(herramientas.map(h=>h.sector||'Sin sector').filter(Boolean))].sort();
-  const selC = document.getElementById('f-herr-cat');
-  if(selC){ const cv=selC.value; selC.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${c}"${c===cv?' selected':''}>${c}</option>`).join(''); }
-  const selD = document.getElementById('f-herr-dep');
-  if(selD){ const dv=selD.value; selD.innerHTML='<option value="">Todos los sectores</option>'+deps.map(d=>`<option value="${d}"${d===dv?' selected':''}>${d}</option>`).join(''); }
-
-  // Resumen cards
-  const total = herramientas.length;
-  const disponibles = herramientas.filter(h=>h.estado==='disponible').length;
-  const prestadas = herramientas.filter(h=>h.estado==='prestada').length;
-  const mant = herramientas.filter(h=>h.estado==='mantenimiento').length;
-  const res = document.getElementById('herr-resumen');
-  if(res) res.innerHTML=`
-    <div class="sc g"><div class="sl">Total registradas</div><div class="sv cg">${total}</div><div class="ss">herramientas</div></div>
-    <div class="sc g"><div class="sl">Disponibles</div><div class="sv cg">${disponibles}</div><div class="ss">en su lugar</div></div>
-    <div class="sc d"><div class="sl">Prestadas ahora</div><div class="sv cd">${prestadas}</div><div class="ss">fuera del sector</div></div>
-    <div class="sc w"><div class="sl">En mantenimiento</div><div class="sv cw">${mant}</div><div class="ss">fuera de servicio</div></div>`;
-
-  // Filtrar
-  const f = herramientas.filter(h=>{
-    const matchQ = !q || (h.nombre||'').toLowerCase().includes(q) || (h.codigo||'').toLowerCase().includes(q) || (h.marca||'').toLowerCase().includes(q);
-    const matchCat = !cat || h.categoria===cat;
-    const matchDep = !dep || (h.sector||'Sin sector')===dep;
-    const matchEst = !est || h.estado===est;
-    return matchQ && matchCat && matchDep && matchEst;
-  });
-
-  const tb = document.getElementById('t-herr');
-  if(!tb) return;
-  if(!f.length){ tb.innerHTML='<tr><td colspan="8"><div class="empty">No se encontraron herramientas</div></td></tr>'; return; }
-
-  const estBadge = {
-    disponible:'<span class="badge b-g">✅ Disponible</span>',
-    prestada:'<span class="badge b-d">🔴 Prestada</span>',
-    mantenimiento:'<span class="badge b-w">🟡 Mantenimiento</span>',
-    baja:'<span class="badge b-x">⬇ Baja</span>',
-  };
-
-  tb.innerHTML = [...f].sort((a,b)=>{
-    // Prestadas primero
-    const ord = {prestada:0, mantenimiento:1, disponible:2, baja:3};
-    return (ord[a.estado]||2) - (ord[b.estado]||2);
-  }).map(h=>{
-    const badge = estBadge[h.estado] || '<span class="badge b-x">—</span>';
-    const quien = h.estado==='prestada' ? (h.prestadoA||'—') : '<span style="color:var(--muted)">—</span>';
-    const desde = h.estado==='prestada' ? (h.prestadoDesde||'—') : '<span style="color:var(--muted)">—</span>';
-    // Alerta vencimiento devolución
-    let vencBadge = '';
-    if(h.estado==='prestada' && h.devolucionEsperada){
-      const d = Math.round((new Date(h.devolucionEsperada)-new Date())/(1000*60*60*24));
-      if(d<0) vencBadge = `<div style="font-size:10px;color:var(--danger);font-family:var(--mono);margin-top:2px">⚠ Dev. vencida hace ${Math.abs(d)}d</div>`;
-      else if(d===0) vencBadge = `<div style="font-size:10px;color:var(--warn);font-family:var(--mono);margin-top:2px">⚠ Devuelve hoy</div>`;
-      else if(d<=2) vencBadge = `<div style="font-size:10px;color:var(--warn);font-family:var(--mono);margin-top:2px">Devuelve en ${d}d</div>`;
-    }
-    return `<tr>
-      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${h.codigo||'—'}</td>
-      <td>
-        <div style="font-weight:500">${h.nombre}</div>
-        ${h.marca?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px">${h.marca}</div>`:''}
-        ${h.notas?`<div style="font-size:10px;color:var(--faint);margin-top:1px">${h.notas}</div>`:''}
-      </td>
-      <td><span class="badge b-x">${h.categoria||'—'}</span></td>
-      <td style="font-size:12px;color:var(--muted)">${h.sector||'—'}</td>
-      <td>${badge}</td>
-      <td style="font-size:12px">
-        ${quien}
-        ${h.estado==='prestada'&&h.sectorDestino?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px">→ ${h.sectorDestino}</div>`:''}
-        ${vencBadge}
-      </td>
-      <td style="font-size:11px;color:var(--muted);font-family:var(--mono)">${desde}</td>
-      <td style="white-space:nowrap">
-        ${h.estado==='disponible'?`<button class="ab" onclick="openPrestamoHerr('${h._id}')" title="Registrar préstamo" style="color:var(--warn);font-size:13px">🔑</button>`:''}
-        ${h.estado==='prestada'?`<button class="ab" onclick="openDevolucionHerr('${h._id}')" title="Registrar devolución" style="color:var(--accent);font-size:13px">↩</button>`:''}
-        <button class="ab qr-btn" onclick="showQRHerr('${h._id}')" title="Ver / imprimir QR" style="color:var(--blue);font-size:13px">⊡</button>
-        <button class="ab ed" onclick="openHerramientaModal('${h._id}')" title="Editar">✎</button>
-        <button class="ab del" onclick="delHerramienta('${h._id}')" title="Eliminar">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// Abrir modal nueva/editar herramienta
-window.openHerramientaModal = function(id){
-  const h = id ? herramientas.find(x=>x._id===id) : null;
-  document.getElementById('mherr-title').textContent = h ? 'Editar herramienta' : 'Nueva herramienta';
-  document.getElementById('herr-nombre').value = h?.nombre||'';
-  document.getElementById('herr-codigo').value = h?.codigo||'';
-  document.getElementById('herr-cat').value = h?.categoria||'Llaves y torques';
-  document.getElementById('herr-estado').value = h?.estado||'disponible';
-  document.getElementById('herr-sector').value = h?.sector||'';
-  document.getElementById('herr-marca').value = h?.marca||'';
-  document.getElementById('herr-notas').value = h?.notas||'';
-  document.getElementById('herr-edit-id').value = id||'';
-  document.getElementById('m-herr').classList.add('open');
-};
-
-window.saveHerramienta = async function(){
-  if(!canDo('crear')) return;
-  const nombre = document.getElementById('herr-nombre').value.trim();
-  if(!nombre){ toast('⚠ Completá el nombre','err'); return; }
-  const id = document.getElementById('herr-edit-id').value;
-  const obj = {
-    nombre,
-    codigo: document.getElementById('herr-codigo').value.trim() || ('HE-'+Date.now().toString().slice(-4)),
-    categoria: document.getElementById('herr-cat').value,
-    estado: id ? document.getElementById('herr-estado').value : 'disponible',
-    sector: document.getElementById('herr-sector').value.trim(),
-    marca: document.getElementById('herr-marca').value.trim(),
-    notas: document.getElementById('herr-notas').value.trim(),
-    updatedAt: new Date().toISOString(),
-  };
-  if(id){
-    await fbUpd('herramientas', id, obj);
-    toast('✓ Herramienta actualizada');
-    logH('herramienta','Editó herramienta: '+nombre);
-  } else {
-    obj.createdAt = new Date().toISOString();
-    obj.prestadoA = '';
-    obj.prestadoDesde = '';
-    obj.sectorDestino = '';
-    obj.devolucionEsperada = '';
-    await fbAdd('herramientas', obj);
-    toast('✓ Herramienta registrada');
-    logH('herramienta','Registró herramienta: '+nombre);
-  }
-  closeModal('m-herr');
-};
-
-window.delHerramienta = async function(id){
-  if(!canDo('eliminar')) return;
-  const h = herramientas.find(x=>x._id===id);
-  if(h?.estado==='prestada'){ toast('⚠ No podés eliminar una herramienta prestada','err'); return; }
-  if(!confirm('¿Eliminar esta herramienta?')) return;
-  await fbDel('herramientas', id);
-  toast('🗑 Herramienta eliminada');
-  logH('herramienta','Eliminó herramienta: '+(h?.nombre||id));
-};
-
-// Préstamo rápido
-window.openPrestamoHerr = function(id){
-  const h = herramientas.find(x=>x._id===id);
-  if(!h) return;
-  document.getElementById('mhprest-title').textContent = `Prestar: ${h.nombre}`;
-  document.getElementById('mhprest-info').textContent = `🔧 ${h.nombre}${h.codigo?' · '+h.codigo:''} — Sector habitual: ${h.sector||'—'}`;
-  document.getElementById('hp-responsable').value = '';
-  document.getElementById('hp-sector').value = '';
-  document.getElementById('hp-devolucion').value = '';
-  document.getElementById('hp-obs').value = '';
-  document.getElementById('hp-herr-id').value = id;
-  document.getElementById('m-herr-prest').classList.add('open');
-};
-
-window.savePrestamoHerr = async function(){
-  const id = document.getElementById('hp-herr-id').value;
-  const responsable = document.getElementById('hp-responsable').value.trim();
-  if(!responsable){ toast('⚠ Indicá quién se lleva la herramienta','err'); return; }
-  const h = herramientas.find(x=>x._id===id);
-  await fbUpd('herramientas', id, {
-    estado: 'prestada',
-    prestadoA: responsable,
-    prestadoDesde: new Date().toLocaleDateString('es-AR'),
-    sectorDestino: document.getElementById('hp-sector').value.trim(),
-    devolucionEsperada: document.getElementById('hp-devolucion').value,
-    obsPrestamo: document.getElementById('hp-obs').value.trim(),
-  });
-  toast('✓ Préstamo registrado — '+responsable+' se llevó '+h?.nombre);
-  logH('herramienta', `Préstamo: ${h?.nombre} → ${responsable}`);
-  closeModal('m-herr-prest');
-};
-
-// Devolución
-window.openDevolucionHerr = function(id){
-  const h = herramientas.find(x=>x._id===id);
-  if(!h) return;
-  document.getElementById('mhdev-info').textContent = `🔧 ${h.nombre} — prestada a: ${h.prestadoA||'—'} desde ${h.prestadoDesde||'—'}`;
-  document.getElementById('hd-estado-dev').value = 'disponible';
-  document.getElementById('hd-obs').value = '';
-  document.getElementById('hd-herr-id').value = id;
-  document.getElementById('m-herr-dev').classList.add('open');
-};
-
-window.confirmarDevolucionHerr = async function(){
-  const id = document.getElementById('hd-herr-id').value;
-  const nuevoEstado = document.getElementById('hd-estado-dev').value;
-  const h = herramientas.find(x=>x._id===id);
-  await fbUpd('herramientas', id, {
-    estado: nuevoEstado,
-    prestadoA: '',
-    prestadoDesde: '',
-    sectorDestino: '',
-    devolucionEsperada: '',
-    ultDevolucion: new Date().toLocaleDateString('es-AR'),
-    obsDevolucion: document.getElementById('hd-obs').value.trim(),
-  });
-  const msg = nuevoEstado==='disponible' ? '✓ Devolución registrada — herramienta disponible' :
-              nuevoEstado==='mantenimiento' ? '⚠ Devolución registrada — requiere revisión' :
-              '⬇ Devolución registrada — herramienta dada de baja';
-  toast(msg);
-  logH('herramienta', `Devolución: ${h?.nombre} de ${h?.prestadoA||'—'} → ${nuevoEstado}`);
-  closeModal('m-herr-dev');
-};
-
-// QR para herramienta
-window.showQRHerr = function(id){
-  const h = herramientas.find(x=>x._id===id);
-  if(!h) return;
-  // Reutilizar el modal QR existente si está disponible, sino alerta simple
-  if(window.UI && window.UI.showQR){
-    // Crear objeto compatible con showQR de stock
-    const fake = { _id: id, nombre: h.nombre, codigo: h.codigo||id, categoria: h.categoria };
-    window.UI.showQR(id, 'herramienta');
-  } else {
-    alert(`QR para: ${h.nombre}\nCódigo: ${h.codigo||id}`);
-  }
-};
-
-
+// Hook nav compras para renderizar facturas al cambiar de tab
 window.swTabCompras = function(tid, el){
   document.querySelectorAll('#view-compras .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
