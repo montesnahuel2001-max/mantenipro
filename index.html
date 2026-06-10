@@ -561,6 +561,10 @@ textarea.fi{resize:vertical;min-height:56px;}
     <input class="login-input" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')window.doLogin&&window.doLogin()">
     <button class="login-btn" onclick="window.doLogin&&window.doLogin()">Ingresar →</button>
     <div class="login-err" id="l-err"></div>
+    <div class="login-users">
+      <div class="login-users-title">Acceso rápido</div>
+      <div id="login-chips"><span style="font-size:11px;color:var(--muted);font-family:var(--mono)">Cargando usuarios...</span></div>
+    </div>
   </div>
 </div>
 
@@ -598,6 +602,7 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="ng">Registro</div>
     <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
     <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
+    <div class="ni" id="ni-usuarios" style="display:none" onclick="nav('usuarios')"><span class="ic">👥</span><span>Usuarios</span></div>
     <div class="ni" onclick="exportarJSON()"><span class="ic">💾</span><span>Backup JSON</span></div>
   </nav>
   <div class="sf">
@@ -774,7 +779,15 @@ textarea.fi{resize:vertical;min-height:56px;}
       <div class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Usuario</th></tr></thead><tbody id="t-hist"></tbody></table></div>
     </div>
 
-    <!-- NOTAS PRACTICANTES -->
+    <!-- USUARIOS -->
+    <div class="view" id="view-usuarios">
+      <div class="sg" id="usr-resumen" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px"></div>
+      <div class="tw">
+        <table><thead><tr>
+          <th>Usuario</th><th>Nombre completo</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th>Acciones</th>
+        </tr></thead><tbody id="t-usuarios"></tbody></table>
+      </div>
+    </div>
     <div class="view" id="view-notas">
       <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:var(--rl);padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
         <span style="font-size:22px;flex-shrink:0">📋</span>
@@ -1404,23 +1417,76 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
-<!-- MODAL PRÉSTAMO RÁPIDO DESDE STOCK -->
-<div class="ov" id="m-stock-prest">
-  <div class="modal" style="width:460px">
-    <div class="mt">🔑 Registrar préstamo</div>
-    <div style="background:var(--ag);border:1px solid rgba(0,229,160,.2);border-radius:9px;padding:11px 14px;margin-bottom:14px;font-size:13px;font-family:var(--mono)" id="msp-info">—</div>
+<!-- MODAL USUARIO -->
+<div class="ov" id="m-usuario">
+  <div class="modal" style="width:480px">
+    <div class="mt">👤 <span id="musr-title">Nuevo usuario</span></div>
     <div class="fr">
-      <div class="fg"><label class="fl">Quién lo lleva</label><input class="fi" id="sp-responsable" placeholder="Nombre del técnico / operario"></div>
-      <div class="fg"><label class="fl">Sector de destino</label><input class="fi" id="sp-sector" placeholder="Ej: Línea 3, Taller B..."></div>
+      <div class="fg">
+        <label class="fl">Nombre de usuario <span style="color:var(--danger)">*</span></label>
+        <input class="fi" id="usr-username" placeholder="ej: tecnico3" autocomplete="off">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)" id="usr-username-hint">Solo letras, números y guiones bajos. Sin espacios.</div>
+      </div>
+      <div class="fg">
+        <label class="fl">Nombre completo</label>
+        <input class="fi" id="usr-nombre" placeholder="ej: Juan Pérez">
+      </div>
     </div>
     <div class="fr">
-      <div class="fg"><label class="fl">Cantidad</label><input class="fi" type="number" id="sp-cant" value="1" min="1"></div>
-      <div class="fg"><label class="fl">Fecha de devolución</label><input class="fi" type="date" id="sp-devolucion"></div>
+      <div class="fg">
+        <label class="fl">Contraseña <span style="color:var(--danger)" id="usr-pass-req">*</span></label>
+        <input class="fi" type="password" id="usr-pass" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)" id="usr-pass-hint"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Confirmar contraseña</label>
+        <input class="fi" type="password" id="usr-pass2" placeholder="Repetir contraseña" autocomplete="new-password">
+      </div>
     </div>
-    <input type="hidden" id="sp-stock-id">
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">Rol <span style="color:var(--danger)">*</span></label>
+        <select class="fss" id="usr-rol">
+          <option value="tecnico">🔧 Técnico — puede crear y editar</option>
+          <option value="operario">👷 Operario — solo lectura</option>
+          <option value="supervisor">👁 Supervisor — solo lectura + reportes</option>
+          <option value="admin">⚙ Administrador — acceso total</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Estado</label>
+        <select class="fss" id="usr-activo">
+          <option value="true">✅ Activo</option>
+          <option value="false">🔴 Desactivado</option>
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:1.7">
+      <strong style="color:var(--text)">Permisos por rol:</strong><br>
+      🔧 Técnico — crear y editar registros, sin eliminar<br>
+      👷 Operario — solo ver, sin modificar<br>
+      👁 Supervisor — ver todo, crear reportes<br>
+      ⚙ Admin — acceso total incluido gestión de usuarios
+    </div>
+    <input type="hidden" id="usr-edit-id">
     <div class="mf">
-      <button class="btn btn-ghost" onclick="closeModal('m-stock-prest')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarStockPrest()">✓ Confirmar préstamo</button>
+      <button class="btn btn-ghost" onclick="closeModal('m-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUsuario()">💾 Guardar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR MI CONTRASEÑA -->
+<div class="ov" id="m-mi-pass">
+  <div class="modal" style="width:400px">
+    <div class="mt">🔒 Cambiar mi contraseña</div>
+    <div class="fg"><label class="fl">Contraseña actual</label><input class="fi" type="password" id="mp-actual" placeholder="Tu contraseña actual"></div>
+    <div class="fg"><label class="fl">Nueva contraseña</label><input class="fi" type="password" id="mp-nueva" placeholder="Mínimo 4 caracteres"></div>
+    <div class="fg"><label class="fl">Confirmar nueva contraseña</label><input class="fi" type="password" id="mp-nueva2" placeholder="Repetir nueva contraseña"></div>
+    <div class="login-err" id="mp-err" style="text-align:left;margin-top:4px"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-mi-pass')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMiPass()">💾 Cambiar contraseña</button>
     </div>
   </div>
 </div>
@@ -1463,33 +1529,85 @@ textarea.fi{resize:vertical;min-height:56px;}
 // ═══════════════════════════════════
 // USUARIOS Y ROLES
 // ═══════════════════════════════════
-var USERS = {
-  'admin':      { pass:'admin123',  rol:'admin',      label:'Administrador', color:'#00e5a0', avatar:'⚙' },
-  'tecnico1':   { pass:'tec123',    rol:'tecnico',    label:'Técnico',       color:'#4d9fff', avatar:'🔧' },
-  'tecnico2':   { pass:'tec456',    rol:'tecnico',    label:'Técnico',       color:'#4d9fff', avatar:'🔧' },
-  'supervisor': { pass:'sup123',    rol:'supervisor', label:'Supervisor',    color:'#ffb800', avatar:'👁' },
-};
+
+// Usuarios en memoria — se cargan desde Firestore antes del login
+var USERS = {};
 
 var PERMS = {
   admin:      { eliminar:true,  editar:true,  crear:true  },
   tecnico:    { eliminar:false, editar:true,  crear:true  },
   supervisor: { eliminar:false, editar:false, crear:false },
+  operario:   { eliminar:false, editar:false, crear:false },
+};
+
+var ROL_LABELS = {
+  admin:'Administrador', tecnico:'Técnico', supervisor:'Supervisor', operario:'Operario'
+};
+var ROL_COLORS = {
+  admin:'#00e5a0', tecnico:'#4d9fff', supervisor:'#ffb800', operario:'#a78bfa'
+};
+var ROL_AVATARS = {
+  admin:'⚙', tecnico:'🔧', supervisor:'👁', operario:'👷'
 };
 
 var currentUser = null;
+var _usersLoaded = false;
+
+// Cargar usuarios desde Firestore antes de mostrar el login
+async function preloadUsers(){
+  try {
+    // Esperar a que Firebase esté listo
+    const check = () => window._fbReady;
+    let tries = 0;
+    while(!check() && tries < 40){ await new Promise(r=>setTimeout(r,150)); tries++; }
+    if(!window._fbGetUsers) return;
+    const users = await window._fbGetUsers();
+    USERS = {};
+    users.forEach(u=>{ USERS[u.username] = u; });
+    _usersLoaded = true;
+    renderLoginChips();
+    // Si no hay usuarios en Firestore, sembrar el admin por defecto
+    if(users.length === 0){
+      await window._fbSeedAdmin();
+      const users2 = await window._fbGetUsers();
+      users2.forEach(u=>{ USERS[u.username] = u; });
+      renderLoginChips();
+    }
+  } catch(e){ console.warn('preloadUsers error',e); }
+}
+
+function renderLoginChips(){
+  const cont = document.getElementById('login-chips');
+  if(!cont) return;
+  const list = Object.values(USERS).filter(u=>u.activo!==false);
+  cont.innerHTML = list.map(u=>`<span class="user-chip" onclick="quickFill('${u.username}')">${ROL_AVATARS[u.rol]||'👤'} ${u.username}</span>`).join('');
+}
+
+window.quickFill = function(u){
+  document.getElementById('l-user').value = u;
+  document.getElementById('l-pass').focus();
+};
 
 function doLogin(){
   var u = document.getElementById('l-user').value.trim().toLowerCase();
   var p = document.getElementById('l-pass').value;
-  if(USERS[u] && USERS[u].pass === p){
-    currentUser = Object.assign({ username:u }, USERS[u]);
+  var userData = USERS[u];
+  if(userData && userData.pass === p && userData.activo !== false){
+    currentUser = Object.assign({ username:u }, userData);
     document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('u-name').textContent = u;
-    document.getElementById('u-role').textContent = USERS[u].label;
-    document.getElementById('u-avatar').textContent = USERS[u].avatar;
-    document.getElementById('u-avatar').style.background = USERS[u].color+'22';
+    document.getElementById('u-name').textContent = userData.nombre || u;
+    document.getElementById('u-role').textContent = ROL_LABELS[userData.rol] || userData.rol;
+    document.getElementById('u-avatar').textContent = ROL_AVATARS[userData.rol] || '👤';
+    document.getElementById('u-avatar').style.background = (ROL_COLORS[userData.rol]||'#4d9fff')+'22';
     document.getElementById('l-err').textContent = '';
+    // Mostrar/ocultar item de usuarios según rol
+    const niUsers = document.getElementById('ni-usuarios');
+    if(niUsers) niUsers.style.display = userData.rol==='admin' ? 'flex' : 'none';
     if(window._initListeners) window._initListeners();
+    // Registrar último acceso
+    setTimeout(()=>{ if(window.registrarUltAcceso) registrarUltAcceso(u); }, 2000);
+  } else if(userData && userData.activo === false){
+    document.getElementById('l-err').textContent = '⚠ Usuario desactivado';
   } else {
     document.getElementById('l-err').textContent = '⚠ Usuario o contraseña incorrectos';
   }
@@ -1505,12 +1623,15 @@ function doLogout(){
 
 function canDo(accion){
   if(!currentUser) return false;
-  var p = PERMS[currentUser.rol];
+  var p = PERMS[currentUser.rol] || PERMS.operario;
   if(accion==='eliminar' && !p.eliminar){ if(window.toast)toast('⚠ Sin permiso para eliminar','err'); return false; }
   if(accion==='editar'   && !p.editar)  { if(window.toast)toast('⚠ Sin permiso para editar','err');   return false; }
   if(accion==='crear'    && !p.crear)   { if(window.toast)toast('⚠ Sin permiso para crear','err');    return false; }
   return true;
 }
+
+// Arrancar precarga
+document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(preloadUsers, 300); });
 </script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
@@ -1542,7 +1663,7 @@ function initListeners() {
   onSnapshot(collection(db,'maquinas'), s=>{ maquinas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('maquinas'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'mantenimientos'), s=>{ mantenimientos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('mantenimiento'); rDash(); rAlerts(); rKPIs(); rCal(); });
   onSnapshot(collection(db,'stock'), s=>{ stock=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('stock'); rDash(); rAlerts(); rKPIs(); });
-  onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); ref('stock'); rDash(); rAlerts(); rKPIs(); if(isActive('consumo'))renderConsumo(); });
+  onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); if(isActive('consumo'))renderConsumo(); });
   onSnapshot(collection(db,'ordenes'), s=>{ ordenes=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('ordenes'); rDash(); rKPIs(); rCharts(); });
   onSnapshot(query(collection(db,'historial'),orderBy('ts','desc'),limit(200)), s=>{ historial=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('historial'))renderHistorial(); renderFeed(); });
   onSnapshot(collection(db,'bajas'), s=>{ bajas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); if(isActive('bajas'))renderBajas(); if(isActive('consumo'))renderConsumo(); });
@@ -1551,6 +1672,7 @@ function initListeners() {
   onSnapshot(collection(db,'compras'), s=>{ compras=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('compras'))renderCompras();updateBadgeCompras(); });
   onSnapshot(collection(db,'epp'), s=>{ eppItems=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('epp'))renderEPP();updateBadgeEPP(); });
   onSnapshot(query(collection(db,'reportes'),orderBy('ts','desc'),limit(300)), s=>{ reportes=s.docs.map(d=>({_id:d.id,...d.data()})); if(isActive('reportes'))renderReportes(); updateBadgeReportes(); });
+  initUsuariosListener();
 }
 window._initListeners = initListeners;
 function chk(){ loaded++; if(loaded>=7){ document.getElementById('ls').classList.add('hidden'); setSynced('ok'); rDash(); rAlerts(); } }
@@ -1564,9 +1686,31 @@ async function fbUpd(col,id,data){ setSynced('sy'); try{await updateDoc(doc(db,c
 async function fbDel(col,id){ setSynced('sy'); try{await deleteDoc(doc(db,col,id));setSynced('ok');}catch(e){setSynced('er');} }
 async function logH(tipo,desc){ if(!currentUser)return; await fbAdd('historial',{tipo,desc,usuario:currentUser.username,ts:serverTimestamp(),fecha:new Date().toLocaleString('es-AR')}); }
 
+// ── Exponer helpers de usuarios para el script pre-login ──
+window._fbReady = false;
+window._fbGetUsers = async function(){
+  const { getDocs } = await import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js");
+  const snap = await getDocs(collection(db,'usuarios'));
+  return snap.docs.map(d=>({_id:d.id,...d.data()}));
+};
+window._fbSeedAdmin = async function(){
+  // Crear el admin por defecto la primera vez
+  await setDoc(doc(db,'usuarios','admin'),{
+    username:'admin', pass:'admin123', nombre:'Administrador',
+    rol:'admin', activo:true, createdAt:new Date().toISOString(), ultAcceso:''
+  });
+  await setDoc(doc(db,'usuarios','tecnico1'),{
+    username:'tecnico1', pass:'tec123', nombre:'Técnico 1',
+    rol:'tecnico', activo:true, createdAt:new Date().toISOString(), ultAcceso:''
+  });
+  toast('ℹ️ Usuarios iniciales creados. Cambiá las contraseñas.');
+};
+// Marcar Firebase como listo
+setTimeout(()=>{ window._fbReady = true; }, 800);
+
 // NAVIGATION
-const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos y asignaciones'},reportes:{t:'Reportes del equipo',s:'Notificaciones, pérdidas, tareas completadas e incidentes'}};
-const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button><button class="btn btn-primary" style="background:var(--purple);color:#fff;margin-left:6px" onclick="openFacturaModal()">🧾 + Factura</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`,reportes:`<button class="btn btn-primary" onclick="openReporteModal()">📣 Nuevo reporte</button>`};
+const PI={dashboard:{t:'Dashboard',s:'Resumen general'},alertas:{t:'Alertas',s:'Notificaciones activas'},maquinas:{t:'Máquinas & Equipos',s:'Registro de equipos'},mantenimiento:{t:'Mantenimiento',s:'Mantenimientos programados'},stock:{t:'Stock',s:'Inventario de materiales'},entradas:{t:'Entradas de Stock',s:'Registro de ingresos de materiales'},prestamos:{t:'Préstamos & Consumos',s:'Herramientas y consumibles'},ordenes:{t:'Órdenes',s:'Órdenes de mantenimiento'},calendario:{t:'Calendario',s:'Vista mensual de mantenimientos'},graficos:{t:'Gráficos',s:'Visualización de datos'},kpis:{t:'KPIs & MTBF',s:'Indicadores clave y análisis de fallas'},historial:{t:'Historial',s:'Registro de actividad'},bajas:{t:'Registro de Bajas',s:'Equipos e insumos dados de baja'},notas:{t:'Notas para Practicantes',s:'Instrucciones y guías de trabajo'},compras:{t:'Lista de Compras',s:'Artículos pendientes de adquisición'},consumo:{t:'Top Insumos',s:'Ranking de insumos más usados por período'},ia:{t:'IA & Asistente',s:'Diagnóstico, resumen de turno y chat inteligente'},epp:{t:'Control de EPP',s:'Equipos de protección personal — vencimientos y asignaciones'},reportes:{t:'Reportes del equipo',s:'Notificaciones, pérdidas, tareas completadas e incidentes'},usuarios:{t:'Gestión de Usuarios',s:'Crear, editar y desactivar cuentas del sistema'}};
+const PA={maquinas:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openMaq()">+ Nueva máquina</button>`,mantenimiento:`<button class="btn btn-primary" onclick="UI.openMant()">+ Nuevo mantenimiento</button>`,stock:`<a href="scanner.html" class="btn-scanner">📷 Escáner</a><button class="btn btn-primary" onclick="UI.openStock()">+ Nuevo artículo</button>`,entradas:`<button class="btn btn-primary" onclick="UI.openEntrada()">⬆ Registrar Entrada</button>`,prestamos:`<button class="btn btn-primary" onclick="UI.openPrest()">+ Nuevo préstamo/consumo</button>`,ordenes:`<button class="btn btn-primary" onclick="UI.openOrd()">+ Nueva orden</button>`,bajas:`<button class="btn btn-danger" onclick="UI.openBaja()">⬇ Registrar Baja</button>`,notas:`<span id="ta-notas-btn"></span>`,compras:`<button class="btn btn-primary" onclick="UI.openCompra()">+ Nueva compra</button><button class="btn btn-primary" style="background:var(--purple);color:#fff;margin-left:6px" onclick="openFacturaModal()">🧾 + Factura</button>`,epp:`<button class="btn btn-primary" onclick="UI.openEPP()">🦺 + Nuevo EPP</button>`,reportes:`<button class="btn btn-primary" onclick="openReporteModal()">📣 Nuevo reporte</button>`,usuarios:`<button class="btn btn-primary" onclick="openUsuarioModal()">👤 + Nuevo usuario</button><button class="btn btn-ghost" onclick="document.getElementById('m-mi-pass').classList.add('open')" style="margin-left:6px">🔒 Cambiar mi contraseña</button>`};
 
 window.nav = function(v) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -1595,6 +1739,7 @@ window.nav = function(v) {
   if(v==='consumo')renderConsumo();
   if(v==='ia')initIA();
   if(v==='reportes')renderReportes();
+  if(v==='usuarios')renderUsuarios();
 };
 
 // HELPERS
@@ -1845,28 +1990,6 @@ function renderStock(){
     const rows=items.map(s=>{
       const st=sSt(s);const pct=s.min===0?100:Math.min(100,Math.round((s.qty/(s.min*3))*100));
       const ctrl=s.ultControl?ctrlBadge(s.ultControl):'<span class="badge b-x" style="font-size:9px">Sin control</span>';
-
-      // ── UBICACIÓN / PRÉSTAMO ACTIVO ──
-      const prestAct = prestamos.find(p=>p.itemId===s._id && p.estado==='activo' && !p.sinDevolucion);
-      let ubicCell = '', ubicBtn = '';
-      if(prestAct){
-        const diasDev = prestAct.fechaDevolucion ? Math.round((new Date(prestAct.fechaDevolucion)-new Date())/(1000*60*60*24)) : null;
-        const vencWarn = diasDev!==null && diasDev<0
-          ? `<div style="font-size:9px;color:var(--danger);font-family:var(--mono);margin-top:2px">⚠ Dev. vencida hace ${Math.abs(diasDev)}d</div>`
-          : diasDev===0 ? `<div style="font-size:9px;color:var(--warn);font-family:var(--mono);margin-top:2px">⚠ Devuelve hoy</div>` : '';
-        ubicCell = `<td>
-          <span class="badge b-d" style="margin-bottom:3px">🔴 Prestada</span>
-          <div style="font-size:11px;font-weight:600;margin-top:3px">${prestAct.responsable||'—'}</div>
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${prestAct.sector||''}</div>
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">Desde: ${prestAct.fechaSalida||'—'}</div>
-          ${vencWarn}
-        </td>`;
-        ubicBtn = `<button class="ab" onclick="stockDevolverPrest('${prestAct._id}')" title="Registrar devolución" style="color:var(--accent);font-size:14px">↩</button>`;
-      } else {
-        ubicCell = `<td><span class="badge b-g">✅ En depósito</span><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px">${s.deposito||s.posicion||'—'}</div></td>`;
-        ubicBtn = `<button class="ab" onclick="stockPrestar('${s._id}')" title="Registrar préstamo rápido 🔑" style="color:var(--warn);font-size:14px">🔑</button>`;
-      }
-
       return`<tr>
         <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.codigo||'—'}</td>
         <td>
@@ -1877,13 +2000,11 @@ function renderStock(){
         <td><span class="sbar"><span style="width:${pct}%;height:100%;border-radius:3px;display:block;background:${s.qty===0?'var(--danger)':s.qty<=s.min?'var(--warn)':'var(--accent)'}"></span></span><span style="font-family:var(--mono);font-size:12px">${s.qty} ${s.unidad}</span></td>
         <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${s.min}</td>
         <td style="color:var(--muted);font-size:11px;font-family:var(--mono)">${s.posicion||'—'}</td>
-        ${ubicCell}
         <td style="min-width:110px">${ctrl}${s.ctrlResp?`<div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:2px">${s.ctrlResp}</div>`:''}</td>
         <td><span class="badge ${st.c}">${st.l}</span></td>
         <td style="white-space:nowrap">
           <button class="ab" onclick="UI.marcarControl('${s._id}')" title="Marcar controlado hoy ✓" style="color:var(--accent);font-size:14px">✓</button>
           <button class="ab" onclick="UI.openEntrada('${s._id}')" title="Registrar entrada de stock" style="color:var(--blue);font-size:13px">⬆</button>
-          ${ubicBtn}
           <button class="ab qr-btn" onclick="UI.showQR('${s._id}','stock')" title="QR">⊡</button>
           <button class="ab ed" onclick="UI.editStock('${s._id}')" title="Editar">✎</button>
           <button class="ab del" onclick="UI.delStock('${s._id}')" title="Eliminar">✕</button>
@@ -1896,62 +2017,10 @@ function renderStock(){
         <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)">${depKey}</span>
         <span style="font-size:10px;color:var(--muted);font-family:var(--mono)">${items.length} artículo${items.length!==1?'s':''}</span>
       </div>
-      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>¿Dónde está?</th><th>Último control</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="tw"><table><thead><tr><th>Código</th><th>Artículo</th><th>Categoría</th><th>Stock</th><th>Mín.</th><th>Posición</th><th>Último control</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div>
     </div>`;
   }).join('');
 }
-
-// PRÉSTAMO RÁPIDO DESDE STOCK
-window.stockPrestar = function(stockId){
-  if(!canDo('crear')) return;
-  const s = stock.find(x=>x._id===stockId);
-  if(!s) return;
-  document.getElementById('msp-info').innerHTML = `🔧 <strong>${s.nombre}</strong>${s.codigo?' · '+s.codigo:''}<br><span style="font-size:11px;color:var(--muted)">Stock actual: ${s.qty} ${s.unidad} · Depósito: ${s.deposito||s.posicion||'—'}</span>`;
-  document.getElementById('sp-responsable').value='';
-  document.getElementById('sp-sector').value='';
-  document.getElementById('sp-cant').value='1';
-  document.getElementById('sp-cant').max=s.qty;
-  document.getElementById('sp-devolucion').value='';
-  document.getElementById('sp-stock-id').value=stockId;
-  document.getElementById('m-stock-prest').classList.add('open');
-};
-
-window.confirmarStockPrest = async function(){
-  const stockId = document.getElementById('sp-stock-id').value;
-  const responsable = document.getElementById('sp-responsable').value.trim();
-  const cant = parseInt(document.getElementById('sp-cant').value)||1;
-  if(!responsable){ toast('⚠ Indicá quién se lo lleva','err'); return; }
-  const s = stock.find(x=>x._id===stockId);
-  if(!s) return;
-  if(cant > s.qty){ toast('⚠ No hay suficiente stock','err'); return; }
-  const hoy = new Date().toISOString().split('T')[0];
-  await fbAdd('prestamos',{
-    itemId: stockId,
-    cantidad: cant,
-    responsable,
-    sector: document.getElementById('sp-sector').value.trim(),
-    fechaSalida: hoy,
-    fechaDevolucion: document.getElementById('sp-devolucion').value || '',
-    estado: 'activo',
-    sinDevolucion: false,
-    origen: 'stock-directo',
-  });
-  await fbUpd('stock', stockId, { qty: s.qty - cant });
-  toast(`✓ Préstamo registrado — ${responsable} se llevó ${cant} ${s.unidad} de ${s.nombre}`);
-  logH('prestamo', `Préstamo rápido: ${s.nombre} ×${cant} → ${responsable}`);
-  closeModal('m-stock-prest');
-};
-
-window.stockDevolverPrest = async function(prestId){
-  const p = prestamos.find(x=>x._id===prestId);
-  if(!p) return;
-  const s = stock.find(x=>x._id===p.itemId);
-  if(!confirm(`¿Confirmar devolución de "${s?.nombre||'ítem'}" de ${p.responsable}?`)) return;
-  await fbUpd('prestamos', prestId, { estado:'devuelto' });
-  if(s) await fbUpd('stock', s._id, { qty: s.qty + p.cantidad });
-  toast(`↩ Devuelto — ${s?.nombre} volvió al depósito`);
-  logH('prestamo', `Devolución: ${s?.nombre} ×${p.cantidad} de ${p.responsable}`);
-};
 
 // PRESTAMOS
 function renderPrestamos(){
@@ -4396,6 +4465,169 @@ window.exportFacturasPDF = function(){
   doc.save('facturas-mantenipro.pdf');
   toast('✓ PDF exportado');
 };
+
+// ═══════════════════════════════════
+// GESTIÓN DE USUARIOS
+// ═══════════════════════════════════
+
+let usuariosDB = []; // cache local
+
+// Escuchar cambios en tiempo real
+function initUsuariosListener(){
+  onSnapshot(collection(db,'usuarios'), snap=>{
+    usuariosDB = snap.docs.map(d=>({_id:d.id,...d.data()}));
+    // Actualizar USERS en memoria para que el login funcione siempre
+    USERS = {};
+    usuariosDB.forEach(u=>{ USERS[u.username] = u; });
+    renderLoginChips();
+    if(isActive('usuarios')) renderUsuarios();
+  });
+}
+
+function renderUsuarios(){
+  if(currentUser?.rol !== 'admin'){ toast('⚠ Solo el administrador puede ver esta sección','err'); return; }
+
+  // Resumen
+  const total = usuariosDB.length;
+  const activos = usuariosDB.filter(u=>u.activo!==false).length;
+  const porRol = {};
+  usuariosDB.forEach(u=>{ porRol[u.rol] = (porRol[u.rol]||0)+1; });
+  const res = document.getElementById('usr-resumen');
+  if(res) res.innerHTML=`
+    <div class="sc g"><div class="sl">Total usuarios</div><div class="sv cg">${total}</div><div class="ss">registrados</div></div>
+    <div class="sc b"><div class="sl">Activos</div><div class="sv cb">${activos}</div><div class="ss">pueden ingresar</div></div>
+    <div class="sc w"><div class="sl">Técnicos</div><div class="sv cw">${porRol.tecnico||0}</div><div class="ss">en el sistema</div></div>
+    <div class="sc p"><div class="sl">Admins</div><div class="sv cp">${porRol.admin||0}</div><div class="ss">con acceso total</div></div>`;
+
+  const tb = document.getElementById('t-usuarios');
+  if(!tb) return;
+  if(!usuariosDB.length){ tb.innerHTML='<tr><td colspan="6"><div class="empty">No hay usuarios</div></td></tr>'; return; }
+
+  const rolColor = { admin:'b-g', tecnico:'b-b', supervisor:'b-w', operario:'b-p' };
+
+  tb.innerHTML = [...usuariosDB].sort((a,b)=>{
+    const ord = {admin:0,supervisor:1,tecnico:2,operario:3};
+    return (ord[a.rol]||9)-(ord[b.rol]||9);
+  }).map(u=>{
+    const esYo = u.username === currentUser?.username;
+    const activo = u.activo !== false;
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:30px;height:30px;border-radius:8px;background:${ROL_COLORS[u.rol]||'#4d9fff'}22;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${ROL_AVATARS[u.rol]||'👤'}</div>
+          <div>
+            <div style="font-weight:600;font-family:var(--mono);font-size:12px">${u.username}${esYo?'<span style="font-size:9px;color:var(--accent);margin-left:6px;font-family:var(--sans)">(vos)</span>':''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:13px">${u.nombre||'—'}</td>
+      <td><span class="badge ${rolColor[u.rol]||'b-x'}">${ROL_LABELS[u.rol]||u.rol}</span></td>
+      <td>${activo ? '<span class="badge b-g">✅ Activo</span>' : '<span class="badge b-d">🔴 Desactivado</span>'}</td>
+      <td style="font-size:11px;color:var(--muted);font-family:var(--mono)">${u.ultAcceso||'Nunca'}</td>
+      <td style="white-space:nowrap">
+        <button class="ab ed" onclick="openUsuarioModal('${u._id}')" title="Editar">✎</button>
+        ${!esYo ? `<button class="ab" onclick="toggleUsuario('${u._id}',${activo})" title="${activo?'Desactivar':'Activar'}" style="color:${activo?'var(--warn)':'var(--accent)'};font-size:13px">${activo?'⏸':'▶'}</button>` : ''}
+        ${!esYo && u.username!=='admin' ? `<button class="ab del" onclick="delUsuario('${u._id}')" title="Eliminar">✕</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.openUsuarioModal = function(id){
+  if(currentUser?.rol !== 'admin'){ toast('⚠ Sin permiso','err'); return; }
+  const u = id ? usuariosDB.find(x=>x._id===id) : null;
+  document.getElementById('musr-title').textContent = u ? `Editar: ${u.username}` : 'Nuevo usuario';
+  document.getElementById('usr-username').value = u?.username||'';
+  document.getElementById('usr-username').disabled = !!u; // no se puede cambiar el username
+  document.getElementById('usr-nombre').value = u?.nombre||'';
+  document.getElementById('usr-pass').value = '';
+  document.getElementById('usr-pass2').value = '';
+  document.getElementById('usr-rol').value = u?.rol||'tecnico';
+  document.getElementById('usr-activo').value = u ? String(u.activo!==false) : 'true';
+  document.getElementById('usr-pass-req').style.display = u ? 'none' : 'inline'; // pass obligatorio solo al crear
+  document.getElementById('usr-pass-hint').textContent = u ? 'Dejá en blanco para no cambiar la contraseña' : '';
+  document.getElementById('usr-edit-id').value = id||'';
+  document.getElementById('m-usuario').classList.add('open');
+};
+
+window.saveUsuario = async function(){
+  if(currentUser?.rol !== 'admin'){ toast('⚠ Sin permiso','err'); return; }
+  const id = document.getElementById('usr-edit-id').value;
+  const username = document.getElementById('usr-username').value.trim().toLowerCase();
+  const nombre = document.getElementById('usr-nombre').value.trim();
+  const pass = document.getElementById('usr-pass').value;
+  const pass2 = document.getElementById('usr-pass2').value;
+  const rol = document.getElementById('usr-rol').value;
+  const activo = document.getElementById('usr-activo').value === 'true';
+
+  // Validaciones
+  if(!username){ toast('⚠ Completá el nombre de usuario','err'); return; }
+  if(!/^[a-z0-9_]+$/.test(username)){ toast('⚠ Solo letras minúsculas, números y guión bajo','err'); return; }
+  if(!id && !pass){ toast('⚠ La contraseña es obligatoria para un usuario nuevo','err'); return; }
+  if(pass && pass.length < 4){ toast('⚠ La contraseña debe tener al menos 4 caracteres','err'); return; }
+  if(pass && pass !== pass2){ toast('⚠ Las contraseñas no coinciden','err'); return; }
+  if(!id && usuariosDB.find(u=>u.username===username)){ toast('⚠ Ya existe un usuario con ese nombre','err'); return; }
+
+  const obj = { username, nombre, rol, activo, updatedAt: new Date().toISOString() };
+  if(pass) obj.pass = pass;
+
+  if(id){
+    await fbUpd('usuarios', id, obj);
+    toast(`✓ Usuario "${username}" actualizado`);
+    logH('usuario', `Editó usuario: ${username}`);
+  } else {
+    obj.createdAt = new Date().toISOString();
+    obj.ultAcceso = '';
+    await setDoc(doc(db,'usuarios',username), obj);
+    toast(`✓ Usuario "${username}" creado`);
+    logH('usuario', `Creó usuario: ${username} (${rol})`);
+  }
+  closeModal('m-usuario');
+};
+
+window.toggleUsuario = async function(id, estaActivo){
+  if(currentUser?.rol !== 'admin') return;
+  const u = usuariosDB.find(x=>x._id===id);
+  if(!u) return;
+  const nuevo = !estaActivo;
+  await fbUpd('usuarios', id, { activo: nuevo });
+  toast(nuevo ? `✅ "${u.username}" activado` : `⏸ "${u.username}" desactivado`);
+  logH('usuario', `${nuevo?'Activó':'Desactivó'} usuario: ${u.username}`);
+};
+
+window.delUsuario = async function(id){
+  if(currentUser?.rol !== 'admin') return;
+  const u = usuariosDB.find(x=>x._id===id);
+  if(u?.username === 'admin'){ toast('⚠ No podés eliminar al admin principal','err'); return; }
+  if(!confirm(`¿Eliminar al usuario "${u?.username}"? Esta acción no se puede deshacer.`)) return;
+  await fbDel('usuarios', id);
+  toast(`🗑 Usuario "${u?.username}" eliminado`);
+  logH('usuario', `Eliminó usuario: ${u?.username}`);
+};
+
+// Cambiar mi propia contraseña
+window.guardarMiPass = async function(){
+  const actual = document.getElementById('mp-actual').value;
+  const nueva = document.getElementById('mp-nueva').value;
+  const nueva2 = document.getElementById('mp-nueva2').value;
+  const err = document.getElementById('mp-err');
+  err.textContent = '';
+  if(actual !== currentUser.pass){ err.textContent = '⚠ La contraseña actual no es correcta'; return; }
+  if(nueva.length < 4){ err.textContent = '⚠ Mínimo 4 caracteres'; return; }
+  if(nueva !== nueva2){ err.textContent = '⚠ Las contraseñas no coinciden'; return; }
+  await fbUpd('usuarios', currentUser.username, { pass: nueva });
+  currentUser.pass = nueva;
+  USERS[currentUser.username].pass = nueva;
+  toast('✓ Contraseña cambiada correctamente');
+  closeModal('m-mi-pass');
+};
+
+// Registrar último acceso al login
+function registrarUltAcceso(username){
+  try {
+    updateDoc(doc(db,'usuarios',username),{ ultAcceso: new Date().toLocaleString('es-AR') });
+  } catch(e){}
+}
 
 // Hook nav compras para renderizar facturas al cambiar de tab
 window.swTabCompras = function(tid, el){
