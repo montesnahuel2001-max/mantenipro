@@ -2796,12 +2796,12 @@ function renderNotas(){
     let vistasHTML = '';
     if(isAdmin){
       const chips = listaVistas.length
-        ? listaVistas.map(([usr,v])=>`<span class="nota-vista-chip">\u2713 ${usr} <span class="vts">${v.fecha||''}</span></span>`).join('')
+        ? listaVistas.map(([usr,v])=>`<span class="nota-vista-chip">✓ ${usr} <span class="vts">${v.fecha||''}</span></span>`).join('')
         : `<span class="nota-vista-none">Nadie confirmó todavía</span>`;
       vistasHTML = `<div class="nota-vistas"><div><div class="nota-vistas-label" style="margin-bottom:4px">👁 Confirmado por (${listaVistas.length}):</div><div class="nota-vistas-list">${chips}</div></div></div>`;
     } else {
       const btnHtml = yaVi
-        ? `<button class="btn-confirmar-nota ya-vi" disabled>\u2713 Ya lo vi &middot; ${vistas[currentUser.username].fecha||''}</button>`
+        ? `<button class="btn-confirmar-nota ya-vi" disabled>✓ Ya lo vi &middot; ${vistas[currentUser.username].fecha||''}</button>`
         : `<button class="btn-confirmar-nota" onclick="UI.confirmarNotaVista('${n._id}')">👁 Ya lo leí</button>`;
       const conteo = listaVistas.length ? `<span class="nota-vistas-label">${listaVistas.length} lo confirmaron</span>` : '';
       vistasHTML = `<div class="nota-vistas">${conteo}<div style="margin-left:auto">${btnHtml}</div></div>`;
@@ -2819,6 +2819,7 @@ function renderNotas(){
       ${vistasHTML}
     </div>`;
   }).join('');
+}
 }
 
 function renderNotasAdminBtn(){
@@ -3992,6 +3993,7 @@ window.saveEPP = async function(){
 // ═══════════════════════════════════
 let repTabActual = 'rep-all';
 let repTipoActual = 'perdida';
+let eIdReporte = null;
 
 const REP_TIPOS = {
   perdida:   { label:'Pérdida / Faltante',    icon:'🔴', cls:'tipo-perdida',   bg:'var(--ddim)',  col:'var(--danger)' },
@@ -4118,6 +4120,7 @@ function renderRepCard(r){
       </div>
       <div class="rep-desc">${r.desc||'Sin descripción.'}</div>
       ${r.ubicacion?`<div style="font-size:11px;color:var(--muted);margin-bottom:5px">📍 ${r.ubicacion}</div>`:''}
+      ${r.editadoFecha?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px">✎ editado ${r.editadoFecha}${r.editadoPor?' por '+r.editadoPor:''}</div>`:''}
       <div class="rep-meta">
         <span class="badge" style="background:${t.bg};color:${t.col};border:1px solid ${t.col}33">${t.icon} ${t.label}</span>
         <span class="badge b-x">👤 ${r.autor||'—'}</span>
@@ -4130,6 +4133,7 @@ function renderRepCard(r){
     <div class="rep-actions">
       <button class="rep-estado-btn ${est.cls}" onclick="cycleEstadoRep('${r._id}','${r.estado||'pendiente'}')" title="Clic para cambiar estado">${est.label}</button>
       ${isAdmin&&r.estado!=='resuelto'?`<button class="btn btn-sm btn-ghost" style="font-size:10px" onclick="openRespReporte('${r._id}')">💬 Responder</button>`:''}
+      ${isAdmin||r.autor===currentUser?.username?`<button class="ab ed" onclick="editReporte('${r._id}')" title="Editar reporte">✎</button>`:''}
       ${isAdmin?`<button class="ab del" onclick="delReporte('${r._id}')" title="Eliminar">✕</button>`:''}
     </div>
   </div>`;
@@ -4178,43 +4182,79 @@ window.saveRespReporte = async function(){
   toast('✓ Respuesta guardada');
 };
 
-window.openReporteModal = function(){
-  repTipoActual = 'perdida';
-  document.getElementById('rep-tipo').value='perdida';
-  document.querySelectorAll('.rep-tipo-opt').forEach(b=>{ b.classList.remove('sel'); if(b.dataset.t==='perdida') b.classList.add('sel'); });
-  document.getElementById('rep-titulo').value='';
-  document.getElementById('rep-desc').value='';
-  document.getElementById('rep-prio').value='media';
-  document.getElementById('rep-ubicacion').value='';
-  // Llenar notas
+window.openReporteModal = function(id=null){
+  eIdReporte = id;
   const sel = document.getElementById('rep-nota-link');
   sel.innerHTML = '<option value="">— Sin vincular —</option>' +
     notas.map(n=>`<option value="${n._id}">${n.titulo}</option>`).join('');
-  document.getElementById('mrep-title').textContent='Nuevo Reporte';
+  if(id){
+    const r = reportes.find(x=>x._id===id);
+    if(!r) return;
+    repTipoActual = r.tipo||'perdida';
+    document.getElementById('rep-tipo').value = repTipoActual;
+    document.querySelectorAll('.rep-tipo-opt').forEach(b=>{ b.classList.remove('sel'); if(b.dataset.t===repTipoActual) b.classList.add('sel'); });
+    document.getElementById('rep-titulo').value = r.titulo||'';
+    document.getElementById('rep-desc').value = r.desc||'';
+    document.getElementById('rep-prio').value = r.prio||'media';
+    document.getElementById('rep-ubicacion').value = r.ubicacion||'';
+    sel.value = r.notaId||'';
+    document.getElementById('mrep-title').textContent = 'Editar Reporte';
+    document.querySelector('#m-reporte .btn-primary').textContent = '✓ Guardar cambios';
+  } else {
+    eIdReporte = null;
+    repTipoActual = 'perdida';
+    document.getElementById('rep-tipo').value='perdida';
+    document.querySelectorAll('.rep-tipo-opt').forEach(b=>{ b.classList.remove('sel'); if(b.dataset.t==='perdida') b.classList.add('sel'); });
+    document.getElementById('rep-titulo').value='';
+    document.getElementById('rep-desc').value='';
+    document.getElementById('rep-prio').value='media';
+    document.getElementById('rep-ubicacion').value='';
+    document.getElementById('mrep-title').textContent='Nuevo Reporte';
+    document.querySelector('#m-reporte .btn-primary').textContent = '📣 Enviar reporte';
+  }
   document.getElementById('m-reporte').classList.add('open');
 };
+
+window.editReporte = function(id){ window.openReporteModal(id); };
 
 window.saveReporte = async function(){
   const titulo = document.getElementById('rep-titulo').value.trim();
   if(!titulo){ toast('⚠ Escribí un título','warn'); return; }
   const now = new Date();
-  const obj = {
-    tipo: repTipoActual,
-    titulo,
-    desc: document.getElementById('rep-desc').value.trim(),
-    prio: document.getElementById('rep-prio').value,
-    ubicacion: document.getElementById('rep-ubicacion').value.trim(),
-    notaId: document.getElementById('rep-nota-link').value||null,
-    autor: currentUser?.username||'—',
-    estado: 'pendiente',
-    fecha: now.toISOString().split('T')[0],
-    fechaDisplay: now.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    ts: serverTimestamp(),
-  };
-  await fbAdd('reportes', obj);
-  await logH('reporte', `${REP_TIPOS[repTipoActual]?.icon} ${titulo} — por ${obj.autor}`);
-  closeModal('m-reporte');
-  toast('📣 Reporte enviado');
+  if(eIdReporte){
+    const upd = {
+      tipo: repTipoActual,
+      titulo,
+      desc: document.getElementById('rep-desc').value.trim(),
+      prio: document.getElementById('rep-prio').value,
+      ubicacion: document.getElementById('rep-ubicacion').value.trim(),
+      notaId: document.getElementById('rep-nota-link').value||null,
+      editadoPor: currentUser?.username||'—',
+      editadoFecha: now.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    };
+    await fbSet('reportes', eIdReporte, upd);
+    await logH('reporte_edit', '✎ ' + titulo + ' — editado por ' + upd.editadoPor);
+    closeModal('m-reporte');
+    toast('✓ Reporte actualizado');
+  } else {
+    const obj = {
+      tipo: repTipoActual,
+      titulo,
+      desc: document.getElementById('rep-desc').value.trim(),
+      prio: document.getElementById('rep-prio').value,
+      ubicacion: document.getElementById('rep-ubicacion').value.trim(),
+      notaId: document.getElementById('rep-nota-link').value||null,
+      autor: currentUser?.username||'—',
+      estado: 'pendiente',
+      fecha: now.toISOString().split('T')[0],
+      fechaDisplay: now.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+      ts: serverTimestamp(),
+    };
+    await fbAdd('reportes', obj);
+    await logH('reporte', titulo + ' — por ' + obj.autor);
+    closeModal('m-reporte');
+    toast('📣 Reporte enviado');
+  }
 };
 
 window.exportReportesPDF = function(){
