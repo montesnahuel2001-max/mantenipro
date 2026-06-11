@@ -411,6 +411,16 @@ textarea.fi{resize:vertical;min-height:56px;}
 .nota-prio-opt[data-p="info"].sel{background:rgba(77,159,255,.12);color:var(--blue);border-color:var(--blue);}
 .nota-prio-opt[data-p="aviso"].sel{background:rgba(255,184,0,.12);color:var(--warn);border-color:var(--warn);}
 .nota-prio-opt[data-p="urgente"].sel{background:rgba(255,68,102,.12);color:var(--danger);border-color:var(--danger);}
+/* NOTA VISTAS */
+.nota-vistas{margin-top:11px;padding-top:10px;border-top:1px solid var(--faint);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.nota-vistas-list{display:flex;flex-wrap:wrap;gap:5px;flex:1;}
+.nota-vista-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.2);color:var(--accent);border-radius:5px;padding:2px 7px;font-size:10px;font-family:var(--mono);}
+.nota-vista-chip .vts{color:var(--muted);font-size:9px;}
+.nota-vista-none{font-size:10px;color:var(--muted);font-family:var(--mono);font-style:italic;}
+.btn-confirmar-nota{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent);transition:all .15s;font-family:var(--sans);flex-shrink:0;}
+.btn-confirmar-nota:hover{background:rgba(0,229,160,.12);box-shadow:0 0 10px var(--aglow);}
+.btn-confirmar-nota.ya-vi{border-color:var(--muted);color:var(--muted);cursor:default;background:rgba(0,229,160,.05);}
+.nota-vistas-label{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap;}
 
 /* COMPRAS */
 .compra-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:13px 16px;margin-bottom:9px;display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;transition:border-color .15s;}
@@ -2778,23 +2788,37 @@ function renderNotas(){
   const orden = ['urgente','aviso','info','general'];
   const sorted = [...notas].sort((a,b)=>orden.indexOf(a.prio)-orden.indexOf(b.prio)||(b.ts?.seconds||0)-(a.ts?.seconds||0));
   const icons = {general:'📋',info:'ℹ️',aviso:'⚠️',urgente:'🚨'};
-  const labels = {general:'General',info:'Info',info:'Información',aviso:'Aviso',urgente:'Urgente'};
-  el.innerHTML = sorted.map(n=>`
-    <div class="nota-card ${n.prio||'general'}">
+  const isAdmin = currentUser?.rol==='admin';
+  el.innerHTML = sorted.map(n=>{
+    const vistas = n.vistas||{};
+    const listaVistas = Object.entries(vistas);
+    const yaVi = currentUser && vistas[currentUser.username];
+    let vistasHTML = '';
+    if(isAdmin){
+      const chips = listaVistas.length
+        ? listaVistas.map(([usr,v])=>`<span class="nota-vista-chip">\u2713 ${usr} <span class="vts">${v.fecha||''}</span></span>`).join('')
+        : `<span class="nota-vista-none">Nadie confirmó todavía</span>`;
+      vistasHTML = `<div class="nota-vistas"><div><div class="nota-vistas-label" style="margin-bottom:4px">👁 Confirmado por (${listaVistas.length}):</div><div class="nota-vistas-list">${chips}</div></div></div>`;
+    } else {
+      const btnHtml = yaVi
+        ? `<button class="btn-confirmar-nota ya-vi" disabled>\u2713 Ya lo vi &middot; ${vistas[currentUser.username].fecha||''}</button>`
+        : `<button class="btn-confirmar-nota" onclick="UI.confirmarNotaVista('${n._id}')">👁 Ya lo leí</button>`;
+      const conteo = listaVistas.length ? `<span class="nota-vistas-label">${listaVistas.length} lo confirmaron</span>` : '';
+      vistasHTML = `<div class="nota-vistas">${conteo}<div style="margin-left:auto">${btnHtml}</div></div>`;
+    }
+    return `<div class="nota-card ${n.prio||'general'}">
       <div class="nota-card-header">
         <div class="nota-titulo">${icons[n.prio]||'📋'} ${n.titulo}</div>
-        <div style="display:flex;gap:5px;flex-shrink:0">
-          ${currentUser?.rol==='admin'?`<button class="ab ed" onclick="UI.editNota('${n._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delNota('${n._id}')" title="Eliminar">✕</button>`:''}
-        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">${isAdmin?`<button class="ab ed" onclick="UI.editNota('${n._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delNota('${n._id}')" title="Eliminar">✕</button>`:''}</div>
       </div>
       <div class="nota-body">${n.body||''}</div>
       <div class="nota-footer">
         <span class="badge ${n.prio==='urgente'?'b-d':n.prio==='aviso'?'b-w':n.prio==='info'?'b-b':'b-g'}">${n.prio||'general'}</span>
-        <span>${n.autor||'Admin'}</span>
-        <span>·</span>
-        <span>${n.fecha||''}</span>
+        <span>${n.autor||'Admin'}</span><span>·</span><span>${n.fecha||''}</span>
       </div>
-    </div>`).join('');
+      ${vistasHTML}
+    </div>`;
+  }).join('');
 }
 
 function renderNotasAdminBtn(){
@@ -2945,6 +2969,16 @@ Object.assign(window.UI, {
   },
   async avanzarCompra(id){ await fbUpd('compras',id,{estado:'solicitado'}); toast('→ Marcado como solicitado'); },
   async completarCompra(id){ await fbUpd('compras',id,{estado:'comprado'}); toast('✓ Marcado como comprado'); },
+  async confirmarNotaVista(id){
+    if(!currentUser) return;
+    const usr = currentUser.username;
+    const fecha = new Date().toLocaleDateString('es-AR');
+    const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const ref = doc(db, 'notas', id);
+    await updateDoc(ref, { [`vistas.${usr}`]: { fecha: `${fecha} ${hora}`, nombre: currentUser.nombre||usr } });
+    toast('✓ Confirmado — gracias!');
+    logH('nota_vista', `${usr} confirmó nota ${id}`);
+  },
 });
 
 window.saveNota = async function(){
