@@ -421,6 +421,19 @@ textarea.fi{resize:vertical;min-height:56px;}
 .btn-confirmar-nota:hover{background:rgba(0,229,160,.12);box-shadow:0 0 10px var(--aglow);}
 .btn-confirmar-nota.ya-vi{border-color:var(--muted);color:var(--muted);cursor:default;background:rgba(0,229,160,.05);}
 .nota-vistas-label{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap;}
+/* NOTA ESTADO TRABAJO */
+.nota-trabajo{margin-top:10px;padding-top:10px;border-top:1px solid var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.nota-trabajo-label{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap;}
+.nota-trabajo-opts{display:flex;gap:5px;}
+.nota-trabajo-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s;}
+.nota-trabajo-btn:hover{border-color:var(--muted);}
+.nota-trabajo-btn[data-e="pendiente"].sel{background:rgba(255,184,0,.12);color:var(--warn);border-color:var(--warn);}
+.nota-trabajo-btn[data-e="en_curso"].sel{background:rgba(77,159,255,.12);color:var(--blue);border-color:var(--blue);}
+.nota-trabajo-btn[data-e="hecho"].sel{background:rgba(0,229,160,.12);color:var(--accent);border-color:var(--accent);}
+.nota-trabajo-info{font-size:10px;color:var(--muted);font-family:var(--mono);margin-left:auto;}
+.b-estado-pendiente{background:rgba(255,184,0,.1);color:var(--warn);border:1px solid rgba(255,184,0,.2);}
+.b-estado-en_curso{background:rgba(77,159,255,.1);color:var(--blue);border:1px solid rgba(77,159,255,.2);}
+.b-estado-hecho{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.2);}
 
 /* COMPRAS */
 .compra-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:13px 16px;margin-bottom:9px;display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;transition:border-color .15s;}
@@ -2788,11 +2801,13 @@ function renderNotas(){
   const orden = ['urgente','aviso','info','general'];
   const sorted = [...notas].sort((a,b)=>orden.indexOf(a.prio)-orden.indexOf(b.prio)||(b.ts?.seconds||0)-(a.ts?.seconds||0));
   const icons = {general:'📋',info:'ℹ️',aviso:'⚠️',urgente:'🚨'};
+  const estadoLabels = {pendiente:'Pendiente',en_curso:'En curso',hecho:'Hecho'};
   const isAdmin = currentUser?.rol==='admin';
   el.innerHTML = sorted.map(n=>{
     const vistas = n.vistas||{};
     const listaVistas = Object.entries(vistas);
     const yaVi = currentUser && vistas[currentUser.username];
+    const estado = n.estadoTrabajo||'pendiente';
     let vistasHTML = '';
     if(isAdmin){
       const chips = listaVistas.length
@@ -2806,6 +2821,16 @@ function renderNotas(){
       const conteo = listaVistas.length ? `<span class="nota-vistas-label">${listaVistas.length} lo confirmaron</span>` : '';
       vistasHTML = `<div class="nota-vistas">${conteo}<div style="margin-left:auto">${btnHtml}</div></div>`;
     }
+    const trabajoInfo = n.trabajoPor ? `<span class="nota-trabajo-info">${estado==='hecho'?'✓ hecho':'→ tomado'} por ${n.trabajoPor} · ${n.trabajoFecha||''}</span>` : '';
+    const trabajoHTML = `<div class="nota-trabajo">
+        <span class="nota-trabajo-label">Estado:</span>
+        <div class="nota-trabajo-opts">
+          <button class="nota-trabajo-btn ${estado==='pendiente'?'sel':''}" data-e="pendiente" onclick="UI.setNotaEstado('${n._id}','pendiente')">Pendiente</button>
+          <button class="nota-trabajo-btn ${estado==='en_curso'?'sel':''}" data-e="en_curso" onclick="UI.setNotaEstado('${n._id}','en_curso')">En curso</button>
+          <button class="nota-trabajo-btn ${estado==='hecho'?'sel':''}" data-e="hecho" onclick="UI.setNotaEstado('${n._id}','hecho')">Hecho</button>
+        </div>
+        ${trabajoInfo}
+      </div>`;
     return `<div class="nota-card ${n.prio||'general'}">
       <div class="nota-card-header">
         <div class="nota-titulo">${icons[n.prio]||'📋'} ${n.titulo}</div>
@@ -2814,8 +2839,10 @@ function renderNotas(){
       <div class="nota-body">${n.body||''}</div>
       <div class="nota-footer">
         <span class="badge ${n.prio==='urgente'?'b-d':n.prio==='aviso'?'b-w':n.prio==='info'?'b-b':'b-g'}">${n.prio||'general'}</span>
+        <span class="badge b-estado-${estado}">${estadoLabels[estado]}</span>
         <span>${n.autor||'Admin'}</span><span>·</span><span>${n.fecha||''}</span>
       </div>
+      ${trabajoHTML}
       ${vistasHTML}
     </div>`;
   }).join('');
@@ -2978,6 +3005,16 @@ Object.assign(window.UI, {
     await updateDoc(ref, { [`vistas.${usr}`]: { fecha: `${fecha} ${hora}`, nombre: currentUser.nombre||usr } });
     toast('✓ Confirmado — gracias!');
     logH('nota_vista', `${usr} confirmó nota ${id}`);
+  },
+  async setNotaEstado(id, estado){
+    if(!currentUser) return;
+    const usr = currentUser.username;
+    const fecha = new Date().toLocaleDateString('es-AR');
+    const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    await fbSet('notas', id, { estadoTrabajo: estado, trabajoPor: usr, trabajoFecha: `${fecha} ${hora}` });
+    const labels = {pendiente:'Pendiente',en_curso:'En curso',hecho:'Hecho'};
+    toast(`✓ Estado: ${labels[estado]}`);
+    logH('nota_estado', `${usr} marcó nota ${id} como ${labels[estado]}`);
   },
 });
 
