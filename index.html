@@ -1267,8 +1267,33 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="fr"><div class="fg"><label class="fl">Marca / Modelo</label><input class="fi" id="mq-marca" placeholder="Lincoln / Magnum"></div><div class="fg"><label class="fl">N° de Serie</label><input class="fi" id="mq-serie" placeholder="SN-001"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Ubicación</label><input class="fi" id="mq-ubic" placeholder="Taller - Sector A"></div><div class="fg"><label class="fl">Estado</label><select class="fss" id="mq-est"><option>Operativo</option><option>En mantenimiento</option><option>Fuera de servicio</option></select></div></div>
     <div class="fr"><div class="fg"><label class="fl">Frecuencia mantenim.</label><select class="fss" id="mq-freq"><option value="7">Semanal</option><option value="30" selected>Mensual</option><option value="90">Trimestral</option><option value="180">Semestral</option><option value="365">Anual</option><option value="0">Sin programar</option></select></div><div class="fg"><label class="fl">Último mantenimiento</label><input class="fi" type="date" id="mq-ultm"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Año de fabricación / adquisición</label><input class="fi" type="number" id="mq-anio" placeholder="Ej: 2015" min="1950" max="2100"></div><div class="fg"><label class="fl">Uso estimado (hs/semana)</label><input class="fi" type="number" id="mq-horas" placeholder="Ej: 12" min="0"></div></div>
     <div class="fg"><label class="fl">Notas</label><textarea class="fi" id="mq-notas" placeholder="Instrucciones, repuestos típicos..."></textarea></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-maq')">Cancelar</button><button class="btn btn-primary" onclick="saveMaq()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL FICHA TÉCNICA -->
+<div class="ov" id="m-ficha">
+  <div class="modal" style="max-width:640px">
+    <div class="mt">📋 Ficha técnica — <span id="mf-title">Equipo</span></div>
+    <div id="mf-datos" style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px"></div>
+
+    <div class="sh" style="margin-bottom:8px"><div class="st">🔧 Plan de tareas preventivas</div></div>
+    <div id="mf-tareas" style="margin-bottom:10px"></div>
+
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button class="btn btn-ghost btn-sm" onclick="UI.presetTareas()">＋ Cargar tareas típicas</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportFichaPDF()">⬇ Exportar PDF</button>
+    </div>
+
+    <div class="fr" style="align-items:flex-end">
+      <div class="fg" style="flex:2"><label class="fl">Nueva tarea</label><input class="fi" id="mf-nueva-tarea" placeholder="Ej: Lubricación de husillo"></div>
+      <div class="fg"><label class="fl">Frecuencia</label><select class="fss" id="mf-nueva-frec"><option value="1">Diaria</option><option value="7" selected>Semanal</option><option value="15">Quincenal</option><option value="30">Mensual</option><option value="90">Trimestral</option></select></div>
+      <div class="fg" style="flex:0"><button class="btn btn-primary btn-sm" onclick="UI.addTareaPrev()">Agregar</button></div>
+    </div>
+
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-ficha')">Cerrar</button></div>
   </div>
 </div>
 
@@ -1673,7 +1698,7 @@ const db = getFirestore(app);
 
 // STATE
 let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[], reportes=[];
-let eIds={maq:null,mant:null,stock:null,ord:null};
+let eIds={maq:null,mant:null,stock:null,ord:null,ficha:null};
 let loaded=0, listenersInit=false;
 let eppTabActual='todos';
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
@@ -1772,6 +1797,37 @@ function mSt(days){ if(days<0)return{c:'b-d',l:'Vencido',ec:'alert-eq'}; if(days
 function pC(p){return{'Baja':'b-x','Media':'b-b','Alta':'b-w','Crítica':'b-d'}[p]||'b-x';}
 function eC(e){return{'Pendiente':'b-w','En progreso':'b-b','Completada':'b-g'}[e]||'b-x';}
 function maqIco(cat){ const m=[['Sold','🔥'],['Cort','⚡'],['Taladro','🔩'],['Sierra','🪚'],['Compres','💨'],['Medici','📏'],['Amola','🔴'],['Mult','🔌']]; return m.find(([k])=>cat?.includes(k))?.[1]||'🏭'; }
+
+// --- TAREAS PREVENTIVAS POR MÁQUINA ---
+const FREC_LABEL={1:'Diaria',7:'Semanal',15:'Quincenal',30:'Mensual',90:'Trimestral',180:'Semestral',365:'Anual'};
+function tareaEstado(t){
+  if(!t.ultRealizado) return {c:'b-d',l:'Nunca realizada',venc:true};
+  const d=daysUntil(new Date(new Date(t.ultRealizado).getTime()+t.frecDias*86400000).toISOString().split('T')[0]);
+  if(d<0) return {c:'b-d',l:`Vencida hace ${Math.abs(d)}d`,venc:true};
+  if(d<=2) return {c:'b-w',l:`Vence en ${d}d`,venc:false};
+  return {c:'b-g',l:`Al día (${d}d)`,venc:false};
+}
+function tareasVencidasCount(m){ return (m.tareasPrev||[]).filter(t=>tareaEstado(t).venc).length; }
+// Presets típicos de mantenimiento mecánico por categoría de equipo
+const PRESETS_TAREAS={
+  torno:[['Lubricación de guías y carros',7],['Limpieza de virutas',1],['Verificación de correas/poleas',30],['Calibración / puesta a cero',90]],
+  fresadora:[['Lubricación de husillo y guías',7],['Limpieza de virutas',1],['Revisión de fajas',30],['Calibración de ejes',90]],
+  soldadora:[['Revisión de cables y bornes',15],['Limpieza de boquilla/tobera',7],['Revisión de conexión a tierra',30],['Control de gas / alambre (MIG)',7]],
+  compresor:[['Purga de tanque (agua condensada)',1],['Revisión de nivel de aceite',7],['Limpieza de filtro de aire',30],['Verificación de correas',30]],
+  taladro:[['Lubricación de husillo',7],['Limpieza general',7],['Revisión de mandril / brocas',30]],
+  amoladora:[['Revisión de disco / desgaste',7],['Limpieza de ventilación motor',15],['Revisión de escobillas',90]],
+  general:[['Limpieza general',7],['Revisión visual de cables/conexiones',15],['Lubricación de partes móviles',30]]
+};
+function presetParaCategoria(cat){
+  const c=(cat||'').toLowerCase();
+  if(c.includes('torno'))return PRESETS_TAREAS.torno;
+  if(c.includes('fres'))return PRESETS_TAREAS.fresadora;
+  if(c.includes('sold'))return PRESETS_TAREAS.soldadora;
+  if(c.includes('compres'))return PRESETS_TAREAS.compresor;
+  if(c.includes('taladro'))return PRESETS_TAREAS.taladro;
+  if(c.includes('amola'))return PRESETS_TAREAS.amoladora;
+  return PRESETS_TAREAS.general;
+}
 function sSt(s){ if(s.qty===0)return{c:'b-d',l:'Sin stock'}; if(s.qty<=s.min)return{c:'b-w',l:'Stock bajo'}; return{c:'b-g',l:'Disponible'}; }
 function ctrlBadge(fecha){
   if(!fecha) return '<span class="badge b-x">Sin control</span>';
@@ -1940,15 +1996,19 @@ function renderMaquinas(){
     const mst=d!==null?mSt(d):{c:'b-x',l:'Sin programa',ec:''};
     const estC={'Operativo':'b-g','En mantenimiento':'b-w','Fuera de servicio':'b-d'}[m.estado]||'b-x';
     const bgC={'Operativo':'bg-g','En mantenimiento':'bg-w','Fuera de servicio':'bg-b'}[m.estado]||'bg-g';
+    const antig=m.anio?(new Date().getFullYear()-m.anio)+' años (desde '+m.anio+')':null;
+    const nVenc=tareasVencidasCount(m);
     return`<div class="ec ${mst.ec}">
       <div class="eicon ${bgC}">${maqIco(m.categoria||'')}</div>
       <div>
         <div class="en">${m.nombre} <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${m.codigo||''}</span></div>
         <div class="em">${m.marca||''} ${m.serie?'· SN:'+m.serie:''} ${m.ubicacion?'· '+m.ubicacion:''}</div>
-        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><span class="badge ${estC}">${m.estado}</span><span class="badge b-x">${m.categoria||'General'}</span>${nd?`<span class="badge ${mst.c}">🔧 ${mst.l}</span>`:''}</div>
+        <div class="em">${antig?'⏳ '+antig:''}${m.horasUso?' · ⏱ '+m.horasUso+' hs/sem':''}</div>
+        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><span class="badge ${estC}">${m.estado}</span><span class="badge b-x">${m.categoria||'General'}</span>${nd?`<span class="badge ${mst.c}">🔧 ${mst.l}</span>`:''}${nVenc>0?`<span class="badge b-d">⚠ ${nVenc} tarea(s) vencida(s)</span>`:''}</div>
         ${m.notas?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${m.notas}</div>`:''}
       </div>
       <div class="ea">
+        <button class="ab" onclick="UI.openFicha('${m._id}')" title="Ficha técnica">📋</button>
         <button class="ab qr-btn" onclick="UI.showQR('${m._id}','maq')" title="QR">⊡</button>
         <button class="ab ed" onclick="UI.editMaq('${m._id}')" title="Editar">✎</button>
         <button class="ab del" onclick="UI.delMaq('${m._id}')" title="Eliminar">✕</button>
@@ -2281,12 +2341,86 @@ window.dlQR=function(){const c=document.getElementById('qr-canvas');const a=docu
 window.UI={
   openMaq(id=null){
     eIds.maq=id;document.getElementById('mm-title').textContent=id?'Editar Equipo':'Nueva Máquina';
-    if(id){const m=maquinas.find(x=>x._id===id);document.getElementById('mq-cod').value=m.codigo||'';document.getElementById('mq-cat').value=m.categoria||'';document.getElementById('mq-nom').value=m.nombre||'';document.getElementById('mq-marca').value=m.marca||'';document.getElementById('mq-serie').value=m.serie||'';document.getElementById('mq-ubic').value=m.ubicacion||'';document.getElementById('mq-est').value=m.estado||'Operativo';document.getElementById('mq-freq').value=m.freqDias||30;document.getElementById('mq-ultm').value=m.ultMant||'';document.getElementById('mq-notas').value=m.notas||'';}
-    else{['mq-cod','mq-cat','mq-nom','mq-marca','mq-serie','mq-ubic','mq-notas','mq-ultm'].forEach(i=>document.getElementById(i).value='');document.getElementById('mq-est').value='Operativo';document.getElementById('mq-freq').value=30;}
+    if(id){const m=maquinas.find(x=>x._id===id);document.getElementById('mq-cod').value=m.codigo||'';document.getElementById('mq-cat').value=m.categoria||'';document.getElementById('mq-nom').value=m.nombre||'';document.getElementById('mq-marca').value=m.marca||'';document.getElementById('mq-serie').value=m.serie||'';document.getElementById('mq-ubic').value=m.ubicacion||'';document.getElementById('mq-est').value=m.estado||'Operativo';document.getElementById('mq-freq').value=m.freqDias||30;document.getElementById('mq-ultm').value=m.ultMant||'';document.getElementById('mq-notas').value=m.notas||'';document.getElementById('mq-anio').value=m.anio||'';document.getElementById('mq-horas').value=m.horasUso||'';}
+    else{['mq-cod','mq-cat','mq-nom','mq-marca','mq-serie','mq-ubic','mq-notas','mq-ultm','mq-anio','mq-horas'].forEach(i=>document.getElementById(i).value='');document.getElementById('mq-est').value='Operativo';document.getElementById('mq-freq').value=30;}
     document.getElementById('m-maq').classList.add('open');
   },
   editMaq(id){this.openMaq(id);},
   async delMaq(id){if(!canDo('eliminar'))return;const m=maquinas.find(x=>x._id===id);if(!confirm(`¿Eliminar "${m?.nombre||'este equipo'}"?`))return;await fbDel('maquinas',id);await logH('maquina',`Equipo eliminado: ${m?.nombre||''}`);toast('Equipo eliminado');},
+  openFicha(id){
+    eIds.ficha=id;
+    const m=maquinas.find(x=>x._id===id);if(!m)return;
+    document.getElementById('mf-title').textContent=m.nombre;
+    const antig=m.anio?(new Date().getFullYear()-m.anio)+' años (desde '+m.anio+')':'—';
+    document.getElementById('mf-datos').innerHTML=`
+      <div><b>Código:</b> ${m.codigo||'—'}</div><div><b>Categoría:</b> ${m.categoria||'—'}</div>
+      <div><b>Marca/Modelo:</b> ${m.marca||'—'}</div><div><b>N° de Serie:</b> ${m.serie||'—'}</div>
+      <div><b>Ubicación:</b> ${m.ubicacion||'—'}</div><div><b>Estado:</b> ${m.estado||'—'}</div>
+      <div><b>Antigüedad:</b> ${antig}</div><div><b>Uso estimado:</b> ${m.horasUso?m.horasUso+' hs/semana':'—'}</div>`;
+    this.renderFichaTareas(m);
+    document.getElementById('m-ficha').classList.add('open');
+  },
+  renderFichaTareas(m){
+    const tareas=m.tareasPrev||[];
+    const el=document.getElementById('mf-tareas');
+    if(!tareas.length){el.innerHTML='<div class="empty">Sin tareas cargadas. Agregá una manualmente o usá "Cargar tareas típicas".</div>';return;}
+    el.innerHTML=tareas.map((t,i)=>{
+      const st=tareaEstado(t);
+      return`<div class="ec" style="padding:8px 10px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500">${t.nombre}</div>
+          <div style="font-size:11px;color:var(--muted)">Frecuencia: ${FREC_LABEL[t.frecDias]||t.frecDias+'d'} · Último: ${t.ultRealizado||'nunca'}</div>
+        </div>
+        <span class="badge ${st.c}">${st.l}</span>
+        <div class="ea">
+          <button class="ab ed" onclick="UI.marcarTareaHecha('${i}')" title="Marcar realizada hoy">✓</button>
+          <button class="ab del" onclick="UI.delTareaPrev('${i}')" title="Eliminar tarea">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  },
+  async addTareaPrev(){
+    const nom=document.getElementById('mf-nueva-tarea').value.trim();
+    if(!nom){toast('⚠ Escribí el nombre de la tarea','warn');return;}
+    const frec=parseInt(document.getElementById('mf-nueva-frec').value);
+    const m=maquinas.find(x=>x._id===eIds.ficha);if(!m)return;
+    const tareasPrev=[...(m.tareasPrev||[]),{nombre:nom,frecDias:frec,ultRealizado:null}];
+    await fbUpd('maquinas',m._id,{tareasPrev});
+    m.tareasPrev=tareasPrev;
+    document.getElementById('mf-nueva-tarea').value='';
+    this.renderFichaTareas(m);
+    toast('✓ Tarea agregada al plan preventivo');
+  },
+  async presetTareas(){
+    const m=maquinas.find(x=>x._id===eIds.ficha);if(!m)return;
+    const preset=presetParaCategoria(m.categoria).map(([nombre,frecDias])=>({nombre,frecDias,ultRealizado:null}));
+    const existentes=(m.tareasPrev||[]).map(t=>t.nombre);
+    const nuevas=preset.filter(t=>!existentes.includes(t.nombre));
+    if(!nuevas.length){toast('Ya tenés cargadas esas tareas','warn');return;}
+    const tareasPrev=[...(m.tareasPrev||[]),...nuevas];
+    await fbUpd('maquinas',m._id,{tareasPrev});
+    m.tareasPrev=tareasPrev;
+    this.renderFichaTareas(m);
+    toast(`✓ ${nuevas.length} tarea(s) típica(s) cargada(s)`);
+  },
+  async marcarTareaHecha(i){
+    const m=maquinas.find(x=>x._id===eIds.ficha);if(!m)return;
+    const tareasPrev=[...(m.tareasPrev||[])];
+    if(!tareasPrev[i])return;
+    tareasPrev[i]={...tareasPrev[i],ultRealizado:new Date().toISOString().split('T')[0]};
+    await fbUpd('maquinas',m._id,{tareasPrev});
+    m.tareasPrev=tareasPrev;
+    await logH('maquina',`Tarea preventiva realizada: ${tareasPrev[i].nombre} (${m.nombre})`);
+    this.renderFichaTareas(m);
+    toast('✓ Tarea marcada como realizada hoy');
+  },
+  async delTareaPrev(i){
+    const m=maquinas.find(x=>x._id===eIds.ficha);if(!m)return;
+    const tareasPrev=(m.tareasPrev||[]).filter((_,idx)=>idx!=i);
+    await fbUpd('maquinas',m._id,{tareasPrev});
+    m.tareasPrev=tareasPrev;
+    this.renderFichaTareas(m);
+  },
   openMant(id=null){
     eIds.mant=id;document.getElementById('mmt-title').textContent=id?'Editar Mantenimiento':'Registrar Mantenimiento';
     document.getElementById('mt-maq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
@@ -2366,7 +2500,7 @@ window.UI={
 
 window.saveMaq=async function(){
   const nom=document.getElementById('mq-nom').value.trim();if(!nom){toast('⚠ Completá el nombre','warn');return;}
-  const obj={codigo:document.getElementById('mq-cod').value.trim()||'EQ-000',categoria:document.getElementById('mq-cat').value.trim()||'General',nombre:nom,marca:document.getElementById('mq-marca').value.trim(),serie:document.getElementById('mq-serie').value.trim(),ubicacion:document.getElementById('mq-ubic').value.trim(),estado:document.getElementById('mq-est').value,freqDias:parseInt(document.getElementById('mq-freq').value)||0,ultMant:document.getElementById('mq-ultm').value,notas:document.getElementById('mq-notas').value.trim()};
+  const obj={codigo:document.getElementById('mq-cod').value.trim()||'EQ-000',categoria:document.getElementById('mq-cat').value.trim()||'General',nombre:nom,marca:document.getElementById('mq-marca').value.trim(),serie:document.getElementById('mq-serie').value.trim(),ubicacion:document.getElementById('mq-ubic').value.trim(),estado:document.getElementById('mq-est').value,freqDias:parseInt(document.getElementById('mq-freq').value)||0,ultMant:document.getElementById('mq-ultm').value,notas:document.getElementById('mq-notas').value.trim(),anio:parseInt(document.getElementById('mq-anio').value)||null,horasUso:parseFloat(document.getElementById('mq-horas').value)||0};
   if(eIds.maq){await fbSet('maquinas',eIds.maq,obj);await logH('maquina',`Equipo editado: ${nom}`);}else{await fbAdd('maquinas',obj);await logH('maquina',`Nuevo equipo: ${nom}`);}
   closeModal('m-maq');toast('✓ Equipo guardado');
 };
@@ -2567,6 +2701,50 @@ window.exportStockPDF=async function(){
   }
   pdf.save('mantenipro-stock.pdf');
   toast('✓ PDF de stock generado');
+};
+
+window.exportFichaPDF=async function(){
+  const m=maquinas.find(x=>x._id===eIds.ficha);
+  if(!m){toast('⚠ No se encontró el equipo','err');return;}
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,margin=14;let y=margin;
+  pdf.setFillColor(10,12,18);pdf.rect(0,0,W,26,'F');
+  pdf.setTextColor(0,229,160);pdf.setFontSize(15);pdf.setFont('helvetica','bold');
+  pdf.text('Ficha Técnica — '+m.nombre,margin,12);
+  pdf.setFontSize(8);pdf.setFont('helvetica','normal');pdf.setTextColor(150,160,190);
+  pdf.text('ManteniPro | Generado: '+new Date().toLocaleString('es-AR'),margin,19);
+  y=34;
+  pdf.setTextColor(30,30,30);pdf.setFontSize(10);pdf.setFont('helvetica','normal');
+  const antig=m.anio?(new Date().getFullYear()-m.anio)+' años (desde '+m.anio+')':'—';
+  const datos=[
+    ['Código', m.codigo||'—'], ['Categoría', m.categoria||'—'],
+    ['Marca / Modelo', m.marca||'—'], ['N° de Serie', m.serie||'—'],
+    ['Ubicación', m.ubicacion||'—'], ['Estado actual', m.estado||'—'],
+    ['Antigüedad', antig], ['Uso estimado', m.horasUso?m.horasUso+' hs/semana':'—'],
+  ];
+  datos.forEach(([k,v])=>{ pdf.setFont('helvetica','bold');pdf.text(k+':',margin,y);pdf.setFont('helvetica','normal');pdf.text(String(v),margin+45,y); y+=6; });
+  if(m.notas){ y+=2; pdf.setFont('helvetica','bold');pdf.text('Notas:',margin,y); y+=5; pdf.setFont('helvetica','normal'); const lines=pdf.splitTextToSize(m.notas,W-margin*2); pdf.text(lines,margin,y); y+=lines.length*5; }
+  y+=6;
+  pdf.setFillColor(17,20,32);pdf.rect(margin,y,W-margin*2,7,'F');
+  pdf.setTextColor(0,229,160);pdf.setFontSize(10);pdf.setFont('helvetica','bold');
+  pdf.text('PLAN DE TAREAS PREVENTIVAS',margin+2,y+5);
+  y+=12;
+  const tareas=m.tareasPrev||[];
+  if(!tareas.length){ pdf.setTextColor(90,98,130);pdf.setFontSize(9);pdf.setFont('helvetica','normal');pdf.text('Sin tareas cargadas.',margin,y); y+=6; }
+  else{
+    tareas.forEach(t=>{
+      if(y>270){pdf.addPage();y=margin;}
+      const st=tareaEstado(t);
+      pdf.setTextColor(30,30,30);pdf.setFontSize(9);pdf.setFont('helvetica','bold');
+      pdf.text('• '+t.nombre,margin,y);
+      pdf.setFont('helvetica','normal');pdf.setTextColor(90,98,130);
+      pdf.text(`Frecuencia: ${FREC_LABEL[t.frecDias]||t.frecDias+'d'}   |   Último: ${t.ultRealizado||'nunca'}   |   Estado: ${st.l}`,margin+4,y+5);
+      y+=11;
+    });
+  }
+  pdf.save(`ficha-tecnica-${(m.codigo||m.nombre).replace(/\s+/g,'_')}.pdf`);
+  toast('✓ Ficha técnica exportada en PDF');
 };
 
 window.exportPDF=async function(){
