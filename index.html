@@ -698,10 +698,18 @@ textarea.fi{resize:vertical;min-height:56px;}
         <div class="tab active" onclick="swMT('mt-pend',this)">Pendientes / Vencidos</div>
         <div class="tab" onclick="swMT('mt-prog',this)">Programados</div>
         <div class="tab" onclick="swMT('mt-comp',this)">Completados</div>
+        <div class="tab" onclick="swMT('mt-plan',this)">🔧 Plan Preventivo (todas las máquinas)</div>
       </div>
       <div id="mt-pend"><div id="l-mt-pend"></div></div>
       <div id="mt-prog" style="display:none"><div id="l-mt-prog"></div></div>
       <div id="mt-comp" style="display:none"><div id="l-mt-comp"></div></div>
+      <div id="mt-plan" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <select class="fs" id="f-plan-est" onchange="renderPlanPrev()"><option value="">Todos los estados</option><option value="venc">Vencidas</option><option value="ok">Al día</option></select>
+          <select class="fs" id="f-plan-maq" onchange="renderPlanPrev()"><option value="">Todas las máquinas</option></select>
+        </div>
+        <div id="l-mt-plan"></div>
+      </div>
     </div>
 
     <div class="view" id="view-stock">
@@ -1708,7 +1716,7 @@ function setSynced(s){ document.getElementById('sdot').className='sdot '+s; docu
 
 function initListeners() {
   if (listenersInit) return; listenersInit = true;
-  onSnapshot(collection(db,'maquinas'), s=>{ maquinas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('maquinas'); rDash(); rAlerts(); rKPIs(); });
+  onSnapshot(collection(db,'maquinas'), s=>{ maquinas=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('maquinas'); rDash(); rAlerts(); rKPIs(); if(document.getElementById('mt-plan')?.style.display==='block')renderPlanPrev(); });
   onSnapshot(collection(db,'mantenimientos'), s=>{ mantenimientos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('mantenimiento'); rDash(); rAlerts(); rKPIs(); rCal(); });
   onSnapshot(collection(db,'stock'), s=>{ stock=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('stock'); rDash(); rAlerts(); rKPIs(); });
   onSnapshot(collection(db,'prestamos'), s=>{ prestamos=s.docs.map(d=>({_id:d.id,...d.data()})); chk(); ref('prestamos'); rDash(); rAlerts(); rKPIs(); if(isActive('consumo'))renderConsumo(); });
@@ -2017,6 +2025,34 @@ function renderMaquinas(){
   }).join('');
 }
 
+function renderPlanPrev(){
+  const fEst=document.getElementById('f-plan-est')?.value||'';
+  const fMaq=document.getElementById('f-plan-maq')?.value||'';
+  const selMaq=document.getElementById('f-plan-maq');
+  if(selMaq){const cv=selMaq.value;selMaq.innerHTML='<option value="">Todas las máquinas</option>'+maquinas.map(m=>`<option value="${m._id}"${m._id===cv?' selected':''}>${m.nombre}</option>`).join('');}
+  let filas=[];
+  maquinas.forEach(m=>{ (m.tareasPrev||[]).forEach((t,i)=>{ filas.push({maq:m,tarea:t,idx:i}); }); });
+  filas=filas.filter(f=>!fMaq||f.maq._id===fMaq).filter(f=>{ if(!fEst)return true; const venc=tareaEstado(f.tarea).venc; return fEst==='venc'?venc:!venc; });
+  const el=document.getElementById('l-mt-plan');
+  if(!filas.length){el.innerHTML='<div class="empty">No hay tareas preventivas cargadas todavía. Entrá a la Ficha técnica de cada máquina para cargarlas.</div>';return;}
+  filas.sort((a,b)=>{ const av=tareaEstado(a.tarea).venc,bv=tareaEstado(b.tarea).venc; return (bv-av); });
+  el.innerHTML=filas.map(f=>{
+    const st=tareaEstado(f.tarea);
+    return`<div class="ec ${st.venc?'alert-eq':''}">
+      <div class="eicon ${st.venc?'bg-b':'bg-g'}">${maqIco(f.maq.categoria||'')}</div>
+      <div>
+        <div class="en">${f.tarea.nombre}</div>
+        <div class="em">${f.maq.nombre} <span style="color:var(--muted)">· ${f.maq.codigo||''}</span></div>
+        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><span class="badge b-x">Frecuencia: ${FREC_LABEL[f.tarea.frecDias]||f.tarea.frecDias+'d'}</span><span class="badge ${st.c}">${st.l}</span></div>
+      </div>
+      <div class="ea">
+        <button class="ab ed" onclick="UI.marcarTareaHechaDesde('${f.maq._id}','${f.idx}')" title="Marcar realizada hoy">✓</button>
+        <button class="ab" onclick="UI.openFicha('${f.maq._id}')" title="Ver ficha técnica">📋</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // MANTENIMIENTO
 function renderMant(){
   const pend=mantenimientos.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)<=7);
@@ -2044,7 +2080,7 @@ function rMantList(id,list,urgent,done=false){
     </div>
   </div>`;}).join('');
 }
-window.swMT = function(tid,el){document.querySelectorAll('#view-mantenimiento .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['mt-pend','mt-prog','mt-comp'].forEach(t=>document.getElementById(t).style.display=t===tid?'block':'none');};
+window.swMT = function(tid,el){document.querySelectorAll('#view-mantenimiento .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['mt-pend','mt-prog','mt-comp','mt-plan'].forEach(t=>document.getElementById(t).style.display=t===tid?'block':'none');if(tid==='mt-plan')renderPlanPrev();};
 
 // STOCK
 function renderStock(){
@@ -2420,6 +2456,17 @@ window.UI={
     await fbUpd('maquinas',m._id,{tareasPrev});
     m.tareasPrev=tareasPrev;
     this.renderFichaTareas(m);
+  },
+  async marcarTareaHechaDesde(maqId,i){
+    const m=maquinas.find(x=>x._id===maqId);if(!m)return;
+    const tareasPrev=[...(m.tareasPrev||[])];
+    if(!tareasPrev[i])return;
+    tareasPrev[i]={...tareasPrev[i],ultRealizado:new Date().toISOString().split('T')[0]};
+    await fbUpd('maquinas',m._id,{tareasPrev});
+    m.tareasPrev=tareasPrev;
+    await logH('maquina',`Tarea preventiva realizada: ${tareasPrev[i].nombre} (${m.nombre})`);
+    renderPlanPrev();
+    toast('✓ Tarea marcada como realizada hoy');
   },
   openMant(id=null){
     eIds.mant=id;document.getElementById('mmt-title').textContent=id?'Editar Mantenimiento':'Registrar Mantenimiento';
