@@ -2793,8 +2793,9 @@ window.saveOrden=async function(){
   const nuevoEstado=document.getElementById('or-est').value;
   const prev=eIds.ord?ordenes.find(x=>x._id===eIds.ord):null;
   const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',tipo:document.getElementById('or-tipo').value,prio:document.getElementById('or-pr').value,estado:nuevoEstado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:prev?.fecha||new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),tiempoEstimadoMin,herramientas:[...orHerramientas],checklist:orChecklist.map(c=>({...c}))};
+  if(!prev) obj.creadoAt=new Date().toISOString();
   if(nuevoEstado==='En progreso' && !prev?.inicioAt) obj.inicioAt=new Date().toISOString();
-  if(nuevoEstado==='Completada' && !prev?.finAt){ obj.finAt=new Date().toISOString(); if(!prev?.inicioAt) obj.inicioAt=obj.finAt; }
+  if(nuevoEstado==='Completada' && !prev?.finAt){ obj.finAt=new Date().toISOString(); if(!prev?.inicioAt) obj.inicioAt=prev?.creadoAt||obj.finAt; }
   if(eIds.ord){await fbSet('ordenes',eIds.ord,obj);await logH('orden',`Orden editada: ${desc}`);}else{await fbAdd('ordenes',obj);await logH('orden',`Orden creada: ${desc}`);}
   closeModal('m-ord');toast('✓ Orden guardada');
 };
@@ -2863,7 +2864,7 @@ window.cambiarEstadoOrd=async function(id,nuevoEstado){
   const o=ordenes.find(x=>x._id===id); if(!o) return;
   const upd={estado:nuevoEstado};
   if(nuevoEstado==='En progreso' && !o.inicioAt) upd.inicioAt=new Date().toISOString();
-  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt=new Date().toISOString(); if(!o.inicioAt) upd.inicioAt=upd.finAt; }
+  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt=new Date().toISOString(); if(!o.inicioAt) upd.inicioAt=o.creadoAt||upd.finAt; }
   if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; }
   await fbUpd('ordenes',id,upd);
   await logH('orden',`Orden "${o.desc}" → ${nuevoEstado}`);
