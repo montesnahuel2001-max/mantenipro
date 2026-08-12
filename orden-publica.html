@@ -238,7 +238,7 @@ window.__cambiarEstado = async function(nuevoEstado){
 
   const upd = { estado: nuevoEstado };
   if(nuevoEstado==='En progreso' && !o.inicioAt){ upd.inicioAt = new Date().toISOString(); }
-  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt = new Date().toISOString(); if(!o.inicioAt) upd.inicioAt = upd.finAt; }
+  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt = new Date().toISOString(); if(!o.inicioAt) upd.inicioAt = o.creadoAt || upd.finAt; }
   if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; }
 
   await updateDoc(ref, upd);
