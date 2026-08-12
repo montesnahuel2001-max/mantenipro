@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0c12">
+<title>ManteniPro — Orden de trabajo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#0a0c12;--s1:#111420;--s2:#171b2a;--s3:#1e2336;--border:#252d45;
+  --accent:#00e5a0;--aglow:rgba(0,229,160,0.18);
+  --blue:#4d9fff;--warn:#ffb800;--danger:#ff4466;--purple:#a78bfa;
+  --text:#dde3f5;--muted:#5a6282;
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:16px;padding-bottom:40px;}
+.wrap{max-width:520px;margin:0 auto;}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.mark{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),#00b87a);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 16px var(--aglow);flex-shrink:0;}
+.tt{font-family:var(--mono);font-weight:700;font-size:14px;}
+.ts{font-size:11px;color:var(--muted);}
+
+.card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
+.eyebrow{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px;}
+.h1{font-size:20px;font-weight:700;line-height:1.3;}
+.meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);font-weight:600;}
+.b-warn{background:rgba(255,184,0,.1);color:var(--warn);border:1px solid rgba(255,184,0,.25);}
+.b-blue{background:rgba(77,159,255,.1);color:var(--blue);border:1px solid rgba(77,159,255,.25);}
+.b-accent{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.25);}
+.b-danger{background:rgba(255,68,102,.1);color:var(--danger);border:1px solid rgba(255,68,102,.25);}
+.b-muted{background:var(--s2);color:var(--muted);border:1px solid var(--border);}
+
+.field-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 4px;}
+.field-val{font-size:13px;color:var(--text);}
+.notas-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);margin-top:4px;white-space:pre-wrap;}
+
+.timer{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--accent);text-align:center;padding:14px 0;}
+.timer-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:1.5px;margin-top:-8px;margin-bottom:10px;}
+
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.bigbtn{width:100%;padding:16px;border-radius:12px;font-size:15px;font-weight:700;font-family:var(--sans);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s;}
+.bigbtn:active{transform:scale(0.98);}
+.bg-pend{background:var(--s2);color:var(--warn);border:1px solid var(--warn);}
+.bg-prog{background:var(--s2);color:var(--blue);border:1px solid var(--blue);}
+.bg-comp{background:var(--accent);color:#0a0c12;}
+.bigbtn.active-state{opacity:.45;pointer-events:none;}
+
+.list-item{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.list-item:active{border-color:var(--accent);}
+.li-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.li-desc{font-size:14px;font-weight:600;flex:1;}
+.li-meta{font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--mono);}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-family:var(--mono);font-size:12px;}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.namebar{display:flex;gap:8px;margin-bottom:14px;}
+.namebar input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;}
+.namebar input:focus{border-color:var(--accent);}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--accent);color:var(--text);padding:10px 18px;border-radius:10px;font-size:12px;z-index:99;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.show{opacity:1;}
+.foot{text-align:center;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:24px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="mark">🔧</div>
+    <div>
+      <div class="tt">ManteniPro</div>
+      <div class="ts" id="page-sub">Orden de trabajo</div>
+    </div>
+  </div>
+
+  <div class="namebar">
+    <input id="in-nombre" placeholder="Tu nombre (para registrar quién actualizó)" maxlength="40">
+  </div>
+
+  <div id="app"><div class="loading"><div class="spinner"></div>Cargando…</div></div>
+  <div class="foot">Escaneado desde QR · ManteniPro</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+// Misma config que index__2_.html — si la cambian allá, cambiarla acá también.
+const FC = {
+  apiKey:"AIzaSyAe1I0uUxsSFd6LulUfkZQQrh6HlIcsHgY",
+  authDomain:"mantenipro-f76ce.firebaseapp.com",
+  projectId:"mantenipro-f76ce",
+  storageBucket:"mantenipro-f76ce.firebasestorage.app",
+  messagingSenderId:"376207385684",
+  appId:"1:376207385684:web:85674fa3108c213220f9c1"
+};
+const app = initializeApp(FC);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(location.search);
+const maqId = params.get('maq');
+const ordId = params.get('orden');
+const appEl = document.getElementById('app');
+
+// Nombre de quien escanea, guardado en el celu para no tipearlo cada vez
+const nameInput = document.getElementById('in-nombre');
+nameInput.value = localStorage.getItem('mp_pub_nombre') || '';
+nameInput.addEventListener('change', ()=> localStorage.setItem('mp_pub_nombre', nameInput.value.trim()));
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function pBadge(p){ return {'Crítica':'b-danger','Alta':'b-warn','Media':'b-blue','Baja':'b-muted'}[p]||'b-muted'; }
+function eBadge(e){ return {'Pendiente':'b-warn','En progreso':'b-blue','Completada':'b-accent'}[e]||'b-muted'; }
+function fmtDur(ms){
+  if(ms<0) ms=0;
+  const m=Math.floor(ms/60000), h=Math.floor(m/60), mm=m%60;
+  return h>0 ? `${h}h ${mm}m` : `${mm}m`;
+}
+
+let timerHandle=null;
+
+async function cargarListaMaquina(){
+  document.getElementById('page-sub').textContent='Órdenes del equipo';
+  const mSnap = await getDoc(doc(db,'maquinas',maqId));
+  if(!mSnap.exists()){ appEl.innerHTML='<div class="empty">No se encontró este equipo.</div>'; return; }
+  const maq = mSnap.data();
+
+  const qOrd = query(collection(db,'ordenes'), where('equipoId','==',maqId));
+  const ordSnap = await getDocs(qOrd);
+  const ordenes = ordSnap.docs.map(d=>({_id:d.id, ...d.data()}));
+  ordenes.sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
+
+  const pendientes = ordenes.filter(o=>o.estado!=='Completada');
+  const completadas = ordenes.filter(o=>o.estado==='Completada');
+
+  let html = `<div class="card">
+    <div class="eyebrow">Equipo</div>
+    <div class="h1">${maq.nombre||'—'}</div>
+    <div class="meta-row">
+      ${maq.codigo?`<span class="badge b-muted">${maq.codigo}</span>`:''}
+      ${maq.ubicacion?`<span class="badge b-muted">📍 ${maq.ubicacion}</span>`:''}
+      <span class="badge b-muted">${maq.estado||'—'}</span>
+    </div>
+  </div>`;
+
+  if(!ordenes.length){
+    html += `<div class="empty">Este equipo no tiene órdenes de trabajo cargadas todavía.</div>`;
+  } else {
+    if(pendientes.length){
+      html += `<div class="eyebrow" style="margin:18px 0 8px">Pendientes / en curso (${pendientes.length})</div>`;
+      html += pendientes.map(itemHTML).join('');
+    }
+    if(completadas.length){
+      html += `<div class="eyebrow" style="margin:18px 0 8px">Completadas (${completadas.length})</div>`;
+      html += completadas.map(itemHTML).join('');
+    }
+  }
+  appEl.innerHTML = html;
+}
+
+function itemHTML(o){
+  return `<div class="list-item" onclick="location.href='?orden=${o._id}'">
+    <div class="li-top">
+      <div class="li-desc">${o.desc||'Sin descripción'}</div>
+      <span class="badge ${eBadge(o.estado)}">${o.estado}</span>
+    </div>
+    <div class="li-meta">Prioridad: ${o.prio||'—'} · Resp: ${o.resp||'—'} · #${o._id.slice(-4).toUpperCase()}</div>
+  </div>`;
+}
+
+async function cargarOrden(){
+  document.getElementById('page-sub').textContent='Detalle de la orden';
+  const oSnap = await getDoc(doc(db,'ordenes',ordId));
+  if(!oSnap.exists()){ appEl.innerHTML='<div class="empty">No se encontró esta orden.</div>'; return; }
+  render(oSnap.data());
+}
+
+function render(o){
+  if(timerHandle){ clearInterval(timerHandle); timerHandle=null; }
+
+  let timerBlock = '';
+  if(o.estado==='En progreso' && o.inicioAt){
+    timerBlock = `<div class="timer" id="live-timer">--</div><div class="timer-label">Tiempo en progreso</div>`;
+  } else if(o.estado==='Completada' && o.inicioAt && o.finAt){
+    const dur = new Date(o.finAt) - new Date(o.inicioAt);
+    timerBlock = `<div class="timer">${fmtDur(dur)}</div><div class="timer-label">Duración total</div>`;
+  }
+
+  appEl.innerHTML = `
+    ${maqId ? `<div style="margin-bottom:10px"><a href="?maq=${o.equipoId}" style="color:var(--muted);font-size:11px;font-family:var(--mono);text-decoration:none">← Volver al equipo</a></div>` : ''}
+    <div class="card">
+      <div class="eyebrow">Orden #${(o._id||ordId).slice(-4).toUpperCase()} · ${o.equipoNombre||'—'}</div>
+      <div class="h1">${o.desc||'Sin descripción'}</div>
+      <div class="meta-row">
+        <span class="badge ${pBadge(o.prio)}">Prioridad: ${o.prio||'—'}</span>
+        <span class="badge ${eBadge(o.estado)}" id="estado-badge">${o.estado||'—'}</span>
+      </div>
+      ${timerBlock}
+      <div class="field-label">Responsable</div>
+      <div class="field-val">${o.resp||'—'}</div>
+      <div class="field-label">Fecha de carga</div>
+      <div class="field-val">${o.fecha||'—'}</div>
+      ${o.notas ? `<div class="field-label">Notas / instrucciones</div><div class="notas-box">${o.notas}</div>` : ''}
+
+      <div class="btns">
+        <button class="bigbtn bg-pend ${o.estado==='Pendiente'?'active-state':''}" onclick="window.__cambiarEstado('Pendiente')">⏸ Marcar Pendiente</button>
+        <button class="bigbtn bg-prog ${o.estado==='En progreso'?'active-state':''}" onclick="window.__cambiarEstado('En progreso')">▶ Marcar En progreso</button>
+        <button class="bigbtn bg-comp ${o.estado==='Completada'?'active-state':''}" onclick="window.__cambiarEstado('Completada')">✓ Marcar Completada</button>
+      </div>
+    </div>`;
+
+  if(o.estado==='En progreso' && o.inicioAt){
+    const start = new Date(o.inicioAt).getTime();
+    const tick = ()=>{ const el=document.getElementById('live-timer'); if(el) el.textContent = fmtDur(Date.now()-start); };
+    tick();
+    timerHandle = setInterval(tick, 1000);
+  }
+}
+
+window.__cambiarEstado = async function(nuevoEstado){
+  const nombre = nameInput.value.trim();
+  if(!nombre){ toast('⚠ Escribí tu nombre arriba primero'); nameInput.focus(); return; }
+  localStorage.setItem('mp_pub_nombre', nombre);
+
+  const ref = doc(db,'ordenes',ordId);
+  const snap = await getDoc(ref);
+  if(!snap.exists()) return;
+  const o = snap.data();
+
+  const upd = { estado: nuevoEstado };
+  if(nuevoEstado==='En progreso' && !o.inicioAt){ upd.inicioAt = new Date().toISOString(); }
+  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt = new Date().toISOString(); if(!o.inicioAt) upd.inicioAt = upd.finAt; }
+  if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; }
+
+  await updateDoc(ref, upd);
+  await addDoc(collection(db,'historial'), {
+    tipo:'orden',
+    desc:`${nombre} marcó "${o.desc}" como ${nuevoEstado} (desde QR)`,
+    usuario:nombre,
+    ts: serverTimestamp(),
+    fecha: new Date().toLocaleString('es-AR')
+  });
+
+  toast('✓ Estado actualizado');
+  cargarOrden();
+};
+
+// Enrutar según parámetro de la URL
+if(ordId){ cargarOrden(); }
+else if(maqId){ cargarListaMaquina(); }
+else { appEl.innerHTML = '<div class="empty">Falta el código de equipo u orden en el link (parámetro <b>?maq=</b> o <b>?orden=</b>).</div>'; }
+</script>
+</body>
+</html>
