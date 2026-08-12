@@ -751,7 +751,7 @@ textarea.fi{resize:vertical;min-height:56px;}
         <select class="fs" id="f-or-est" onchange="renderOrdenes()"><option value="">Todos los estados</option><option>Pendiente</option><option>En progreso</option><option>Completada</option></select>
         <select class="fs" id="f-or-pr" onchange="renderOrdenes()"><option value="">Todas las prioridades</option><option>Baja</option><option>Media</option><option>Alta</option><option>Crítica</option></select>
       </div>
-      <div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Equipo</th><th>Prioridad</th><th>Responsable</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="t-ord"></tbody></table></div>
+      <div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Equipo</th><th>Prioridad</th><th>Asignado a</th><th>Progreso</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="t-ord"></tbody></table></div>
     </div>
 
     <div class="view" id="view-calendario">
@@ -1383,16 +1383,38 @@ textarea.fi{resize:vertical;min-height:56px;}
 </div>
 
 <div class="ov" id="m-ord">
-  <div class="modal">
+  <div class="modal" style="width:560px">
     <div class="mt">≡ <span id="mo-title">Nueva Orden</span></div>
-    <div class="fg"><label class="fl">Descripción</label><input class="fi" id="or-desc" placeholder="Descripción del trabajo"></div>
+    <div class="fg"><label class="fl">Descripción / Tarea</label><input class="fi" id="or-desc" placeholder="Ej: Cambiar rodamiento del torno 2"></div>
     <div class="fg"><label class="fl">Equipo</label><select class="fss" id="or-eq"></select></div>
     <div class="fr"><div class="fg"><label class="fl">Prioridad</label><select class="fss" id="or-pr"><option>Baja</option><option>Media</option><option selected>Alta</option><option>Crítica</option></select></div><div class="fg"><label class="fl">Estado</label><select class="fss" id="or-est"><option>Pendiente</option><option>En progreso</option><option>Completada</option></select></div></div>
-    <div class="fg"><label class="fl">Responsable</label><input class="fi" id="or-resp" placeholder="Técnico asignado"></div>
-    <div class="fg"><label class="fl">Notas</label><input class="fi" id="or-notas" placeholder="Instrucciones adicionales"></div>
+    <div class="fr"><div class="fg"><label class="fl">Asignado a (alumno / pasante / técnico)</label><input class="fi" id="or-resp" placeholder="Nombre y apellido"></div><div class="fg"><label class="fl">Tiempo estimado</label><div style="display:flex;gap:6px"><input class="fi" id="or-tiempo" type="number" min="0" placeholder="0" style="width:80px"><select class="fss" id="or-tiempo-un"><option value="min">minutos</option><option value="h">horas</option></select></div></div></div>
+
+    <div class="fg">
+      <label class="fl">Herramientas / materiales necesarios</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input class="fi" id="or-herr-in" placeholder="Ej: Llave 12mm — Enter para agregar" onkeydown="if(event.key==='Enter'){event.preventDefault();addHerramienta();}"><button class="btn btn-ghost btn-sm" type="button" onclick="addHerramienta()">+ Agregar</button></div>
+      <div id="or-herr-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+
+    <div class="fg">
+      <label class="fl">Checklist de pasos a seguir</label>
+      <div id="or-check-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px"><input class="fi" id="or-check-in" placeholder="Ej: Desconectar la máquina — Enter para agregar" onkeydown="if(event.key==='Enter'){event.preventDefault();addChecklistItem();}"><button class="btn btn-ghost btn-sm" type="button" onclick="addChecklistItem()">+ Agregar paso</button></div>
+    </div>
+
+    <div class="fg"><label class="fl">Notas / instrucciones adicionales</label><textarea class="fi" id="or-notas" placeholder="Instrucciones adicionales, seguridad, EPP requerido, etc."></textarea></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-ord')">Cancelar</button><button class="btn btn-primary" onclick="saveOrden()">Guardar</button></div>
   </div>
 </div>
+
+<div class="ov" id="m-ord-ver">
+  <div class="modal" style="width:560px">
+    <div class="mt">👁 <span id="mov-title">Orden de trabajo</span></div>
+    <div id="mov-body"></div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-ord-ver')">Cerrar</button></div>
+  </div>
+</div>
+
 
 <div class="ov" id="m-qr">
   <div class="modal" style="width:340px;text-align:center">
@@ -1703,6 +1725,11 @@ const FC = {
 };
 const app = initializeApp(FC);
 const db = getFirestore(app);
+
+// ⚠ COMPLETAR: URL pública donde subiste orden-publica.html (sin login).
+// Ejemplo si usás GitHub Pages: "https://tu-usuario.github.io/mantenipro/orden-publica.html"
+// Ejemplo si usás Firebase Hosting: "https://mantenipro-f76ce.web.app/orden-publica.html"
+const PUBLIC_URL_BASE = "https://TU-DOMINIO-ACA/orden-publica.html";
 
 // STATE
 let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[], reportes=[];
@@ -2253,17 +2280,25 @@ function renderOrdenes(){
   const f=ordenes.filter(o=>(!q||o.desc?.toLowerCase().includes(q)||o.resp?.toLowerCase().includes(q))&&(!est||o.estado===est)&&(!pr||o.prio===pr));
   const tb=document.getElementById('t-ord');
   if(!f.length){tb.innerHTML='<tr><td colspan="8"><div class="empty">No se encontraron órdenes</div></td></tr>';return;}
-  tb.innerHTML=[...f].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(o=>`<tr>
+  tb.innerHTML=[...f].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(o=>{
+    const cl=Array.isArray(o.checklist)?o.checklist:[];
+    const done=cl.filter(c=>c.hecho).length;
+    const pct=cl.length?Math.round(done/cl.length*100):0;
+    const progHTML=cl.length?`<div style="display:flex;align-items:center;gap:6px"><div style="width:52px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;flex-shrink:0"><div style="height:100%;background:${pct===100?'var(--accent)':'var(--blue)'};width:${pct}%"></div></div><span style="font-size:10px;color:var(--muted);font-family:var(--mono)">${done}/${cl.length}</span></div>`:`<span style="font-size:10px;color:var(--faint);font-family:var(--mono)">— sin checklist</span>`;
+    const tiempoHTML=o.tiempoEstimadoMin?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px">⏱ est. ${fmtDurMin(o.tiempoEstimadoMin)}</div>`:'';
+    return `<tr>
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td>
-    <td style="font-weight:500">${o.desc}${o.notas?'<br><span style="font-size:10px;color:var(--muted)">'+o.notas+'</span>':''}</td>
+    <td style="font-weight:500;cursor:pointer" onclick="UI.verOrd('${o._id}')">${o.desc}${o.notas?'<br><span style="font-size:10px;color:var(--muted)">'+o.notas+'</span>':''}</td>
     <td style="font-size:11px;color:var(--muted)">${o.equipoNombre||'—'}</td>
     <td><span class="badge ${pC(o.prio)}">${o.prio}</span></td>
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
-    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${o.fecha||''}</td>
+    <td>${progHTML}${tiempoHTML}</td>
     <td><span class="badge ${eC(o.estado)}">${o.estado}</span></td>
-    <td><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button></td>
-  </tr>`).join('');
+    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button></td>
+  </tr>`;}).join('');
 }
+function fmtDurMin(min){ if(!min&&min!==0)return'—'; const h=Math.floor(min/60),m=Math.round(min%60); return h>0?`${h}h ${m}m`:`${m}m`; }
+function fmtDurMs(ms){ if(ms<0)ms=0; return fmtDurMin(ms/60000); }
 
 // CALENDARIO
 window.calNav = function(delta){ calMonth+=delta; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} rCal(); };
@@ -2501,12 +2536,25 @@ window.UI={
   openOrd(id=null){
     eIds.ord=id;document.getElementById('mo-title').textContent=id?'Editar Orden':'Nueva Orden';
     document.getElementById('or-eq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
-    if(id){const o=ordenes.find(x=>x._id===id);document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';}
-    else{['or-desc','or-resp','or-notas'].forEach(i=>document.getElementById(i).value='');document.getElementById('or-eq').value='';document.getElementById('or-pr').value='Alta';document.getElementById('or-est').value='Pendiente';}
+    if(id){
+      const o=ordenes.find(x=>x._id===id);
+      document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';
+      if(o.tiempoEstimadoMin>=60 && o.tiempoEstimadoMin%60===0){document.getElementById('or-tiempo').value=o.tiempoEstimadoMin/60;document.getElementById('or-tiempo-un').value='h';}
+      else{document.getElementById('or-tiempo').value=o.tiempoEstimadoMin||'';document.getElementById('or-tiempo-un').value='min';}
+      orHerramientas=Array.isArray(o.herramientas)?[...o.herramientas]:[];
+      orChecklist=Array.isArray(o.checklist)?o.checklist.map(c=>({...c})):[];
+    }
+    else{
+      ['or-desc','or-resp','or-notas','or-tiempo'].forEach(i=>document.getElementById(i).value='');
+      document.getElementById('or-eq').value='';document.getElementById('or-pr').value='Alta';document.getElementById('or-est').value='Pendiente';document.getElementById('or-tiempo-un').value='min';
+      orHerramientas=[];orChecklist=[];
+    }
+    renderHerrChips();renderCheckBuilder();
     document.getElementById('m-ord').classList.add('open');
   },
   editOrd(id){this.openOrd(id);},
   async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
+  verOrd(id){ verOrdenDetalle(id); },
   openBaja(){
     document.getElementById('bj-cat').value='Insumo';
     document.getElementById('bj-fecha').value=new Date().toISOString().split('T')[0];
@@ -2536,7 +2584,10 @@ window.UI={
   showQR(id,tipo){
     const canvas=document.getElementById('qr-canvas');
     let label='',code='';
-    if(tipo==='maq'){const m=maquinas.find(x=>x._id===id);label=m?.nombre||'Equipo';code=`MAQUINA:${m?.codigo||id}|${m?.nombre||''}|${m?.ubicacion||''}`;}
+    // ⚠ Reemplazá PUBLIC_URL_BASE (arriba, cerca de la config de Firebase) por la URL real
+    // donde subas orden-publica.html, ej: "https://tu-escuela.github.io/mantenipro/orden-publica.html"
+    if(tipo==='maq'){const m=maquinas.find(x=>x._id===id);label=m?.nombre||'Equipo';code=`${PUBLIC_URL_BASE}?maq=${id}`;}
+    else if(tipo==='orden'){const o=ordenes.find(x=>x._id===id);label=o?.desc||'Orden';code=`${PUBLIC_URL_BASE}?orden=${id}`;}
     else{const s=stock.find(s=>s._id===id);label=s?.nombre||'Artículo';code=`STOCK:${s?.codigo||id}|${s?.nombre||''}|${s?.ubicacion||''}`;}
     document.getElementById('qr-label').textContent=label;
     document.getElementById('qr-code').textContent=code;
@@ -2661,12 +2712,118 @@ window.saveBaja=async function(){
   closeModal('m-baja');toast('✓ Baja registrada');
 };
 
+// ═══ Herramientas y Checklist (modal Nueva/Editar Orden) ═══
+let orHerramientas=[], orChecklist=[];
+function renderHerrChips(){
+  document.getElementById('or-herr-list').innerHTML = orHerramientas.length
+    ? orHerramientas.map((h,i)=>`<span class="badge b-b" style="cursor:default">🔧 ${h} <span style="cursor:pointer;margin-left:4px;opacity:.7" onclick="rmHerramienta(${i})">✕</span></span>`).join('')
+    : '<span style="font-size:11px;color:var(--faint)">Sin herramientas agregadas todavía</span>';
+}
+window.addHerramienta=function(){
+  const inp=document.getElementById('or-herr-in');const v=inp.value.trim();
+  if(!v)return; orHerramientas.push(v); inp.value=''; renderHerrChips();
+};
+window.rmHerramienta=function(i){ orHerramientas.splice(i,1); renderHerrChips(); };
+
+function renderCheckBuilder(){
+  document.getElementById('or-check-list').innerHTML = orChecklist.length
+    ? orChecklist.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:6px 10px">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);width:16px">${i+1}.</span>
+        <span style="flex:1;font-size:12px">${c.texto}</span>
+        <span style="cursor:pointer;color:var(--danger);font-size:12px" onclick="rmChecklistItem(${i})">✕</span>
+      </div>`).join('')
+    : '<span style="font-size:11px;color:var(--faint)">Sin pasos agregados todavía — armá la secuencia que va a seguir el alumno/pasante</span>';
+}
+window.addChecklistItem=function(){
+  const inp=document.getElementById('or-check-in');const v=inp.value.trim();
+  if(!v)return; orChecklist.push({id:'p'+Date.now()+Math.floor(Math.random()*999),texto:v,hecho:false}); inp.value=''; renderCheckBuilder();
+};
+window.rmChecklistItem=function(i){ orChecklist.splice(i,1); renderCheckBuilder(); };
+
 window.saveOrden=async function(){
   const desc=document.getElementById('or-desc').value.trim();if(!desc){toast('⚠ Completá la descripción','warn');return;}
   const eqId=document.getElementById('or-eq').value;const maq=maquinas.find(m=>m._id===eqId);
-  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',prio:document.getElementById('or-pr').value,estado:document.getElementById('or-est').value,resp:document.getElementById('or-resp').value.trim()||'—',fecha:new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim()};
+  const tiempoVal=parseFloat(document.getElementById('or-tiempo').value)||0;
+  const tiempoUn=document.getElementById('or-tiempo-un').value;
+  const tiempoEstimadoMin=tiempoUn==='h'?Math.round(tiempoVal*60):Math.round(tiempoVal);
+  const nuevoEstado=document.getElementById('or-est').value;
+  const prev=eIds.ord?ordenes.find(x=>x._id===eIds.ord):null;
+  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',prio:document.getElementById('or-pr').value,estado:nuevoEstado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:prev?.fecha||new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),tiempoEstimadoMin,herramientas:[...orHerramientas],checklist:orChecklist.map(c=>({...c}))};
+  if(nuevoEstado==='En progreso' && !prev?.inicioAt) obj.inicioAt=new Date().toISOString();
+  if(nuevoEstado==='Completada' && !prev?.finAt){ obj.finAt=new Date().toISOString(); if(!prev?.inicioAt) obj.inicioAt=obj.finAt; }
   if(eIds.ord){await fbSet('ordenes',eIds.ord,obj);await logH('orden',`Orden editada: ${desc}`);}else{await fbAdd('ordenes',obj);await logH('orden',`Orden creada: ${desc}`);}
   closeModal('m-ord');toast('✓ Orden guardada');
+};
+
+// ═══ Vista de detalle / ejecución de la orden (para el alumno/pasante) ═══
+let ordVerTimer=null;
+window.verOrdenDetalle=function(id){
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  document.getElementById('mov-title').textContent='#'+id.slice(-4).toUpperCase()+' — '+(o.equipoNombre||'Sin equipo');
+  pintarOrdenDetalle(o,id);
+  document.getElementById('m-ord-ver').classList.add('open');
+};
+function pintarOrdenDetalle(o,id){
+  if(ordVerTimer){clearInterval(ordVerTimer);ordVerTimer=null;}
+  const cl=Array.isArray(o.checklist)?o.checklist:[];
+  const done=cl.filter(c=>c.hecho).length;
+  const pct=cl.length?Math.round(done/cl.length*100):0;
+  let timerHTML='';
+  if(o.estado==='En progreso' && o.inicioAt){ timerHTML=`<div style="text-align:center;padding:10px 0"><div id="ordver-timer" style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--blue)">--</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px">Tiempo transcurrido</div></div>`; }
+  else if(o.estado==='Completada' && o.inicioAt && o.finAt){ timerHTML=`<div style="text-align:center;padding:10px 0"><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent)">${fmtDurMs(new Date(o.finAt)-new Date(o.inicioAt))}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px">Duración real</div></div>`; }
+
+  document.getElementById('mov-body').innerHTML=`
+    <div style="font-weight:600;font-size:15px;margin-bottom:8px">${o.desc}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <span class="badge ${pC(o.prio)}">${o.prio}</span>
+      <span class="badge ${eC(o.estado)}">${o.estado}</span>
+      ${o.tiempoEstimadoMin?`<span class="badge b-x">⏱ estimado ${fmtDurMin(o.tiempoEstimadoMin)}</span>`:''}
+    </div>
+    <div class="fr" style="margin-bottom:12px">
+      <div><div class="fl">Asignado a</div><div style="font-size:13px">${o.resp||'—'}</div></div>
+      <div><div class="fl">Fecha de carga</div><div style="font-size:13px">${o.fecha||'—'}</div></div>
+    </div>
+    ${o.herramientas?.length?`<div class="fl">Herramientas / materiales necesarios</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${o.herramientas.map(h=>`<span class="badge b-b">🔧 ${h}</span>`).join('')}</div>`:''}
+    ${o.notas?`<div class="fl">Notas / instrucciones</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.notas}</div>`:''}
+    ${cl.length?`<div class="fl">Checklist de pasos (${done}/${cl.length})</div>
+      <div style="width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:${pct===100?'var(--accent)':'var(--blue)'};width:${pct}%"></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        ${cl.map((c,i)=>`<label style="display:flex;align-items:center;gap:9px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;cursor:pointer">
+          <input type="checkbox" ${c.hecho?'checked':''} onchange="toggleCheckItem('${id}',${i})" style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+          <span style="font-size:12px;${c.hecho?'text-decoration:line-through;color:var(--muted)':''}">${c.texto}</span>
+        </label>`).join('')}
+      </div>` : ''}
+    ${timerHTML}
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn btn-warn" style="flex:1;justify-content:center" ${o.estado==='Pendiente'?'disabled':''} onclick="cambiarEstadoOrd('${id}','Pendiente')">⏸ Pendiente</button>
+      <button class="btn btn-blue" style="flex:1;justify-content:center" ${o.estado==='En progreso'?'disabled':''} onclick="cambiarEstadoOrd('${id}','En progreso')">▶ En progreso</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" ${o.estado==='Completada'?'disabled':''} onclick="cambiarEstadoOrd('${id}','Completada')">✓ Completada</button>
+    </div>`;
+
+  if(o.estado==='En progreso' && o.inicioAt){
+    const start=new Date(o.inicioAt).getTime();
+    const tick=()=>{const el=document.getElementById('ordver-timer'); if(el) el.textContent=fmtDurMs(Date.now()-start);};
+    tick(); ordVerTimer=setInterval(tick,1000);
+  }
+}
+window.toggleCheckItem=async function(id,idx){
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  const cl=Array.isArray(o.checklist)?o.checklist.map(c=>({...c})):[];
+  if(!cl[idx]) return;
+  cl[idx].hecho=!cl[idx].hecho;
+  await fbUpd('ordenes',id,{checklist:cl});
+  const upd={...o,checklist:cl}; pintarOrdenDetalle(upd,id);
+};
+window.cambiarEstadoOrd=async function(id,nuevoEstado){
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  const upd={estado:nuevoEstado};
+  if(nuevoEstado==='En progreso' && !o.inicioAt) upd.inicioAt=new Date().toISOString();
+  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt=new Date().toISOString(); if(!o.inicioAt) upd.inicioAt=upd.finAt; }
+  if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; }
+  await fbUpd('ordenes',id,upd);
+  await logH('orden',`Orden "${o.desc}" → ${nuevoEstado}`);
+  toast('✓ Estado actualizado');
+  const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
 };
 
 window.closeModal=function(id){document.getElementById(id).classList.remove('open');};
