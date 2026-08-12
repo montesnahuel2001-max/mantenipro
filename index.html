@@ -2662,8 +2662,21 @@ window.UI={
     else{const s=stock.find(s=>s._id===id);label=s?.nombre||'Artículo';code=`STOCK:${s?.codigo||id}|${s?.nombre||''}|${s?.ubicacion||''}`;}
     document.getElementById('qr-label').textContent=label;
     document.getElementById('qr-code').textContent=code;
-    QRCode.toCanvas(canvas,code,{width:200,margin:2,color:{dark:'#00e5a0',light:'#111420'}},()=>{});
+    // Abrimos el modal primero: así el usuario siempre ve la ventana, aunque falle
+    // la generación de la imagen del QR (ej: la librería no llegó a cargar por la red).
     document.getElementById('m-qr').classList.add('open');
+    try{
+      if(typeof QRCode === 'undefined'){
+        toast('⚠ No se pudo cargar la librería del QR. Revisá tu conexión y recargá la página.','err');
+      } else {
+        QRCode.toCanvas(canvas,code,{width:200,margin:2,color:{dark:'#00e5a0',light:'#111420'}},(err)=>{
+          if(err){ console.error(err); toast('⚠ No se pudo dibujar el QR','err'); }
+        });
+      }
+    }catch(e){
+      console.error(e);
+      toast('⚠ Error generando el QR','err');
+    }
   }
 };
 
