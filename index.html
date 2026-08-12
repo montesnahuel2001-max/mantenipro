@@ -600,33 +600,33 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
   <nav>
     <div class="ng">Principal</div>
-    <div class="ni active" onclick="nav('dashboard')"><span class="ic">⊞</span><span>Dashboard</span></div>
-    <div class="ni" onclick="nav('alertas')"><span class="ic">🔔</span><span>Alertas</span><span class="nbadge" id="badge-al">0</span></div>
-    <div class="ng">Gestión</div>
-    <div class="ni" onclick="nav('maquinas')"><span class="ic">🏭</span><span>Máquinas</span></div>
-    <div class="ni" onclick="nav('mantenimiento')"><span class="ic">📅</span><span>Mantenimiento</span></div>
-    <div class="ni" onclick="nav('stock')"><span class="ic">▦</span><span>Stock</span></div>
-    <div class="ni" onclick="nav('entradas')"><span class="ic">⬆</span><span>Entradas</span></div>
-    <div class="ni" onclick="nav('prestamos')"><span class="ic">⇄</span><span>Préstamos</span></div>
-    <div class="ni" onclick="nav('ordenes')"><span class="ic">≡</span><span>Órdenes</span></div>
-    <div class="ng">Análisis</div>
-    <div class="ni" onclick="nav('calendario')"><span class="ic">📆</span><span>Calendario</span></div>
-    <div class="ni" onclick="nav('graficos')"><span class="ic">📈</span><span>Gráficos</span></div>
-    <div class="ni" onclick="nav('kpis')"><span class="ic">📊</span><span>KPIs & MTBF</span></div>
-    <div class="ni" onclick="nav('consumo')"><span class="ic">🔥</span><span>Top Insumos</span></div>
-    <div class="ni" onclick="nav('ia')"><span class="ic">🤖</span><span>IA & Asistente</span></div>
+    <div class="ni active" id="ni-dashboard" onclick="nav('dashboard')"><span class="ic">⊞</span><span>Dashboard</span></div>
+    <div class="ni" id="ni-alertas" onclick="nav('alertas')"><span class="ic">🔔</span><span>Alertas</span><span class="nbadge" id="badge-al">0</span></div>
+    <div class="ng" id="ng-gestion">Gestión</div>
+    <div class="ni" id="ni-maquinas" onclick="nav('maquinas')"><span class="ic">🏭</span><span>Máquinas</span></div>
+    <div class="ni" id="ni-mantenimiento" onclick="nav('mantenimiento')"><span class="ic">📅</span><span>Mantenimiento</span></div>
+    <div class="ni" id="ni-stock" onclick="nav('stock')"><span class="ic">▦</span><span>Stock</span></div>
+    <div class="ni" id="ni-entradas" onclick="nav('entradas')"><span class="ic">⬆</span><span>Entradas</span></div>
+    <div class="ni" id="ni-prestamos" onclick="nav('prestamos')"><span class="ic">⇄</span><span>Préstamos</span></div>
+    <div class="ni" id="ni-ordenes" onclick="nav('ordenes')"><span class="ic">≡</span><span>Órdenes</span></div>
+    <div class="ng" id="ng-analisis">Análisis</div>
+    <div class="ni" id="ni-calendario" onclick="nav('calendario')"><span class="ic">📆</span><span>Calendario</span></div>
+    <div class="ni" id="ni-graficos" onclick="nav('graficos')"><span class="ic">📈</span><span>Gráficos</span></div>
+    <div class="ni" id="ni-kpis" onclick="nav('kpis')"><span class="ic">📊</span><span>KPIs & MTBF</span></div>
+    <div class="ni" id="ni-consumo" onclick="nav('consumo')"><span class="ic">🔥</span><span>Top Insumos</span></div>
+    <div class="ni" id="ni-ia" onclick="nav('ia')"><span class="ic">🤖</span><span>IA & Asistente</span></div>
     <div class="ni" onclick="showApiKeyModal()" id="ni-apikey"><span class="ic">🔑</span><span>Config. API Key</span><span id="apikey-dot" style="width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:auto;flex-shrink:0"></span></div>
-    <div class="ng">Equipo</div>
-    <div class="ni" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
-    <div class="ni" onclick="nav('reportes')"><span class="ic">📣</span><span>Reportes</span><span class="nbadge" id="badge-rep" style="background:var(--warn);display:none">0</span></div>
-    <div class="ni" onclick="nav('epp')"><span class="ic">🦺</span><span>Control EPP</span><span class="nbadge" id="badge-epp" style="display:none;background:var(--danger)">0</span></div>
-    <div class="ni" onclick="nav('compras')"><span class="ic">🛒</span><span>Compras</span><span class="nbadge" id="badge-compras" style="background:var(--warn);display:none">0</span></div>
-    <div class="ni" onclick="nav('compras');setTimeout(()=>{swTabCompras('cp-fact',document.querySelectorAll('#view-compras .tab')[3])},100)"><span class="ic">🧾</span><span>Facturas</span><span class="nbadge" id="badge-facturas" style="background:var(--purple);display:none">0</span></div>
-    <div class="ng">Registro</div>
-    <div class="ni" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
-    <div class="ni" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
+    <div class="ng" id="ng-equipo">Equipo</div>
+    <div class="ni" id="ni-notas" onclick="nav('notas')"><span class="ic">📝</span><span>Notas Practicantes</span></div>
+    <div class="ni" id="ni-reportes" onclick="nav('reportes')"><span class="ic">📣</span><span>Reportes</span><span class="nbadge" id="badge-rep" style="background:var(--warn);display:none">0</span></div>
+    <div class="ni" id="ni-epp" onclick="nav('epp')"><span class="ic">🦺</span><span>Control EPP</span><span class="nbadge" id="badge-epp" style="display:none;background:var(--danger)">0</span></div>
+    <div class="ni" id="ni-compras" onclick="nav('compras')"><span class="ic">🛒</span><span>Compras</span><span class="nbadge" id="badge-compras" style="background:var(--warn);display:none">0</span></div>
+    <div class="ni" id="ni-facturas" onclick="nav('compras');setTimeout(()=>{swTabCompras('cp-fact',document.querySelectorAll('#view-compras .tab')[3])},100)"><span class="ic">🧾</span><span>Facturas</span><span class="nbadge" id="badge-facturas" style="background:var(--purple);display:none">0</span></div>
+    <div class="ng" id="ng-registro">Registro</div>
+    <div class="ni" id="ni-bajas" onclick="nav('bajas')"><span class="ic">🗑</span><span>Bajas</span></div>
+    <div class="ni" id="ni-historial" onclick="nav('historial')"><span class="ic">◷</span><span>Historial</span></div>
     <div class="ni" id="ni-usuarios" style="display:none" onclick="nav('usuarios')"><span class="ic">👥</span><span>Usuarios</span></div>
-    <div class="ni" onclick="exportarJSON()"><span class="ic">💾</span><span>Backup JSON</span></div>
+    <div class="ni" id="ni-backup" onclick="exportarJSON()"><span class="ic">💾</span><span>Backup JSON</span></div>
   </nav>
   <div class="sf">
     <div class="user-row">
@@ -750,8 +750,9 @@ textarea.fi{resize:vertical;min-height:56px;}
         <input class="si" placeholder="🔍 Buscar..." id="s-ord" oninput="renderOrdenes()">
         <select class="fs" id="f-or-est" onchange="renderOrdenes()"><option value="">Todos los estados</option><option>Pendiente</option><option>En progreso</option><option>Completada</option></select>
         <select class="fs" id="f-or-pr" onchange="renderOrdenes()"><option value="">Todas las prioridades</option><option>Baja</option><option>Media</option><option>Alta</option><option>Crítica</option></select>
+        <select class="fs" id="f-or-tipo" onchange="renderOrdenes()"><option value="">Todos los tipos</option><option>Preventivo</option><option>Correctivo</option><option>Predictivo</option><option>Tarea básica</option><option>Instalación</option><option>Otro</option></select>
       </div>
-      <div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Equipo</th><th>Prioridad</th><th>Asignado a</th><th>Progreso</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="t-ord"></tbody></table></div>
+      <div class="tw"><table><thead><tr><th>ID</th><th>Descripción</th><th>Equipo</th><th>Tipo / Prioridad</th><th>Asignado a</th><th>Progreso</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="t-ord"></tbody></table></div>
     </div>
 
     <div class="view" id="view-calendario">
@@ -1387,7 +1388,8 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="mt">≡ <span id="mo-title">Nueva Orden</span></div>
     <div class="fg"><label class="fl">Descripción / Tarea</label><input class="fi" id="or-desc" placeholder="Ej: Cambiar rodamiento del torno 2"></div>
     <div class="fg"><label class="fl">Equipo</label><select class="fss" id="or-eq"></select></div>
-    <div class="fr"><div class="fg"><label class="fl">Prioridad</label><select class="fss" id="or-pr"><option>Baja</option><option>Media</option><option selected>Alta</option><option>Crítica</option></select></div><div class="fg"><label class="fl">Estado</label><select class="fss" id="or-est"><option>Pendiente</option><option>En progreso</option><option>Completada</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Tipo de mantenimiento</label><select class="fss" id="or-tipo"><option>Preventivo</option><option>Correctivo</option><option>Predictivo</option><option>Tarea básica</option><option>Instalación</option><option>Otro</option></select></div><div class="fg"><label class="fl">Prioridad</label><select class="fss" id="or-pr"><option>Baja</option><option>Media</option><option selected>Alta</option><option>Crítica</option></select></div></div>
+    <div class="fg"><label class="fl">Estado</label><select class="fss" id="or-est"><option>Pendiente</option><option>En progreso</option><option>Completada</option></select></div>
     <div class="fr"><div class="fg"><label class="fl">Asignado a (alumno / pasante / técnico)</label><input class="fi" id="or-resp" placeholder="Nombre y apellido"></div><div class="fg"><label class="fl">Tiempo estimado</label><div style="display:flex;gap:6px"><input class="fi" id="or-tiempo" type="number" min="0" placeholder="0" style="width:80px"><select class="fss" id="or-tiempo-un"><option value="min">minutos</option><option value="h">horas</option></select></div></div></div>
 
     <div class="fg">
@@ -1616,16 +1618,17 @@ var PERMS = {
   tecnico:    { eliminar:false, editar:true,  crear:true  },
   supervisor: { eliminar:false, editar:false, crear:false },
   operario:   { eliminar:false, editar:false, crear:false },
+  pasante:    { eliminar:false, editar:false, crear:false },
 };
 
 var ROL_LABELS = {
-  admin:'Administrador', tecnico:'Técnico', supervisor:'Supervisor', operario:'Operario'
+  admin:'Administrador', tecnico:'Técnico', supervisor:'Supervisor', operario:'Operario', pasante:'Pasante / Alumno'
 };
 var ROL_COLORS = {
-  admin:'#00e5a0', tecnico:'#4d9fff', supervisor:'#ffb800', operario:'#a78bfa'
+  admin:'#00e5a0', tecnico:'#4d9fff', supervisor:'#ffb800', operario:'#a78bfa', pasante:'#ff7a35'
 };
 var ROL_AVATARS = {
-  admin:'⚙', tecnico:'🔧', supervisor:'👁', operario:'👷'
+  admin:'⚙', tecnico:'🔧', supervisor:'👁', operario:'👷', pasante:'🎓'
 };
 
 var currentUser = null;
@@ -1708,6 +1711,42 @@ function canDo(accion){
   return true;
 }
 
+// ═══════════════════════════════════
+// MODO PASANTE — acceso restringido por QR, solo Órdenes
+// ═══════════════════════════════════
+function restringirSidebarPasante(){
+  const permitidos = ['ni-ordenes'];
+  document.querySelectorAll('.ni').forEach(el=>{
+    if(!permitidos.includes(el.id)) el.style.display='none';
+  });
+  ['ng-gestion','ng-analisis','ng-equipo','ng-registro'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  const fab = document.getElementById('fab'); if(fab) fab.style.display='none';
+  const logoSub = document.querySelector('.logo-sub'); if(logoSub) logoSub.textContent='Acceso Pasante';
+}
+
+function activarModoPasante(){
+  currentUser = { username:'pasante', nombre:'Pasante / Alumno', rol:'pasante', pass:'' };
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('u-name').textContent = 'Pasante / Alumno';
+  document.getElementById('u-role').textContent = ROL_LABELS.pasante;
+  document.getElementById('u-avatar').textContent = ROL_AVATARS.pasante;
+  document.getElementById('u-avatar').style.background = (ROL_COLORS.pasante)+'22';
+  const niUsers = document.getElementById('ni-usuarios'); if(niUsers) niUsers.style.display='none';
+  restringirSidebarPasante();
+  if(window._initListeners) window._initListeners();
+  setTimeout(()=>nav('ordenes'), 300);
+}
+
+// Si el link trae ?modo=pasante, entra directo sin login, con acceso solo a Órdenes
+document.addEventListener('DOMContentLoaded', ()=>{
+  const p = new URLSearchParams(location.search);
+  if(p.get('modo')==='pasante'){
+    setTimeout(activarModoPasante, 400);
+  }
+});
+
 // Arrancar precarga
 document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(preloadUsers, 300); });
 </script>
@@ -1730,6 +1769,9 @@ const db = getFirestore(app);
 // Ejemplo si usás GitHub Pages: "https://tu-usuario.github.io/mantenipro/orden-publica.html"
 // Ejemplo si usás Firebase Hosting: "https://mantenipro-f76ce.web.app/orden-publica.html"
 const PUBLIC_URL_BASE = "https://TU-DOMINIO-ACA/orden-publica.html";
+// ⚠ COMPLETAR TAMBIÉN: URL del propio index.html (para el QR de "Acceso Pasantes")
+// Ejemplo GitHub Pages: "https://montesnahuel2001-max.github.io/mantenipro/index.html"
+const SITE_INDEX_URL = "https://TU-DOMINIO-ACA/index.html";
 
 // STATE
 let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[], reportes=[];
@@ -1802,7 +1844,7 @@ window.nav = function(v) {
   document.querySelectorAll('.ni').forEach(x=>{if(x.getAttribute('onclick')?.includes("'"+v+"'"))x.classList.add('active');});
   document.getElementById('pt').textContent=PI[v]?.t||v;
   document.getElementById('ps').textContent=PI[v]?.s||'';
-  document.getElementById('ta').innerHTML=PA[v]||'';
+  document.getElementById('ta').innerHTML=(currentUser?.rol==='pasante')?'':((PA[v]||'')+(v==='ordenes'&&currentUser?.rol==='admin'?` <button class="btn btn-warn" onclick="UI.showQR('_','pasante')">🎓 QR Acceso Pasantes</button>`:''));
   if(v==='maquinas')renderMaquinas();
   if(v==='mantenimiento')renderMant();
   if(v==='stock')renderStock();
@@ -2277,7 +2319,8 @@ function renderOrdenes(){
   const q=document.getElementById('s-ord')?.value.toLowerCase()||'';
   const est=document.getElementById('f-or-est')?.value||'';
   const pr=document.getElementById('f-or-pr')?.value||'';
-  const f=ordenes.filter(o=>(!q||o.desc?.toLowerCase().includes(q)||o.resp?.toLowerCase().includes(q))&&(!est||o.estado===est)&&(!pr||o.prio===pr));
+  const tipo=document.getElementById('f-or-tipo')?.value||'';
+  const f=ordenes.filter(o=>(!q||o.desc?.toLowerCase().includes(q)||o.resp?.toLowerCase().includes(q))&&(!est||o.estado===est)&&(!pr||o.prio===pr)&&(!tipo||o.tipo===tipo));
   const tb=document.getElementById('t-ord');
   if(!f.length){tb.innerHTML='<tr><td colspan="8"><div class="empty">No se encontraron órdenes</div></td></tr>';return;}
   tb.innerHTML=[...f].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(o=>{
@@ -2290,11 +2333,11 @@ function renderOrdenes(){
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td>
     <td style="font-weight:500;cursor:pointer" onclick="UI.verOrd('${o._id}')">${o.desc}${o.notas?'<br><span style="font-size:10px;color:var(--muted)">'+o.notas+'</span>':''}</td>
     <td style="font-size:11px;color:var(--muted)">${o.equipoNombre||'—'}</td>
-    <td><span class="badge ${pC(o.prio)}">${o.prio}</span></td>
+    <td><span class="badge b-p">${o.tipo||'—'}</span><br><span class="badge ${pC(o.prio)}" style="margin-top:3px">${o.prio}</span></td>
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
     <td>${progHTML}${tiempoHTML}</td>
     <td><span class="badge ${eC(o.estado)}">${o.estado}</span></td>
-    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button></td>
+    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button>${currentUser?.rol==='pasante'?'':`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
   </tr>`;}).join('');
 }
 function fmtDurMin(min){ if(!min&&min!==0)return'—'; const h=Math.floor(min/60),m=Math.round(min%60); return h>0?`${h}h ${m}m`:`${m}m`; }
@@ -2538,7 +2581,7 @@ window.UI={
     document.getElementById('or-eq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
     if(id){
       const o=ordenes.find(x=>x._id===id);
-      document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';
+      document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-tipo').value=o.tipo||'Preventivo';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';
       if(o.tiempoEstimadoMin>=60 && o.tiempoEstimadoMin%60===0){document.getElementById('or-tiempo').value=o.tiempoEstimadoMin/60;document.getElementById('or-tiempo-un').value='h';}
       else{document.getElementById('or-tiempo').value=o.tiempoEstimadoMin||'';document.getElementById('or-tiempo-un').value='min';}
       orHerramientas=Array.isArray(o.herramientas)?[...o.herramientas]:[];
@@ -2546,13 +2589,13 @@ window.UI={
     }
     else{
       ['or-desc','or-resp','or-notas','or-tiempo'].forEach(i=>document.getElementById(i).value='');
-      document.getElementById('or-eq').value='';document.getElementById('or-pr').value='Alta';document.getElementById('or-est').value='Pendiente';document.getElementById('or-tiempo-un').value='min';
+      document.getElementById('or-eq').value='';document.getElementById('or-tipo').value='Preventivo';document.getElementById('or-pr').value='Alta';document.getElementById('or-est').value='Pendiente';document.getElementById('or-tiempo-un').value='min';
       orHerramientas=[];orChecklist=[];
     }
     renderHerrChips();renderCheckBuilder();
     document.getElementById('m-ord').classList.add('open');
   },
-  editOrd(id){this.openOrd(id);},
+  editOrd(id){ if(!canDo('editar')){toast('⚠ Tu rol no puede editar órdenes, solo ejecutarlas','warn');return;} this.openOrd(id); },
   async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
   verOrd(id){ verOrdenDetalle(id); },
   openBaja(){
@@ -2588,6 +2631,7 @@ window.UI={
     // donde subas orden-publica.html, ej: "https://tu-escuela.github.io/mantenipro/orden-publica.html"
     if(tipo==='maq'){const m=maquinas.find(x=>x._id===id);label=m?.nombre||'Equipo';code=`${PUBLIC_URL_BASE}?maq=${id}`;}
     else if(tipo==='orden'){const o=ordenes.find(x=>x._id===id);label=o?.desc||'Orden';code=`${PUBLIC_URL_BASE}?orden=${id}`;}
+    else if(tipo==='pasante'){label='Acceso Pasantes — solo Órdenes';code=`${SITE_INDEX_URL}?modo=pasante`;}
     else{const s=stock.find(s=>s._id===id);label=s?.nombre||'Artículo';code=`STOCK:${s?.codigo||id}|${s?.nombre||''}|${s?.ubicacion||''}`;}
     document.getElementById('qr-label').textContent=label;
     document.getElementById('qr-code').textContent=code;
@@ -2748,7 +2792,7 @@ window.saveOrden=async function(){
   const tiempoEstimadoMin=tiempoUn==='h'?Math.round(tiempoVal*60):Math.round(tiempoVal);
   const nuevoEstado=document.getElementById('or-est').value;
   const prev=eIds.ord?ordenes.find(x=>x._id===eIds.ord):null;
-  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',prio:document.getElementById('or-pr').value,estado:nuevoEstado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:prev?.fecha||new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),tiempoEstimadoMin,herramientas:[...orHerramientas],checklist:orChecklist.map(c=>({...c}))};
+  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',tipo:document.getElementById('or-tipo').value,prio:document.getElementById('or-pr').value,estado:nuevoEstado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:prev?.fecha||new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),tiempoEstimadoMin,herramientas:[...orHerramientas],checklist:orChecklist.map(c=>({...c}))};
   if(nuevoEstado==='En progreso' && !prev?.inicioAt) obj.inicioAt=new Date().toISOString();
   if(nuevoEstado==='Completada' && !prev?.finAt){ obj.finAt=new Date().toISOString(); if(!prev?.inicioAt) obj.inicioAt=obj.finAt; }
   if(eIds.ord){await fbSet('ordenes',eIds.ord,obj);await logH('orden',`Orden editada: ${desc}`);}else{await fbAdd('ordenes',obj);await logH('orden',`Orden creada: ${desc}`);}
@@ -2775,6 +2819,7 @@ function pintarOrdenDetalle(o,id){
   document.getElementById('mov-body').innerHTML=`
     <div style="font-weight:600;font-size:15px;margin-bottom:8px">${o.desc}</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <span class="badge b-p">${o.tipo||'—'}</span>
       <span class="badge ${pC(o.prio)}">${o.prio}</span>
       <span class="badge ${eC(o.estado)}">${o.estado}</span>
       ${o.tiempoEstimadoMin?`<span class="badge b-x">⏱ estimado ${fmtDurMin(o.tiempoEstimadoMin)}</span>`:''}
