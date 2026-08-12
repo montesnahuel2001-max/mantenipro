@@ -8,10 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <title>ManteniPro — Sistema de Gestión Industrial</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -1602,8 +1599,14 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div class="fr"><div class="fg"><label class="fl">Proveedor sugerido</label><input class="fi" id="cp-prov" placeholder="Opcional"></div><div class="fg"><label class="fl">Precio estimado ($)</label><input class="fi" type="number" id="cp-precio" placeholder="0" min="0" step="0.01"></div></div>
     <div class="fg"><label class="fl">Notas / Motivo</label><input class="fi" id="cp-notas" placeholder="¿Para qué se necesita? ¿Dónde comprarlo?"></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-compra')">Cancelar</button><button class="btn btn-primary" onclick="saveCompra()">Guardar</button></div>
-  </div>
 </div>
+</div>
+
+<!-- PÉGALAS AQUÍ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
 <script>
 // ═══════════════════════════════════
