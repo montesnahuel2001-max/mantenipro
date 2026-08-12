@@ -1431,7 +1431,7 @@ textarea.fi{resize:vertical;min-height:56px;}
 <div class="ov" id="m-qr">
   <div class="modal" style="width:340px;text-align:center">
     <div class="mt" style="justify-content:center">📱 Código QR</div>
-    <div class="qr-wrap"><canvas id="qr-canvas"></canvas><div style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="qr-label">—</div><div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px;word-break:break-all" id="qr-code"></div></div>
+    <div class="qr-wrap"><img id="qr-canvas" style="width:200px;height:200px;border-radius:10px;background:#111420" alt="Código QR"><div id="qr-error" style="display:none;color:var(--danger);font-size:11px;font-family:var(--mono);max-width:280px;line-height:1.5"></div><div style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="qr-label">—</div><div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px;word-break:break-all" id="qr-code"></div></div>
     <div class="mf" style="justify-content:center"><button class="btn btn-ghost" onclick="closeModal('m-qr')">Cerrar</button><button class="btn btn-primary" onclick="dlQR()">⬇ Descargar</button></div>
   </div>
 </div>
@@ -2476,7 +2476,26 @@ function renderHistorial(){
 }
 
 // QR
-window.dlQR=function(){const c=document.getElementById('qr-canvas');const a=document.createElement('a');a.download='qr-mantenipro.png';a.href=c.toDataURL();a.click();};
+window.dlQR=async function(){
+  if(!window._qrDataUrl){ toast('⚠ Todavía no se generó el QR, esperá un segundo e intentá de nuevo','err'); return; }
+  const a=document.createElement('a');
+  a.download='qr-mantenipro.png';
+  if(window._qrDataUrl.startsWith('data:')){
+    a.href=window._qrDataUrl;
+    a.click();
+  } else {
+    // Imagen de un servicio externo (respaldo): la bajamos como blob para poder descargarla.
+    try{
+      const resp=await fetch(window._qrDataUrl);
+      const blob=await resp.blob();
+      a.href=URL.createObjectURL(blob);
+      a.click();
+    }catch(e){
+      window.open(window._qrDataUrl,'_blank');
+      toast('Se abrió el QR en otra pestaña — guardalo desde ahí (mantené presionada la imagen → Guardar imagen)');
+    }
+  }
+};
 
 // UI
 window.UI={
@@ -2652,7 +2671,10 @@ window.UI={
   },
   async delEntrada(id){if(!canDo('eliminar'))return;if(!confirm('¿Eliminar este registro de entrada?\n(El stock NO se revertirá automáticamente)'))return;await fbDel('entradas',id);toast('Entrada eliminada');},
   showQR(id,tipo){
-    const canvas=document.getElementById('qr-canvas');
+    const img=document.getElementById('qr-canvas');
+    const errBox=document.getElementById('qr-error');
+    errBox.style.display='none'; errBox.textContent='';
+    img.style.display='';
     let label='',code='';
     // ⚠ Reemplazá PUBLIC_URL_BASE (arriba, cerca de la config de Firebase) por la URL real
     // donde subas orden-publica.html, ej: "https://tu-escuela.github.io/mantenipro/orden-publica.html"
@@ -2662,20 +2684,34 @@ window.UI={
     else{const s=stock.find(s=>s._id===id);label=s?.nombre||'Artículo';code=`STOCK:${s?.codigo||id}|${s?.nombre||''}|${s?.ubicacion||''}`;}
     document.getElementById('qr-label').textContent=label;
     document.getElementById('qr-code').textContent=code;
+    window._qrDataUrl=null;
+    img.src='';
+    const mostrarError=(msg)=>{ img.style.display='none'; errBox.textContent=msg; errBox.style.display='block'; };
     // Abrimos el modal primero: así el usuario siempre ve la ventana, aunque falle
     // la generación de la imagen del QR (ej: la librería no llegó a cargar por la red).
     document.getElementById('m-qr').classList.add('open');
     try{
       if(typeof QRCode === 'undefined'){
-        toast('⚠ No se pudo cargar la librería del QR. Revisá tu conexión y recargá la página.','err');
-      } else {
-        QRCode.toCanvas(canvas,code,{width:200,margin:2,color:{dark:'#00e5a0',light:'#111420'}},(err)=>{
-          if(err){ console.error(err); toast('⚠ No se pudo dibujar el QR','err'); }
-        });
+        // Respaldo: si la librería principal no cargó, generamos el QR como imagen
+        // desde un servicio externo (no requiere librería local).
+        const fallbackUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(code);
+        img.onerror=()=>{ mostrarError('⚠ No se pudo cargar la librería del QR (cdn.jsdelivr.net) ni el respaldo online. Revisá tu conexión a internet o probá desde otra red/navegador.'); };
+        img.onload=()=>{ window._qrDataUrl=fallbackUrl; };
+        img.src=fallbackUrl;
+        return;
       }
+      QRCode.toDataURL(code,{width:200,margin:2,color:{dark:'#00e5a0',light:'#111420'}},(err,url)=>{
+        if(err || !url){
+          mostrarError('⚠ Error generando la imagen: '+(err?.message||err||'desconocido'));
+          console.error(err);
+          return;
+        }
+        window._qrDataUrl=url;
+        img.src=url;
+      });
     }catch(e){
+      mostrarError('⚠ Excepción generando el QR: '+(e?.message||e));
       console.error(e);
-      toast('⚠ Error generando el QR','err');
     }
   }
 };
