@@ -588,6 +588,19 @@ textarea.fi{resize:vertical;min-height:56px;}
   </div>
 </div>
 
+<div class="login-screen hidden" id="qr-choice-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-mark">🎓</div>
+      <div><div class="login-title">Acceso por QR</div><div class="login-sub">Órdenes de trabajo</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5">Elegí cómo querés ingresar para ver y actualizar la orden de trabajo.</div>
+    <button class="login-btn" onclick="elegirModoQR('usuario')">🔑 Ingresar con mi usuario</button>
+    <button class="login-btn" style="background:var(--s2);color:var(--accent);border:1px solid var(--accent);margin-top:10px" onclick="elegirModoQR('invitado')">🎓 Continuar como invitado (Pasante)</button>
+    <div style="font-size:10px;color:var(--muted);margin-top:16px;text-align:center;font-family:var(--mono)">Como invitado vas a poder ver y actualizar órdenes, pero no eliminarlas.</div>
+  </div>
+</div>
+
 <div class="ls" id="ls"><div class="spinner"></div><div style="font-family:var(--mono);color:var(--muted);font-size:12px">Cargando datos...</div></div>
 
 <aside class="sidebar">
@@ -1621,7 +1634,7 @@ var PERMS = {
   tecnico:    { eliminar:false, editar:true,  crear:true  },
   supervisor: { eliminar:false, editar:false, crear:false },
   operario:   { eliminar:false, editar:false, crear:false },
-  pasante:    { eliminar:false, editar:false, crear:false },
+  pasante:    { eliminar:false, editar:true, crear:false },
 };
 
 var ROL_LABELS = {
@@ -1742,13 +1755,24 @@ function activarModoPasante(){
   setTimeout(()=>nav('ordenes'), 300);
 }
 
-// Si el link trae ?modo=pasante, entra directo sin login, con acceso solo a Órdenes
+// Si el link trae ?modo=pasante, en vez de entrar directo, se le pregunta al que escaneó
+// si quiere ingresar con su propio usuario o seguir como invitado (solo Órdenes, sin borrar).
 document.addEventListener('DOMContentLoaded', ()=>{
   const p = new URLSearchParams(location.search);
   if(p.get('modo')==='pasante'){
-    setTimeout(activarModoPasante, 400);
+    document.getElementById('login-screen').classList.add('hidden');
+    setTimeout(()=>{ document.getElementById('qr-choice-screen').classList.remove('hidden'); }, 300);
   }
 });
+
+window.elegirModoQR = function(modo){
+  document.getElementById('qr-choice-screen').classList.add('hidden');
+  if(modo==='invitado'){
+    activarModoPasante();
+  } else {
+    document.getElementById('login-screen').classList.remove('hidden');
+  }
+};
 
 // Arrancar precarga
 document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(preloadUsers, 300); });
@@ -1771,10 +1795,10 @@ const db = getFirestore(app);
 // ⚠ COMPLETAR: URL pública donde subiste orden-publica.html (sin login).
 // Ejemplo si usás GitHub Pages: "https://tu-usuario.github.io/mantenipro/orden-publica.html"
 // Ejemplo si usás Firebase Hosting: "https://mantenipro-f76ce.web.app/orden-publica.html"
-const PUBLIC_URL_BASE = "https://TU-DOMINIO-ACA/orden-publica.html";
+const PUBLIC_URL_BASE = "https://montesnahuel2001-max.github.io/mantenipro/orden-publica.html";
 // ⚠ COMPLETAR TAMBIÉN: URL del propio index.html (para el QR de "Acceso Pasantes")
 // Ejemplo GitHub Pages: "https://montesnahuel2001-max.github.io/mantenipro/index.html"
-const SITE_INDEX_URL = "https://TU-DOMINIO-ACA/index.html";
+const SITE_INDEX_URL = "https://montesnahuel2001-max.github.io/mantenipro/index.html";
 
 // STATE
 let maquinas=[], mantenimientos=[], stock=[], prestamos=[], ordenes=[], historial=[], bajas=[], entradas=[], notas=[], compras=[], eppItems=[], reportes=[];
@@ -2340,7 +2364,7 @@ function renderOrdenes(){
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
     <td>${progHTML}${tiempoHTML}</td>
     <td><span class="badge ${eC(o.estado)}">${o.estado}</span></td>
-    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button>${currentUser?.rol==='pasante'?'':`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
+    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
   </tr>`;}).join('');
 }
 function fmtDurMin(min){ if(!min&&min!==0)return'—'; const h=Math.floor(min/60),m=Math.round(min%60); return h>0?`${h}h ${m}m`:`${m}m`; }
