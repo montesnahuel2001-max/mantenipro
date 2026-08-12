@@ -238,6 +238,9 @@ textarea.fi{resize:vertical;min-height:56px;}
 
 /* ACTION BTNS */
 .ab{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:4px 5px;border-radius:4px;transition:all .15s;display:inline-flex;align-items:center;}
+/* MODO INVITADO — solo lectura en todas las secciones, salvo "Editar" dentro de Órdenes */
+body.modo-invitado .ab.ed, body.modo-invitado .ab.del, body.modo-invitado .ab.qr-btn{display:none !important;}
+body.modo-invitado #view-ordenes .ab.ed{display:inline-flex !important;}
 .ab:hover{background:var(--s2);color:var(--text);}
 .ab.del:hover{color:var(--danger);}
 .ab.ed:hover{color:var(--blue);}
@@ -597,7 +600,20 @@ textarea.fi{resize:vertical;min-height:56px;}
     <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5">Elegí cómo querés ingresar para ver y actualizar la orden de trabajo.</div>
     <button class="login-btn" onclick="elegirModoQR('usuario')">🔑 Ingresar con mi usuario</button>
     <button class="login-btn" style="background:var(--s2);color:var(--accent);border:1px solid var(--accent);margin-top:10px" onclick="elegirModoQR('invitado')">🎓 Continuar como invitado (Pasante)</button>
-    <div style="font-size:10px;color:var(--muted);margin-top:16px;text-align:center;font-family:var(--mono)">Como invitado vas a poder ver y actualizar órdenes, pero no eliminarlas.</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:16px;text-align:center;font-family:var(--mono)">Como invitado podés ver todo, y en Órdenes también actualizar (sin eliminar).</div>
+  </div>
+</div>
+
+<div class="login-screen hidden" id="guest-name-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-mark">🎓</div>
+      <div><div class="login-title">Acceso Invitado</div><div class="login-sub">Para identificarte en el historial</div></div>
+    </div>
+    <label class="login-label">Tu nombre y apellido</label>
+    <input class="login-input" id="guest-name-input" placeholder="Ej: Juan Pérez" onkeydown="if(event.key==='Enter')confirmarNombreInvitado()">
+    <div class="login-err" id="guest-name-err"></div>
+    <button class="login-btn" onclick="confirmarNombreInvitado()">Continuar →</button>
   </div>
 </div>
 
@@ -1726,26 +1742,36 @@ function canDo(accion){
   if(accion==='crear'    && !p.crear)   { if(window.toast)toast('⚠ Sin permiso para crear','err');    return false; }
   return true;
 }
+// El invitado (rol pasante) solo puede editar dentro de Órdenes. Esta función bloquea
+// acciones de edición en el resto de las secciones (mantenimiento, compras, etc.)
+function esInvitadoFueraDeOrdenes(){
+  if(currentUser?.rol==='pasante'){
+    toast('⚠ Modo invitado: en esta sección solo podés ver, no editar','warn');
+    return true;
+  }
+  return false;
+}
 
 // ═══════════════════════════════════
 // MODO PASANTE — acceso restringido por QR, solo Órdenes
 // ═══════════════════════════════════
 function restringirSidebarPasante(){
-  const permitidos = ['ni-ordenes'];
-  document.querySelectorAll('.ni').forEach(el=>{
-    if(!permitidos.includes(el.id)) el.style.display='none';
-  });
-  ['ng-gestion','ng-analisis','ng-equipo','ng-registro'].forEach(id=>{
+  // El invitado puede VER todas las secciones. Solo ocultamos lo sensible/administrativo:
+  // gestión de usuarios, configuración de la API Key, y el backup completo en JSON.
+  ['ni-usuarios','ni-apikey','ni-backup'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display='none';
   });
   const fab = document.getElementById('fab'); if(fab) fab.style.display='none';
-  const logoSub = document.querySelector('.logo-sub'); if(logoSub) logoSub.textContent='Acceso Pasante';
+  const logoSub = document.querySelector('.logo-sub'); if(logoSub) logoSub.textContent='Acceso Invitado';
+  document.body.classList.add('modo-invitado');
 }
 
-function activarModoPasante(){
-  currentUser = { username:'pasante', nombre:'Pasante / Alumno', rol:'pasante', pass:'' };
+function activarModoPasante(nombreInvitado){
+  const nombre = (nombreInvitado||'').trim() || 'Invitado';
+  // El username queda marcado como "(invitado)" para diferenciarlo de usuarios reales en el historial.
+  currentUser = { username:`${nombre} (invitado)`, nombre:nombre, rol:'pasante', pass:'' };
   document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('u-name').textContent = 'Pasante / Alumno';
+  document.getElementById('u-name').textContent = nombre;
   document.getElementById('u-role').textContent = ROL_LABELS.pasante;
   document.getElementById('u-avatar').textContent = ROL_AVATARS.pasante;
   document.getElementById('u-avatar').style.background = (ROL_COLORS.pasante)+'22';
@@ -1768,10 +1794,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
 window.elegirModoQR = function(modo){
   document.getElementById('qr-choice-screen').classList.add('hidden');
   if(modo==='invitado'){
-    activarModoPasante();
+    document.getElementById('guest-name-screen').classList.remove('hidden');
+    setTimeout(()=>document.getElementById('guest-name-input')?.focus(),100);
   } else {
     document.getElementById('login-screen').classList.remove('hidden');
   }
+};
+
+window.confirmarNombreInvitado = function(){
+  const val = document.getElementById('guest-name-input').value.trim();
+  const err = document.getElementById('guest-name-err');
+  if(!val){ err.textContent='⚠ Ingresá tu nombre y apellido'; return; }
+  err.textContent='';
+  document.getElementById('guest-name-screen').classList.add('hidden');
+  activarModoPasante(val);
 };
 
 // Arrancar precarga
@@ -2218,7 +2254,7 @@ function renderStock(){
         <td style="min-width:110px">${ctrl}${s.ctrlResp?`<div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:2px">${s.ctrlResp}</div>`:''}</td>
         <td><span class="badge ${st.c}">${st.l}</span></td>
         <td style="white-space:nowrap">
-          <button class="ab" onclick="UI.marcarControl('${s._id}')" title="Marcar controlado hoy ✓" style="color:var(--accent);font-size:14px">✓</button>
+          <button class="ab ed" onclick="UI.marcarControl('${s._id}')" title="Marcar controlado hoy ✓" style="color:var(--accent);font-size:14px">✓</button>
           <button class="ab" onclick="UI.openEntrada('${s._id}')" title="Registrar entrada de stock" style="color:var(--blue);font-size:13px">⬆</button>
           <button class="ab qr-btn" onclick="UI.showQR('${s._id}','stock')" title="QR">⊡</button>
           <button class="ab ed" onclick="UI.editStock('${s._id}')" title="Editar">✎</button>
@@ -2564,6 +2600,7 @@ window.UI={
     toast(`✓ ${nuevas.length} tarea(s) típica(s) cargada(s)`);
   },
   async marcarTareaHecha(i){
+    if(esInvitadoFueraDeOrdenes())return;
     const m=maquinas.find(x=>x._id===eIds.ficha);if(!m)return;
     const tareasPrev=[...(m.tareasPrev||[])];
     if(!tareasPrev[i])return;
@@ -2582,6 +2619,7 @@ window.UI={
     this.renderFichaTareas(m);
   },
   async marcarTareaHechaDesde(maqId,i){
+    if(esInvitadoFueraDeOrdenes())return;
     const m=maquinas.find(x=>x._id===maqId);if(!m)return;
     const tareasPrev=[...(m.tareasPrev||[])];
     if(!tareasPrev[i])return;
@@ -2600,7 +2638,7 @@ window.UI={
     document.getElementById('m-mant').classList.add('open');
   },
   editMant(id){this.openMant(id);},
-  async completarMant(id){const m=mantenimientos.find(x=>x._id===id);const maq=maquinas.find(q=>q._id===m?.maqId);await fbUpd('mantenimientos',id,{estado:'Completado'});if(maq)await fbUpd('maquinas',maq._id,{ultMant:new Date().toISOString().split('T')[0]});await logH('mantenimiento',`Mantenimiento completado: ${maq?.nombre||'equipo'}`);toast('✓ Mantenimiento completado');},
+  async completarMant(id){if(esInvitadoFueraDeOrdenes())return;const m=mantenimientos.find(x=>x._id===id);const maq=maquinas.find(q=>q._id===m?.maqId);await fbUpd('mantenimientos',id,{estado:'Completado'});if(maq)await fbUpd('maquinas',maq._id,{ultMant:new Date().toISOString().split('T')[0]});await logH('mantenimiento',`Mantenimiento completado: ${maq?.nombre||'equipo'}`);toast('✓ Mantenimiento completado');},
   async delMant(id){if(!canDo('eliminar'))return;await fbDel('mantenimientos',id);toast('Mantenimiento eliminado');},
   openStock(id=null){
     eIds.stock=id;document.getElementById('ms-title').textContent=id?'Editar Artículo':'Nuevo Artículo';
@@ -2663,6 +2701,7 @@ window.UI={
     document.getElementById('m-entrada').classList.add('open');
   },
   async marcarControl(id){
+    if(esInvitadoFueraDeOrdenes())return;
     const hoy=new Date().toISOString().split('T')[0];
     const u=currentUser?.username||'—';
     await fbUpd('stock',id,{ultControl:hoy,ctrlResp:u});
@@ -3486,7 +3525,7 @@ Object.assign(window.UI, {
     }
     document.getElementById('m-compra').classList.add('open');
   },
-  editCompra(id){ this.openCompra(id); },
+  editCompra(id){ if(esInvitadoFueraDeOrdenes())return; this.openCompra(id); },
   async delCompra(id){
     if(!canDo('eliminar')) return;
     if(!confirm('¿Eliminar este ítem de compra?')) return;
@@ -3494,12 +3533,13 @@ Object.assign(window.UI, {
     toast('Ítem eliminado');
   },
   async toggleCompra(id, estado){
+    if(esInvitadoFueraDeOrdenes())return;
     const next = estado==='pendiente'?'solicitado':estado==='solicitado'?'comprado':'pendiente';
     await fbUpd('compras',id,{estado:next});
     toast(`✓ Estado: ${next}`);
   },
-  async avanzarCompra(id){ await fbUpd('compras',id,{estado:'solicitado'}); toast('→ Marcado como solicitado'); },
-  async completarCompra(id){ await fbUpd('compras',id,{estado:'comprado'}); toast('✓ Marcado como comprado'); },
+  async avanzarCompra(id){ if(esInvitadoFueraDeOrdenes())return; await fbUpd('compras',id,{estado:'solicitado'}); toast('→ Marcado como solicitado'); },
+  async completarCompra(id){ if(esInvitadoFueraDeOrdenes())return; await fbUpd('compras',id,{estado:'comprado'}); toast('✓ Marcado como comprado'); },
   async confirmarNotaVista(id){
     if(!currentUser) return;
     const usr = currentUser.username;
