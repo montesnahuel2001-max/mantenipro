@@ -2400,7 +2400,7 @@ function renderOrdenes(){
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
     <td>${progHTML}${tiempoHTML}</td>
     <td><span class="badge ${eC(o.estado)}">${o.estado}</span></td>
-    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
+    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
   </tr>`;}).join('');
 }
 function fmtDurMin(min){ if(!min&&min!==0)return'—'; const h=Math.floor(min/60),m=Math.round(min%60); return h>0?`${h}h ${m}m`:`${m}m`; }
@@ -2955,6 +2955,9 @@ function pintarOrdenDetalle(o,id){
         </label>`).join('')}
       </div>` : ''}
     ${timerHTML}
+    <div style="margin-top:6px;margin-bottom:8px">
+      <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="exportOrdenPDF('${id}')">📄 Descargar / Imprimir PDF</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn btn-warn" style="flex:1;justify-content:center" ${o.estado==='Pendiente'?'disabled':''} onclick="cambiarEstadoOrd('${id}','Pendiente')">⏸ Pendiente</button>
       <button class="btn btn-blue" style="flex:1;justify-content:center" ${o.estado==='En progreso'?'disabled':''} onclick="cambiarEstadoOrd('${id}','En progreso')">▶ En progreso</button>
@@ -3123,6 +3126,114 @@ window.exportPDF=async function(){
   y=36;
   pdf.save('mantenipro-reporte.pdf');
   toast('✓ PDF generado');
+};
+
+// EXPORTAR ORDEN DE TRABAJO INDIVIDUAL A PDF (para imprimir y llevar en mano)
+window.exportOrdenPDF=function(id){
+  const o=ordenes.find(x=>x._id===id); if(!o){ toast('⚠ Orden no encontrada','err'); return; }
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,margin=14;let y=margin;
+
+  // Encabezado
+  pdf.setFillColor(10,12,18);pdf.rect(0,0,W,26,'F');
+  pdf.setTextColor(0,229,160);pdf.setFontSize(15);pdf.setFont('helvetica','bold');
+  pdf.text('ORDEN DE TRABAJO',margin,12);
+  pdf.setFontSize(8.5);pdf.setFont('helvetica','normal');pdf.setTextColor(150,160,190);
+  pdf.text('ManteniPro  |  N° OT-'+id.slice(-4).toUpperCase()+'  |  Generado: '+new Date().toLocaleString('es-AR'),margin,19);
+  y=34;
+
+  // Descripción / título de la tarea
+  pdf.setTextColor(20,20,20);pdf.setFontSize(13);pdf.setFont('helvetica','bold');
+  const descLines=pdf.splitTextToSize(o.desc||'—',W-margin*2);
+  pdf.text(descLines,margin,y); y+=descLines.length*6+3;
+
+  // Chips de tipo / prioridad / estado
+  pdf.setFontSize(9);pdf.setFont('helvetica','bold');
+  const chips=[['TIPO',o.tipo||'—'],['PRIORIDAD',o.prio||'—'],['ESTADO',o.estado||'—']];
+  let bx=margin;
+  chips.forEach(([k,v])=>{
+    const txt=k+': '+v;
+    const tw=pdf.getTextWidth(txt)+6;
+    pdf.setFillColor(23,27,42);pdf.roundedRect(bx,y-4.5,tw,7,1.5,1.5,'F');
+    pdf.setTextColor(0,229,160);pdf.text(txt,bx+3,y);
+    bx+=tw+4;
+  });
+  y+=13;
+
+  // Línea divisoria
+  pdf.setDrawColor(220,220,220);pdf.line(margin,y,W-margin,y); y+=8;
+
+  // Datos generales
+  pdf.setTextColor(30,30,30);pdf.setFontSize(10);
+  const datos=[
+    ['Equipo / Máquina', o.equipoNombre||'—'],
+    ['Asignado a', o.resp||'—'],
+    ['Fecha de carga', o.fecha||'—'],
+    ['Tiempo estimado', o.tiempoEstimadoMin?fmtDurMin(o.tiempoEstimadoMin):'—'],
+  ];
+  datos.forEach(([k,v])=>{
+    pdf.setFont('helvetica','bold');pdf.text(k+':',margin,y);
+    pdf.setFont('helvetica','normal');pdf.text(String(v),margin+48,y);
+    y+=6.5;
+  });
+  y+=2;
+
+  // Herramientas / materiales
+  if(o.herramientas?.length){
+    pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Herramientas / materiales necesarios:',margin,y); y+=5.5;
+    pdf.setFont('helvetica','normal');
+    const hlines=pdf.splitTextToSize(o.herramientas.join('  •  '),W-margin*2);
+    pdf.text(hlines,margin,y); y+=hlines.length*5+4;
+  }
+
+  // Notas / instrucciones
+  if(o.notas){
+    if(y>255){pdf.addPage();y=margin;}
+    pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Notas / instrucciones:',margin,y); y+=5.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setDrawColor(225,225,225);pdf.setFillColor(248,249,252);
+    const nlines=pdf.splitTextToSize(o.notas,W-margin*2-8);
+    const boxH=nlines.length*5+6;
+    pdf.roundedRect(margin,y-4,W-margin*2,boxH,1.5,1.5,'FD');
+    pdf.text(nlines,margin+4,y+1); y+=boxH+6;
+  }
+
+  // Checklist de pasos — casilleros para tildar a mano
+  const cl=Array.isArray(o.checklist)?o.checklist:[];
+  if(cl.length){
+    if(y>250){pdf.addPage();y=margin;}
+    pdf.setFillColor(17,20,32);pdf.rect(margin,y,W-margin*2,7,'F');
+    pdf.setTextColor(0,229,160);pdf.setFontSize(10);pdf.setFont('helvetica','bold');
+    pdf.text('CHECKLIST DE PASOS',margin+2,y+5);
+    y+=13;
+    pdf.setFontSize(10);
+    cl.forEach((c,i)=>{
+      const clines=pdf.splitTextToSize(c.texto||'',W-margin*2-11);
+      const stepH=Math.max(clines.length*5,6)+3;
+      if(y+stepH>280){pdf.addPage();y=margin;}
+      pdf.setDrawColor(90,98,130);pdf.setLineWidth(0.4);
+      pdf.rect(margin,y-4.2,5,5);
+      if(c.hecho){ pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(0,150,100);pdf.text('X',margin+1.1,y-0.6);pdf.setTextColor(30,30,30);pdf.setFontSize(10); }
+      pdf.setFont('helvetica','normal');
+      pdf.text(clines,margin+9,y);
+      y+=stepH;
+    });
+    y+=4;
+  }
+
+  // Firmas
+  if(y>255){pdf.addPage();y=margin;}
+  y+=12;
+  pdf.setDrawColor(140,148,175);pdf.setLineWidth(0.3);
+  pdf.line(margin,y,margin+72,y);
+  pdf.line(W-margin-72,y,W-margin,y);
+  pdf.setFontSize(8);pdf.setTextColor(90,98,130);pdf.setFont('helvetica','normal');
+  pdf.text('Firma responsable',margin,y+5);
+  pdf.text('Firma supervisor',W-margin-72,y+5);
+
+  pdf.save(`orden-trabajo-OT-${id.slice(-4).toUpperCase()}.pdf`);
+  toast('✓ Orden de trabajo descargada en PDF');
 };
 
 // --- FUNCIÓN DE NAVEGACIÓN CONTEXTUAL ---
