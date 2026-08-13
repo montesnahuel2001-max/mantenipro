@@ -36,6 +36,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .field-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 4px;}
 .field-val{font-size:13px;color:var(--text);}
 .notas-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);margin-top:4px;white-space:pre-wrap;}
+.cl-progress{width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin:8px 0 10px;}
+.cl-progress-bar{height:100%;background:var(--blue);}
+.cl-item{display:flex;align-items:center;gap:9px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;margin-bottom:6px;cursor:pointer;}
+.cl-item input{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;}
+.cl-item span{font-size:13px;}
+.cl-item span.done{text-decoration:line-through;color:var(--muted);}
+.obs-box{width:100%;min-height:80px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);font-family:var(--sans);resize:vertical;margin-top:4px;}
+.obs-box:focus{border-color:var(--warn);outline:none;}
+.btn-obs-save{width:100%;padding:11px;border-radius:10px;font-size:13px;font-weight:700;font-family:var(--sans);border:1px solid var(--warn);background:transparent;color:var(--warn);cursor:pointer;margin-top:8px;}
+.btn-pdf{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--sans);border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;}
 
 .timer{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--accent);text-align:center;padding:14px 0;}
 .timer-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:1.5px;margin-top:-8px;margin-bottom:10px;}
@@ -87,6 +97,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getFirestore, collection, doc, getDoc, getDocs, query, where, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
@@ -184,7 +195,10 @@ async function cargarOrden(){
   render(oSnap.data());
 }
 
+let currentOrden = null;
+
 function render(o){
+  currentOrden = o;
   if(timerHandle){ clearInterval(timerHandle); timerHandle=null; }
 
   let timerBlock = '';
@@ -194,6 +208,19 @@ function render(o){
     const dur = new Date(o.finAt) - new Date(o.inicioAt);
     timerBlock = `<div class="timer">${fmtDur(dur)}</div><div class="timer-label">Duración total</div>`;
   }
+
+  const cl = Array.isArray(o.checklist) ? o.checklist : [];
+  const done = cl.filter(c=>c.hecho).length;
+  const pct = cl.length ? Math.round(done/cl.length*100) : 0;
+  const clBlock = cl.length ? `
+      <div class="field-label">Checklist de pasos (${done}/${cl.length})</div>
+      <div class="cl-progress"><div class="cl-progress-bar" style="width:${pct}%"></div></div>
+      <div id="cl-list">
+        ${cl.map((c,i)=>`<label class="cl-item">
+          <input type="checkbox" ${c.hecho?'checked':''} onchange="window.__toggleCheck(${i})">
+          <span class="${c.hecho?'done':''}">${c.texto}</span>
+        </label>`).join('')}
+      </div>` : '';
 
   appEl.innerHTML = `
     ${maqId ? `<div style="margin-bottom:10px"><a href="?maq=${o.equipoId}" style="color:var(--muted);font-size:11px;font-family:var(--mono);text-decoration:none">← Volver al equipo</a></div>` : ''}
@@ -210,6 +237,13 @@ function render(o){
       <div class="field-label">Fecha de carga</div>
       <div class="field-val">${o.fecha||'—'}</div>
       ${o.notas ? `<div class="field-label">Notas / instrucciones</div><div class="notas-box">${o.notas}</div>` : ''}
+      ${clBlock}
+
+      <div class="field-label">Observación del operario (qué pasó, novedades, etc.)</div>
+      <textarea id="obs-input" class="obs-box" placeholder="Ej: se cambió el rodamiento, quedó pendiente pedir repuesto X...">${o.observacionOperario||''}</textarea>
+      <button class="btn-obs-save" onclick="window.__guardarObs()">💾 Guardar observación</button>
+
+      <button class="btn-pdf" onclick="window.__descargarPDF()">📄 Descargar / Imprimir PDF</button>
 
       <div class="btns">
         <button class="bigbtn bg-pend ${o.estado==='Pendiente'?'active-state':''}" onclick="window.__cambiarEstado('Pendiente')">⏸ Marcar Pendiente</button>
@@ -225,6 +259,144 @@ function render(o){
     timerHandle = setInterval(tick, 1000);
   }
 }
+
+window.__toggleCheck = async function(idx){
+  if(!currentOrden) return;
+  const cl = Array.isArray(currentOrden.checklist) ? currentOrden.checklist.map(c=>({...c})) : [];
+  if(!cl[idx]) return;
+  cl[idx].hecho = !cl[idx].hecho;
+  await updateDoc(doc(db,'ordenes',ordId), { checklist: cl });
+  currentOrden.checklist = cl;
+  render(currentOrden);
+  toast('✓ Checklist actualizado');
+};
+
+window.__guardarObs = async function(){
+  if(!currentOrden) return;
+  const val = document.getElementById('obs-input').value.trim();
+  await updateDoc(doc(db,'ordenes',ordId), { observacionOperario: val });
+  currentOrden.observacionOperario = val;
+  const nombre = nameInput.value.trim();
+  await addDoc(collection(db,'historial'), {
+    tipo:'orden',
+    desc:`${nombre||'Operario'} actualizó la observación de "${currentOrden.desc}" (desde QR)`,
+    usuario:nombre||'—',
+    ts: serverTimestamp(),
+    fecha: new Date().toLocaleString('es-AR')
+  });
+  toast('✓ Observación guardada');
+};
+
+window.__descargarPDF = function(){
+  if(!currentOrden) return;
+  const o = currentOrden;
+  const id = o._id || ordId;
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, margin=14; let y=margin;
+
+  pdf.setFillColor(10,12,18); pdf.rect(0,0,W,26,'F');
+  pdf.setTextColor(0,229,160); pdf.setFontSize(15); pdf.setFont('helvetica','bold');
+  pdf.text('ORDEN DE TRABAJO', margin, 12);
+  pdf.setFontSize(8.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(150,160,190);
+  pdf.text('ManteniPro  |  N° OT-'+id.slice(-4).toUpperCase()+'  |  Generado: '+new Date().toLocaleString('es-AR'), margin, 19);
+  y=34;
+
+  pdf.setTextColor(20,20,20); pdf.setFontSize(13); pdf.setFont('helvetica','bold');
+  const descLines = pdf.splitTextToSize(o.desc||'—', W-margin*2);
+  pdf.text(descLines, margin, y); y += descLines.length*6+3;
+
+  pdf.setFontSize(9); pdf.setFont('helvetica','bold');
+  const chips = [['TIPO',o.tipo||'—'],['PRIORIDAD',o.prio||'—'],['ESTADO',o.estado||'—']];
+  let bx = margin;
+  chips.forEach(([k,v])=>{
+    const txt = k+': '+v;
+    const tw = pdf.getTextWidth(txt)+6;
+    pdf.setFillColor(23,27,42); pdf.roundedRect(bx,y-4.5,tw,7,1.5,1.5,'F');
+    pdf.setTextColor(0,229,160); pdf.text(txt,bx+3,y);
+    bx += tw+4;
+  });
+  y += 13;
+
+  pdf.setDrawColor(220,220,220); pdf.line(margin,y,W-margin,y); y += 8;
+
+  pdf.setTextColor(30,30,30); pdf.setFontSize(10);
+  const datos = [
+    ['Equipo / Máquina', o.equipoNombre||'—'],
+    ['Asignado a', o.resp||'—'],
+    ['Fecha de carga', o.fecha||'—'],
+  ];
+  datos.forEach(([k,v])=>{
+    pdf.setFont('helvetica','bold'); pdf.text(k+':', margin, y);
+    pdf.setFont('helvetica','normal'); pdf.text(String(v), margin+48, y);
+    y += 6.5;
+  });
+  y += 2;
+
+  if(o.herramientas?.length){
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.text('Herramientas / materiales necesarios:', margin, y); y += 5.5;
+    pdf.setFont('helvetica','normal');
+    const hlines = pdf.splitTextToSize(o.herramientas.join('  •  '), W-margin*2);
+    pdf.text(hlines, margin, y); y += hlines.length*5+4;
+  }
+
+  if(o.notas){
+    if(y>255){ pdf.addPage(); y=margin; }
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.text('Notas / instrucciones:', margin, y); y += 5.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setDrawColor(225,225,225); pdf.setFillColor(248,249,252);
+    const nlines = pdf.splitTextToSize(o.notas, W-margin*2-8);
+    const boxH = nlines.length*5+6;
+    pdf.roundedRect(margin,y-4,W-margin*2,boxH,1.5,1.5,'FD');
+    pdf.text(nlines, margin+4, y+1); y += boxH+6;
+  }
+
+  const cl = Array.isArray(o.checklist) ? o.checklist : [];
+  if(cl.length){
+    if(y>250){ pdf.addPage(); y=margin; }
+    pdf.setFillColor(17,20,32); pdf.rect(margin,y,W-margin*2,7,'F');
+    pdf.setTextColor(0,229,160); pdf.setFontSize(10); pdf.setFont('helvetica','bold');
+    pdf.text('CHECKLIST DE PASOS', margin+2, y+5);
+    y += 13;
+    pdf.setFontSize(10);
+    cl.forEach((c)=>{
+      const clines = pdf.splitTextToSize(c.texto||'', W-margin*2-11);
+      const stepH = Math.max(clines.length*5,6)+3;
+      if(y+stepH>280){ pdf.addPage(); y=margin; }
+      pdf.setDrawColor(90,98,130); pdf.setLineWidth(0.4);
+      pdf.rect(margin,y-4.2,5,5);
+      if(c.hecho){ pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(0,150,100); pdf.text('X',margin+1.1,y-0.6); pdf.setTextColor(30,30,30); pdf.setFontSize(10); }
+      pdf.setFont('helvetica','normal');
+      pdf.text(clines, margin+9, y);
+      y += stepH;
+    });
+    y += 4;
+  }
+
+  if(o.observacionOperario){
+    if(y>245){ pdf.addPage(); y=margin; }
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(30,30,30); pdf.text('Observación del operario:', margin, y); y += 5.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setDrawColor(255,184,0); pdf.setFillColor(255,249,230);
+    const olines = pdf.splitTextToSize(o.observacionOperario, W-margin*2-8);
+    const oboxH = olines.length*5+6;
+    if(y+oboxH>280){ pdf.addPage(); y=margin; }
+    pdf.roundedRect(margin,y-4,W-margin*2,oboxH,1.5,1.5,'FD');
+    pdf.text(olines, margin+4, y+1); y += oboxH+6;
+  }
+
+  if(y>255){ pdf.addPage(); y=margin; }
+  y += 12;
+  pdf.setDrawColor(140,148,175); pdf.setLineWidth(0.3);
+  pdf.line(margin,y,margin+72,y);
+  pdf.line(W-margin-72,y,W-margin,y);
+  pdf.setFontSize(8); pdf.setTextColor(90,98,130); pdf.setFont('helvetica','normal');
+  pdf.text('Firma responsable', margin, y+5);
+  pdf.text('Firma supervisor', W-margin-72, y+5);
+
+  pdf.save(`orden-trabajo-OT-${id.slice(-4).toUpperCase()}.pdf`);
+  toast('✓ PDF descargado');
+};
 
 window.__cambiarEstado = async function(nuevoEstado){
   const nombre = nameInput.value.trim();
