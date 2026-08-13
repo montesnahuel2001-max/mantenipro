@@ -2946,6 +2946,11 @@ function pintarOrdenDetalle(o,id){
     </div>
     ${o.herramientas?.length?`<div class="fl">Herramientas / materiales necesarios</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${o.herramientas.map(h=>`<span class="badge b-b">🔧 ${h}</span>`).join('')}</div>`:''}
     ${o.notas?`<div class="fl">Notas / instrucciones</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.notas}</div>`:''}
+    <div class="fl">Observación del operario (qué pasó, novedades, etc.)</div>
+    <textarea id="ordver-obs" placeholder="Ej: se cambió el rodamiento, quedó pendiente pedir repuesto X, la máquina hizo un ruido raro al arrancar..." style="width:100%;min-height:70px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--sans);resize:vertical;margin-bottom:6px">${o.observacionOperario||''}</textarea>
+    <div style="margin-bottom:12px">
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="guardarObsOperario('${id}')">💾 Guardar observación</button>
+    </div>
     ${cl.length?`<div class="fl">Checklist de pasos (${done}/${cl.length})</div>
       <div style="width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:${pct===100?'var(--accent)':'var(--blue)'};width:${pct}%"></div></div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
@@ -2977,6 +2982,14 @@ window.toggleCheckItem=async function(id,idx){
   cl[idx].hecho=!cl[idx].hecho;
   await fbUpd('ordenes',id,{checklist:cl});
   const upd={...o,checklist:cl}; pintarOrdenDetalle(upd,id);
+};
+window.guardarObsOperario=async function(id){
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  const val=document.getElementById('ordver-obs').value.trim();
+  await fbUpd('ordenes',id,{observacionOperario:val});
+  await logH('orden',`Orden "${o.desc}" — observación del operario actualizada`);
+  o.observacionOperario=val;
+  toast('✓ Observación guardada');
 };
 window.cambiarEstadoOrd=async function(id,nuevoEstado){
   const o=ordenes.find(x=>x._id===id); if(!o) return;
@@ -3220,6 +3233,19 @@ window.exportOrdenPDF=function(id){
       y+=stepH;
     });
     y+=4;
+  }
+
+  // Observación del operario
+  if(o.observacionOperario){
+    if(y>245){pdf.addPage();y=margin;}
+    pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.setTextColor(30,30,30);pdf.text('Observación del operario:',margin,y); y+=5.5;
+    pdf.setFont('helvetica','normal');
+    pdf.setDrawColor(255,184,0);pdf.setFillColor(255,249,230);
+    const olines=pdf.splitTextToSize(o.observacionOperario,W-margin*2-8);
+    const oboxH=olines.length*5+6;
+    if(y+oboxH>280){pdf.addPage();y=margin;}
+    pdf.roundedRect(margin,y-4,W-margin*2,oboxH,1.5,1.5,'FD');
+    pdf.text(olines,margin+4,y+1); y+=oboxH+6;
   }
 
   // Firmas
