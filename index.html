@@ -241,6 +241,10 @@ textarea.fi{resize:vertical;min-height:56px;}
 /* MODO INVITADO — solo lectura en todas las secciones, salvo "Editar" dentro de Órdenes */
 body.modo-invitado .ab.ed, body.modo-invitado .ab.del, body.modo-invitado .ab.qr-btn{display:none !important;}
 body.modo-invitado #view-ordenes .ab.ed{display:inline-flex !important;}
+/* Modo operario: solo puede VER todo. No puede editar/eliminar/crear nada, ni siquiera dentro de Órdenes (solo puede ejecutarlas desde el ícono 👁). */
+body.modo-operario .ab.ed, body.modo-operario .ab.del, body.modo-operario .ab.qr-btn{display:none !important;}
+body.modo-operario #ta{display:none !important;}
+body.modo-operario #fab{display:none !important;}
 .ab:hover{background:var(--s2);color:var(--text);}
 .ab.del:hover{color:var(--danger);}
 .ab.ed:hover{color:var(--blue);}
@@ -1716,6 +1720,8 @@ function doLogin(){
     // Mostrar/ocultar item de usuarios según rol
     const niUsers = document.getElementById('ni-usuarios');
     if(niUsers) niUsers.style.display = userData.rol==='admin' ? 'flex' : 'none';
+    // El operario solo puede ver — restringimos edición/creación en toda la app excepto ejecutar Órdenes
+    if(userData.rol==='operario') restringirSidebarOperario();
     if(window._initListeners) window._initListeners();
     // Registrar último acceso
     setTimeout(()=>{ if(window.registrarUltAcceso) registrarUltAcceso(u); }, 2000);
@@ -1749,7 +1755,23 @@ function esInvitadoFueraDeOrdenes(){
     toast('⚠ Modo invitado: en esta sección solo podés ver, no editar','warn');
     return true;
   }
+  if(currentUser?.rol==='operario'){
+    toast('⚠ Tu rol solo puede ver esta sección. Podés cargar datos dentro de Órdenes de Trabajo','warn');
+    return true;
+  }
   return false;
+}
+
+// ═══════════════════════════════════
+// MODO OPERARIO — puede VER todo, pero solo puede "rellenar" (ejecutar) Órdenes de Trabajo
+// ═══════════════════════════════════
+function restringirSidebarOperario(){
+  // Puede ver todas las secciones, pero no crear/editar/eliminar nada ni acceder a lo administrativo.
+  ['ni-usuarios','ni-apikey','ni-backup'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  const fab = document.getElementById('fab'); if(fab) fab.style.display='none';
+  document.body.classList.add('modo-operario');
 }
 
 // ═══════════════════════════════════
@@ -2399,7 +2421,7 @@ function renderOrdenes(){
     <td><span class="badge b-p">${o.tipo||'—'}</span><br><span class="badge ${pC(o.prio)}" style="margin-top:3px">${o.prio}</span></td>
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
     <td>${progHTML}${tiempoHTML}</td>
-    <td><span class="badge ${eC(o.estado)}">${o.estado}</span></td>
+    <td><span class="badge ${eC(o.estado)}">${o.estado}</span>${o.estado==='En progreso'&&o.ejecutadoPor?`<br><span class="badge b-b" style="margin-top:3px;font-size:9px">👤 ${o.ejecutadoPor}</span>`:''}</td>
     <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
   </tr>`;}).join('');
 }
@@ -2536,6 +2558,7 @@ window.dlQR=async function(){
 // UI
 window.UI={
   openMaq(id=null){
+    if(!canDo(id?'editar':'crear'))return;
     eIds.maq=id;document.getElementById('mm-title').textContent=id?'Editar Equipo':'Nueva Máquina';
     if(id){const m=maquinas.find(x=>x._id===id);document.getElementById('mq-cod').value=m.codigo||'';document.getElementById('mq-cat').value=m.categoria||'';document.getElementById('mq-nom').value=m.nombre||'';document.getElementById('mq-marca').value=m.marca||'';document.getElementById('mq-serie').value=m.serie||'';document.getElementById('mq-ubic').value=m.ubicacion||'';document.getElementById('mq-est').value=m.estado||'Operativo';document.getElementById('mq-freq').value=m.freqDias||30;document.getElementById('mq-ultm').value=m.ultMant||'';document.getElementById('mq-notas').value=m.notas||'';document.getElementById('mq-anio').value=m.anio||'';document.getElementById('mq-horas').value=m.horasUso||'';}
     else{['mq-cod','mq-cat','mq-nom','mq-marca','mq-serie','mq-ubic','mq-notas','mq-ultm','mq-anio','mq-horas'].forEach(i=>document.getElementById(i).value='');document.getElementById('mq-est').value='Operativo';document.getElementById('mq-freq').value=30;}
@@ -2631,6 +2654,7 @@ window.UI={
     toast('✓ Tarea marcada como realizada hoy');
   },
   openMant(id=null){
+    if(!canDo(id?'editar':'crear'))return;
     eIds.mant=id;document.getElementById('mmt-title').textContent=id?'Editar Mantenimiento':'Registrar Mantenimiento';
     document.getElementById('mt-maq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
     if(id){const m=mantenimientos.find(x=>x._id===id);document.getElementById('mt-maq').value=m.maqId||'';document.getElementById('mt-tipo').value=m.tipo||'Preventivo';document.getElementById('mt-fecha').value=m.fecha||'';document.getElementById('mt-desc').value=m.desc||'';document.getElementById('mt-resp').value=m.resp||'';document.getElementById('mt-est').value=m.estado||'Programado';document.getElementById('mt-notas').value=m.notas||'';}
@@ -2641,6 +2665,7 @@ window.UI={
   async completarMant(id){if(esInvitadoFueraDeOrdenes())return;const m=mantenimientos.find(x=>x._id===id);const maq=maquinas.find(q=>q._id===m?.maqId);await fbUpd('mantenimientos',id,{estado:'Completado'});if(maq)await fbUpd('maquinas',maq._id,{ultMant:new Date().toISOString().split('T')[0]});await logH('mantenimiento',`Mantenimiento completado: ${maq?.nombre||'equipo'}`);toast('✓ Mantenimiento completado');},
   async delMant(id){if(!canDo('eliminar'))return;await fbDel('mantenimientos',id);toast('Mantenimiento eliminado');},
   openStock(id=null){
+    if(!canDo(id?'editar':'crear'))return;
     eIds.stock=id;document.getElementById('ms-title').textContent=id?'Editar Artículo':'Nuevo Artículo';
     if(id){const s=stock.find(x=>x._id===id);document.getElementById('sk-cod').value=s.codigo||'';document.getElementById('sk-cat').value=s.categoria||'';document.getElementById('sk-nom').value=s.nombre||'';document.getElementById('sk-marca').value=s.marca||'';document.getElementById('sk-caract').value=s.caracteristicas||'';document.getElementById('sk-qty').value=s.qty||0;document.getElementById('sk-min').value=s.min||0;document.getElementById('sk-uni').value=s.unidad||'Unidad';document.getElementById('sk-dep').value=s.deposito||'';document.getElementById('sk-pos').value=s.posicion||'';document.getElementById('sk-ctrl').value=s.ultControl||'';document.getElementById('sk-ctrl-resp').value=s.ctrlResp||'';}
     else{['sk-cod','sk-cat','sk-nom','sk-marca','sk-caract','sk-qty','sk-min','sk-dep','sk-pos','sk-ctrl','sk-ctrl-resp'].forEach(i=>document.getElementById(i).value='');document.getElementById('sk-uni').value='Unidad';}
@@ -2649,6 +2674,7 @@ window.UI={
   editStock(id){this.openStock(id);},
   async delStock(id){if(!canDo('eliminar'))return;const s=stock.find(x=>x._id===id);if(!confirm(`¿Eliminar "${s?.nombre||'este artículo'}"?`))return;await fbDel('stock',id);await logH('stock',`Artículo eliminado: ${s?.nombre||''}`);toast('Artículo eliminado');},
   openPrest(){
+    if(!canDo('crear'))return;
     const disp=stock.filter(s=>s.qty>0);if(!disp.length){toast('⚠ Sin stock disponible','warn');return;}
     document.getElementById('pr-item').innerHTML=disp.map(s=>`<option value="${s._id}">${s.nombre} (${s.qty})</option>`).join('');
     document.getElementById('pr-cant').value=1;document.getElementById('pr-resp').value='';document.getElementById('pr-sec').value='';document.getElementById('pr-obs').value='';
@@ -2683,6 +2709,7 @@ window.UI={
   async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
   verOrd(id){ verOrdenDetalle(id); },
   openBaja(){
+    if(!canDo('crear'))return;
     document.getElementById('bj-cat').value='Insumo';
     document.getElementById('bj-fecha').value=new Date().toISOString().split('T')[0];
     document.getElementById('bj-cant').value=1;
@@ -2694,6 +2721,7 @@ window.UI={
   },
   async delBaja(id){if(!canDo('eliminar'))return;if(!confirm('¿Eliminar este registro de baja?'))return;await fbDel('bajas',id);toast('Registro eliminado');},
   openEntrada(itemIdPre=null){
+    if(!canDo('crear'))return;
     document.getElementById('ent-item').innerHTML=stock.map(s=>`<option value="${s._id}"${s._id===itemIdPre?' selected':''}>${s.nombre} — ${s.codigo||'SIN COD'} (${s.qty} ${s.unidad})</option>`).join('');
     document.getElementById('ent-fecha').value=new Date().toISOString().split('T')[0];
     document.getElementById('ent-cant').value='';document.getElementById('ent-prov').value='';document.getElementById('ent-remito').value='';document.getElementById('ent-precio').value='';document.getElementById('ent-recibio').value='';document.getElementById('ent-notas').value='';
@@ -2939,11 +2967,16 @@ function pintarOrdenDetalle(o,id){
       <span class="badge ${pC(o.prio)}">${o.prio}</span>
       <span class="badge ${eC(o.estado)}">${o.estado}</span>
       ${o.tiempoEstimadoMin?`<span class="badge b-x">⏱ estimado ${fmtDurMin(o.tiempoEstimadoMin)}</span>`:''}
+      ${o.estado==='En progreso' && o.ejecutadoPor?`<span class="badge b-b">👤 En ejecución: ${o.ejecutadoPor}</span>`:''}
     </div>
     <div class="fr" style="margin-bottom:12px">
       <div><div class="fl">Asignado a</div><div style="font-size:13px">${o.resp||'—'}</div></div>
       <div><div class="fl">Fecha de carga</div><div style="font-size:13px">${o.fecha||'—'}</div></div>
     </div>
+    <div class="fl">Quién está haciendo esta tarea ahora <span style="color:var(--danger)">*</span></div>
+    <input class="fi" id="ordver-ejecutor" placeholder="Nombre y apellido de quien la ejecuta" value="${o.ejecutadoPor||''}" style="margin-bottom:4px">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Completá tu nombre y apellido antes de tocar "▶ En progreso" — así el supervisor ve quién está haciendo la tarea en el momento.</div>
+    ${o.estado==='En progreso'?`<div style="margin-bottom:12px"><button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="guardarEjecutorOrd('${id}')">👤 Actualizar quién la está haciendo</button></div>`:'<div style="margin-bottom:12px"></div>'}
     ${o.herramientas?.length?`<div class="fl">Herramientas / materiales necesarios</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${o.herramientas.map(h=>`<span class="badge b-b">🔧 ${h}</span>`).join('')}</div>`:''}
     ${o.notas?`<div class="fl">Notas / instrucciones</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.notas}</div>`:''}
     <div class="fl">Observación del operario (qué pasó, novedades, etc.)</div>
@@ -2991,14 +3024,36 @@ window.guardarObsOperario=async function(id){
   o.observacionOperario=val;
   toast('✓ Observación guardada');
 };
+window.guardarEjecutorOrd=async function(id){
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  const val=(document.getElementById('ordver-ejecutor')?.value||'').trim();
+  if(!val){ toast('⚠ Escribí un nombre y apellido','warn'); return; }
+  await fbUpd('ordenes',id,{ejecutadoPor:val,ejecutadoPorEn:new Date().toISOString()});
+  await logH('orden',`Orden "${o.desc}" — ahora la ejecuta: ${val}`);
+  const upd={ejecutadoPor:val}; const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
+  toast('✓ Actualizado');
+};
 window.cambiarEstadoOrd=async function(id,nuevoEstado){
   const o=ordenes.find(x=>x._id===id); if(!o) return;
   const upd={estado:nuevoEstado};
-  if(nuevoEstado==='En progreso' && !o.inicioAt) upd.inicioAt=new Date().toISOString();
+  if(nuevoEstado==='En progreso'){
+    // Quién está haciendo la tarea en este momento — así el supervisor ve en tiempo real
+    // quién ejecuta cada orden. Se pide siempre que se inicia/reinicia una tarea.
+    const ejecutorInput=document.getElementById('ordver-ejecutor');
+    const ejecutor=(ejecutorInput?.value||'').trim();
+    if(!ejecutor){
+      toast('⚠ Escribí tu nombre y apellido antes de iniciar la tarea','warn');
+      if(ejecutorInput) ejecutorInput.focus();
+      return;
+    }
+    upd.ejecutadoPor=ejecutor;
+    upd.ejecutadoPorEn=new Date().toISOString();
+    if(!o.inicioAt) upd.inicioAt=new Date().toISOString();
+  }
   if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt=new Date().toISOString(); if(!o.inicioAt) upd.inicioAt=o.creadoAt||upd.finAt; }
-  if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; }
+  if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; upd.ejecutadoPor=null; upd.ejecutadoPorEn=null; }
   await fbUpd('ordenes',id,upd);
-  await logH('orden',`Orden "${o.desc}" → ${nuevoEstado}`);
+  await logH('orden',`Orden "${o.desc}" → ${nuevoEstado}${upd.ejecutadoPor?` (por ${upd.ejecutadoPor})`:''}`);
   toast('✓ Estado actualizado');
   const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
 };
@@ -3182,6 +3237,7 @@ window.exportOrdenPDF=function(id){
   const datos=[
     ['Equipo / Máquina', o.equipoNombre||'—'],
     ['Asignado a', o.resp||'—'],
+    ['Ejecutado por', o.ejecutadoPor||'—'],
     ['Fecha de carga', o.fecha||'—'],
     ['Tiempo estimado', o.tiempoEstimadoMin?fmtDurMin(o.tiempoEstimadoMin):'—'],
   ];
@@ -3643,6 +3699,7 @@ Object.assign(window.UI, {
     toast('Nota eliminada');
   },
   openCompra(id=null){
+    if(!canDo(id?'editar':'crear'))return;
     eIdCompra=id;
     document.getElementById('mcompra-title').textContent=id?'Editar Compra':'Nueva Compra';
     if(id){
@@ -4618,6 +4675,7 @@ window.exportEPPAlert = function() {
 let eIdEPP_edit = null;
 Object.assign(window.UI, {
   openEPP(id=null){
+    if(!canDo(id?'editar':'crear'))return;
     eIdEPP_edit = id;
     document.getElementById('mepp-title').textContent = id ? 'Editar EPP' : 'Nuevo EPP';
     if(id){
@@ -4900,6 +4958,7 @@ window.saveRespReporte = async function(){
 };
 
 window.openReporteModal = function(id=null){
+  if(currentUser?.rol==='operario'){toast('⚠ Tu rol solo puede ver esta sección. Podés cargar datos dentro de Órdenes de Trabajo','warn');return;}
   eIdReporte = id;
   const sel = document.getElementById('rep-nota-link');
   sel.innerHTML = '<option value="">— Sin vincular —</option>' +
@@ -5144,6 +5203,7 @@ function processFactFile(file){
 }
 
 function openFacturaModal(id=null){
+  if(currentUser?.rol==='operario'){toast('⚠ Tu rol solo puede ver esta sección. Podés cargar datos dentro de Órdenes de Trabajo','warn');return;}
   eIdFactura = id;
   factFileData = null;
   document.getElementById('mfact-title').textContent = id ? 'Editar Factura' : 'Nueva Factura';
