@@ -778,7 +778,7 @@ body.modo-operario #fab{display:none !important;}
     <div class="view" id="view-ordenes">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="si" placeholder="🔍 Buscar..." id="s-ord" oninput="renderOrdenes()">
-        <select class="fs" id="f-or-est" onchange="renderOrdenes()"><option value="">Todos los estados</option><option>Pendiente</option><option>En progreso</option><option>Completada</option></select>
+        <select class="fs" id="f-or-est" onchange="renderOrdenes()"><option value="">Todos los estados</option><option>Pendiente</option><option>En progreso</option><option>Completada</option><option>Cerrada</option></select>
         <select class="fs" id="f-or-pr" onchange="renderOrdenes()"><option value="">Todas las prioridades</option><option>Baja</option><option>Media</option><option>Alta</option><option>Crítica</option></select>
         <select class="fs" id="f-or-tipo" onchange="renderOrdenes()"><option value="">Todos los tipos</option><option>Preventivo</option><option>Correctivo</option><option>Predictivo</option><option>Tarea básica</option><option>Instalación</option><option>Otro</option></select>
       </div>
@@ -1748,6 +1748,15 @@ function canDo(accion){
   if(accion==='crear'    && !p.crear)   { if(window.toast)toast('⚠ Sin permiso para crear','err');    return false; }
   return true;
 }
+// Igual que canDo pero sin mostrar toast — para decidir si se muestra un botón/opción
+function canDoSilent(accion){
+  if(!currentUser) return false;
+  var p = PERMS[currentUser.rol] || PERMS.operario;
+  if(accion==='eliminar') return !!p.eliminar;
+  if(accion==='editar')   return !!p.editar;
+  if(accion==='crear')    return !!p.crear;
+  return false;
+}
 // El invitado (rol pasante) solo puede editar dentro de Órdenes. Esta función bloquea
 // acciones de edición en el resto de las secciones (mantenimiento, compras, etc.)
 function esInvitadoFueraDeOrdenes(){
@@ -1957,7 +1966,7 @@ function daysUntil(ds){ if(!ds)return 9999; const d=new Date(ds);d.setHours(0,0,
 function nextMant(m){ if(!m.ultMant||!m.freqDias||m.freqDias==0)return null; const d=new Date(m.ultMant);d.setDate(d.getDate()+parseInt(m.freqDias));return d.toISOString().split('T')[0]; }
 function mSt(days){ if(days<0)return{c:'b-d',l:'Vencido',ec:'alert-eq'}; if(days===0)return{c:'b-d',l:'Hoy',ec:'alert-eq'}; if(days<=7)return{c:'b-w',l:`En ${days}d`,ec:'warn-eq'}; return{c:'b-g',l:`En ${days}d`,ec:''}; }
 function pC(p){return{'Baja':'b-x','Media':'b-b','Alta':'b-w','Crítica':'b-d'}[p]||'b-x';}
-function eC(e){return{'Pendiente':'b-w','En progreso':'b-b','Completada':'b-g'}[e]||'b-x';}
+function eC(e){return{'Pendiente':'b-w','En progreso':'b-b','Completada':'b-g','Cerrada':'b-x'}[e]||'b-x';}
 function maqIco(cat){ const m=[['Sold','🔥'],['Cort','⚡'],['Taladro','🔩'],['Sierra','🪚'],['Compres','💨'],['Medici','📏'],['Amola','🔴'],['Mult','🔌']]; return m.find(([k])=>cat?.includes(k))?.[1]||'🏭'; }
 
 // --- TAREAS PREVENTIVAS POR MÁQUINA ---
@@ -2034,7 +2043,7 @@ function rDash(){
   document.getElementById('d-pr').textContent=hasPeriod
     ? prestamosPeriodo.filter(p=>p.estado==='activo').length
     : prestamos.filter(p=>p.estado==='activo').length;
-  document.getElementById('d-or').textContent=ordenesPeriodo.filter(o=>o.estado!=='Completada').length;
+  document.getElementById('d-or').textContent=ordenesPeriodo.filter(o=>o.estado!=='Completada'&&o.estado!=='Cerrada').length;
   document.getElementById('d-al').textContent=al;
   document.getElementById('d-dp').textContent=disp+'%';
   document.getElementById('badge-al').textContent=al;
@@ -2421,8 +2430,8 @@ function renderOrdenes(){
     <td><span class="badge b-p">${o.tipo||'—'}</span><br><span class="badge ${pC(o.prio)}" style="margin-top:3px">${o.prio}</span></td>
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
     <td>${progHTML}${tiempoHTML}</td>
-    <td><span class="badge ${eC(o.estado)}">${o.estado}</span>${o.estado==='En progreso'&&o.ejecutadoPor?`<br><span class="badge b-b" style="margin-top:3px;font-size:9px">👤 ${o.ejecutadoPor}</span>`:''}</td>
-    <td><button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}</td>
+    <td><span class="badge ${eC(o.estado)}">${o.estado==='Cerrada'?'🔒 Cerrada':o.estado}</span>${o.estado==='En progreso'&&o.ejecutadoPor?`<br><span class="badge b-b" style="margin-top:3px;font-size:9px">👤 ${o.ejecutadoPor}</span>`:''}</td>
+    <td>${o.estado==='Cerrada'?`<button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver (cerrada — solo lectura)" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>`:`<button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}`}</td>
   </tr>`;}).join('');
 }
 function fmtDurMin(min){ if(!min&&min!==0)return'—'; const h=Math.floor(min/60),m=Math.round(min%60); return h>0?`${h}h ${m}m`:`${m}m`; }
@@ -2495,7 +2504,7 @@ function rKPIs(){
   const cump=mantT?Math.round((mantC/mantT)*100):0;
   const stT=stock.length;const stC=stock.filter(s=>s.qty<=s.min).length;
   const stPct=stT?Math.round((stC/stT)*100):0;
-  const ordT=ordenes.length;const ordC=ordenes.filter(o=>o.estado==='Completada').length;
+  const ordT=ordenes.length;const ordC=ordenes.filter(o=>o.estado==='Completada'||o.estado==='Cerrada').length;
 
   document.getElementById('kpi-disp').textContent=disp+'%';document.getElementById('kpi-disp-b').style.width=disp+'%';
   document.getElementById('kpi-cump').textContent=cump+'%';document.getElementById('kpi-cump-b').style.width=cump+'%';
@@ -2705,8 +2714,8 @@ window.UI={
     renderHerrChips();renderCheckBuilder();
     document.getElementById('m-ord').classList.add('open');
   },
-  editOrd(id){ if(!canDo('editar')){toast('⚠ Tu rol no puede editar órdenes, solo ejecutarlas','warn');return;} this.openOrd(id); },
-  async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
+  editOrd(id){ const o=id?ordenes.find(x=>x._id===id):null; if(o?.estado==='Cerrada'){toast('🔒 Esta orden está cerrada y no se puede modificar','warn');return;} if(!canDo('editar')){toast('⚠ Tu rol no puede editar órdenes, solo ejecutarlas','warn');return;} this.openOrd(id); },
+  async delOrd(id){if(!canDo('eliminar'))return;const o=ordenes.find(x=>x._id===id);if(o?.estado==='Cerrada'){toast('🔒 Esta orden está cerrada y no se puede eliminar. Reabrila primero.','warn');return;}if(!confirm(`¿Eliminar "${o?.desc||'esta orden'}"?`))return;await fbDel('ordenes',id);await logH('orden',`Orden eliminada: ${o?.desc||''}`);toast('Orden eliminada');},
   verOrd(id){ verOrdenDetalle(id); },
   openBaja(){
     if(!canDo('crear'))return;
@@ -2956,9 +2965,48 @@ function pintarOrdenDetalle(o,id){
   const cl=Array.isArray(o.checklist)?o.checklist:[];
   const done=cl.filter(c=>c.hecho).length;
   const pct=cl.length?Math.round(done/cl.length*100):0;
+  const cerrada=o.estado==='Cerrada';
   let timerHTML='';
   if(o.estado==='En progreso' && o.inicioAt){ timerHTML=`<div style="text-align:center;padding:10px 0"><div id="ordver-timer" style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--blue)">--</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px">Tiempo transcurrido</div></div>`; }
-  else if(o.estado==='Completada' && o.inicioAt && o.finAt){ timerHTML=`<div style="text-align:center;padding:10px 0"><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent)">${fmtDurMs(new Date(o.finAt)-new Date(o.inicioAt))}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px">Duración real</div></div>`; }
+  else if((o.estado==='Completada'||cerrada) && o.inicioAt && o.finAt){ timerHTML=`<div style="text-align:center;padding:10px 0"><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent)">${fmtDurMs(new Date(o.finAt)-new Date(o.inicioAt))}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px">Duración real</div></div>`; }
+
+  // ═══ Vista de solo lectura para órdenes cerradas ═══
+  if(cerrada){
+    const puedeReabrir = currentUser?.rol==='admin';
+    document.getElementById('mov-body').innerHTML=`
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px">
+      🔒 <span>Orden cerrada${o.cerradoPor?` por <b style="color:var(--text)">${o.cerradoPor}</b>`:''}${o.cerradoAt?` — ${new Date(o.cerradoAt).toLocaleString('es-AR')}`:''}. Ya no se puede modificar, solo consultar lo realizado.</span>
+    </div>
+    <div style="font-weight:600;font-size:15px;margin-bottom:8px">${o.desc}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <span class="badge b-p">${o.tipo||'—'}</span>
+      <span class="badge ${pC(o.prio)}">${o.prio}</span>
+      <span class="badge ${eC(o.estado)}">🔒 Cerrada</span>
+      ${o.tiempoEstimadoMin?`<span class="badge b-x">⏱ estimado ${fmtDurMin(o.tiempoEstimadoMin)}</span>`:''}
+    </div>
+    <div class="fr" style="margin-bottom:12px">
+      <div><div class="fl">Asignado a</div><div style="font-size:13px">${o.resp||'—'}</div></div>
+      <div><div class="fl">Fecha de carga</div><div style="font-size:13px">${o.fecha||'—'}</div></div>
+    </div>
+    ${o.ejecutadoPor?`<div class="fr" style="margin-bottom:12px"><div><div class="fl">Ejecutada por</div><div style="font-size:13px">${o.ejecutadoPor}</div></div></div>`:''}
+    ${o.herramientas?.length?`<div class="fl">Herramientas / materiales necesarios</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${o.herramientas.map(h=>`<span class="badge b-b">🔧 ${h}</span>`).join('')}</div>`:''}
+    ${o.notas?`<div class="fl">Notas / instrucciones</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.notas}</div>`:''}
+    ${o.observacionOperario?`<div class="fl">Observación del operario</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.observacionOperario}</div>`:''}
+    ${cl.length?`<div class="fl">Checklist — cumplido (${done}/${cl.length})</div>
+      <div style="width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:${pct===100?'var(--accent)':'var(--warn)'};width:${pct}%"></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        ${cl.map(c=>`<div style="display:flex;align-items:center;gap:9px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 10px">
+          <span style="flex-shrink:0">${c.hecho?'✅':'❌'}</span>
+          <span style="font-size:12px;${c.hecho?'color:var(--text)':'color:var(--danger)'}">${c.texto}</span>
+        </div>`).join('')}
+      </div>` : ''}
+    ${timerHTML}
+    <div style="margin-top:6px;margin-bottom:8px">
+      <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="exportOrdenPDF('${id}')">📄 Descargar / Imprimir PDF</button>
+    </div>
+    ${puedeReabrir?`<div style="margin-top:6px"><button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="reabrirOrden('${id}')">🔓 Reabrir orden (admin)</button></div>`:''}`;
+    return;
+  }
 
   document.getElementById('mov-body').innerHTML=`
     <div style="font-weight:600;font-size:15px;margin-bottom:8px">${o.desc}</div>
@@ -3000,7 +3048,8 @@ function pintarOrdenDetalle(o,id){
       <button class="btn btn-warn" style="flex:1;justify-content:center" ${o.estado==='Pendiente'?'disabled':''} onclick="cambiarEstadoOrd('${id}','Pendiente')">⏸ Pendiente</button>
       <button class="btn btn-blue" style="flex:1;justify-content:center" ${o.estado==='En progreso'?'disabled':''} onclick="cambiarEstadoOrd('${id}','En progreso')">▶ En progreso</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center" ${o.estado==='Completada'?'disabled':''} onclick="cambiarEstadoOrd('${id}','Completada')">✓ Completada</button>
-    </div>`;
+    </div>
+    ${canDoSilent('editar')?`<div style="margin-top:8px"><button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--muted)" onclick="cerrarOrden('${id}')">🔒 Cerrar orden (ya no se podrá modificar)</button></div>`:''}`;
 
   if(o.estado==='En progreso' && o.inicioAt){
     const start=new Date(o.inicioAt).getTime();
@@ -3055,6 +3104,37 @@ window.cambiarEstadoOrd=async function(id,nuevoEstado){
   await fbUpd('ordenes',id,upd);
   await logH('orden',`Orden "${o.desc}" → ${nuevoEstado}${upd.ejecutadoPor?` (por ${upd.ejecutadoPor})`:''}`);
   toast('✓ Estado actualizado');
+  const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
+};
+
+// Cerrar una orden: queda bloqueada para edición, solo se puede consultar
+// lo que se cumplió (checklist) y lo que no.
+window.cerrarOrden=async function(id){
+  if(!canDo('editar')) return;
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  if(o.estado==='Cerrada'){ toast('Esta orden ya está cerrada','warn'); return; }
+  const cl=Array.isArray(o.checklist)?o.checklist:[];
+  const pend=cl.filter(c=>!c.hecho).length;
+  const msg=pend>0
+    ? `Esta orden tiene ${pend} paso(s) del checklist sin marcar como hecho. Al cerrarla ya no se va a poder modificar, solo consultar. ¿Confirmás?`
+    : '¿Cerrar esta orden? Una vez cerrada ya no se va a poder modificar, solo consultar.';
+  if(!confirm(msg)) return;
+  const upd={ estado:'Cerrada', cerradoPor: currentUser?.username || currentUser?.nombre || '—', cerradoAt: new Date().toISOString() };
+  await fbUpd('ordenes',id,upd);
+  await logH('orden',`Orden "${o.desc}" cerrada por ${upd.cerradoPor}`);
+  toast('🔒 Orden cerrada');
+  const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
+};
+
+// Reabrir una orden cerrada (solo admin) — vuelve a estado "Completada" para poder corregirla.
+window.reabrirOrden=async function(id){
+  if(currentUser?.rol!=='admin'){ toast('⚠ Solo un administrador puede reabrir una orden cerrada','err'); return; }
+  const o=ordenes.find(x=>x._id===id); if(!o) return;
+  if(!confirm('¿Reabrir esta orden? Va a volver a estar disponible para editar.')) return;
+  const upd={ estado:'Completada', reabiertoPor: currentUser?.username, reabiertoAt: new Date().toISOString() };
+  await fbUpd('ordenes',id,upd);
+  await logH('orden',`Orden "${o.desc}" reabierta por ${currentUser?.username}`);
+  toast('🔓 Orden reabierta');
   const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
 };
 
@@ -4167,7 +4247,7 @@ Sé específico, práctico y conciso. Usá el contexto del equipo si está dispo
 // ---- RESUMEN DE TURNO ----
 function updateTurnoPreview() {
   const hoy = new Date();
-  const ordHoy = ordenes.filter(o => o.estado !== 'Completada').length;
+  const ordHoy = ordenes.filter(o => o.estado !== 'Completada' && o.estado !== 'Cerrada').length;
   const mantVenc = mantenimientos.filter(m => m.estado !== 'Completado' && daysUntil(m.fecha) <= 0).length;
   const alertas = calcAlerts().length;
   const consumosHoy = prestamos.filter(p => {
@@ -4200,8 +4280,8 @@ window.runResumenTurno = async function() {
   response.innerHTML = '<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>Redactando informe del turno...</span></div>';
 
   // Recopilar datos del día
-  const ordPend = ordenes.filter(o => o.estado !== 'Completada');
-  const ordComp = ordenes.filter(o => o.estado === 'Completada');
+  const ordPend = ordenes.filter(o => o.estado !== 'Completada' && o.estado !== 'Cerrada');
+  const ordComp = ordenes.filter(o => o.estado === 'Completada' || o.estado === 'Cerrada');
   const mantVenc = mantenimientos.filter(m => m.estado !== 'Completado' && daysUntil(m.fecha) <= 0);
   const mantHoy = mantenimientos.filter(m => m.fecha === fecha);
   const alertasAct = calcAlerts();
@@ -4369,8 +4449,9 @@ function buildSystemPrompt() {
   const mantProx = mantenimientos.filter(m=>m.estado!=='Completado'&&daysUntil(m.fecha)>0&&daysUntil(m.fecha)<=7);
   const stockCrit = stock.filter(s=>s.qty<=s.min);
   const stockSinStock = stock.filter(s=>s.qty===0);
-  const ordPend = ordenes.filter(o=>o.estado!=='Completada');
+  const ordPend = ordenes.filter(o=>o.estado!=='Completada'&&o.estado!=='Cerrada');
   const ordCrit = ordPend.filter(o=>o.prio==='Crítica');
+  const ordCerradas = ordenes.filter(o=>o.estado==='Cerrada');
   const prestActivos = prestamos.filter(p=>p.estado==='activo');
   const prestVencidos = prestamos.filter(p=>p.estado==='activo'&&daysUntil(p.fechaDevolucion)<0);
   const alertas = calcAlerts();
@@ -4407,7 +4488,7 @@ ${stock.map(s=>`  ${s.nombre}: ${s.qty} ${s.unidad} (mín:${s.min}) [${s.categor
 ÓRDENES DE TRABAJO:
 • Pendientes: ${ordPend.length} | Críticas: ${ordCrit.length}
 ${ordPend.map(o=>{const mq=maquinas.find(q=>q._id===o.equipoId);return`  ${o.prio==='Crítica'?'🔴':'•'} ${o.desc} | ${o.prio} | ${mq?.nombre||'Sin equipo'} | Resp:${o.resp||'—'} | Estado:${o.estado}`;}).join('\n')}
-• Completadas: ${ordenes.filter(o=>o.estado==='Completada').length}
+• Completadas: ${ordenes.filter(o=>o.estado==='Completada').length} | Cerradas: ${ordCerradas.length}
 
 PRÉSTAMOS:
 • Activos: ${prestActivos.length} | Vencidos: ${prestVencidos.length}
