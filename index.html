@@ -2972,7 +2972,7 @@ function pintarOrdenDetalle(o,id){
 
   // ═══ Vista de solo lectura para órdenes cerradas ═══
   if(cerrada){
-    const puedeReabrir = currentUser?.rol==='admin';
+    const puedeReabrir = currentUser?.rol==='admin' || currentUser?.rol==='supervisor';
     document.getElementById('mov-body').innerHTML=`
     <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px">
       🔒 <span>Orden cerrada${o.cerradoPor?` por <b style="color:var(--text)">${o.cerradoPor}</b>`:''}${o.cerradoAt?` — ${new Date(o.cerradoAt).toLocaleString('es-AR')}`:''}. Ya no se puede modificar, solo consultar lo realizado.</span>
@@ -3004,7 +3004,7 @@ function pintarOrdenDetalle(o,id){
     <div style="margin-top:6px;margin-bottom:8px">
       <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="exportOrdenPDF('${id}')">📄 Descargar / Imprimir PDF</button>
     </div>
-    ${puedeReabrir?`<div style="margin-top:6px"><button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="reabrirOrden('${id}')">🔓 Reabrir orden (admin)</button></div>`:''}`;
+    ${puedeReabrir?`<div style="margin-top:6px"><button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="reabrirOrden('${id}')">🔓 Reabrir orden</button></div>`:''}`;
     return;
   }
 
@@ -3049,7 +3049,7 @@ function pintarOrdenDetalle(o,id){
       <button class="btn btn-blue" style="flex:1;justify-content:center" ${o.estado==='En progreso'?'disabled':''} onclick="cambiarEstadoOrd('${id}','En progreso')">▶ En progreso</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center" ${o.estado==='Completada'?'disabled':''} onclick="cambiarEstadoOrd('${id}','Completada')">✓ Completada</button>
     </div>
-    ${canDoSilent('editar')?`<div style="margin-top:8px"><button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--muted)" onclick="cerrarOrden('${id}')">🔒 Cerrar orden (ya no se podrá modificar)</button></div>`:''}`;
+    ${currentUser?`<div style="margin-top:8px"><button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--muted)" onclick="cerrarOrden('${id}')">🔒 Cerrar orden (ya no se podrá modificar)</button></div>`:''}`;
 
   if(o.estado==='En progreso' && o.inicioAt){
     const start=new Date(o.inicioAt).getTime();
@@ -3107,10 +3107,11 @@ window.cambiarEstadoOrd=async function(id,nuevoEstado){
   const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
 };
 
-// Cerrar una orden: queda bloqueada para edición, solo se puede consultar
+// Cerrar una orden: la puede cerrar cualquier usuario logueado (típicamente quien la
+// está ejecutando). Queda bloqueada para edición, solo se puede consultar
 // lo que se cumplió (checklist) y lo que no.
 window.cerrarOrden=async function(id){
-  if(!canDo('editar')) return;
+  if(!currentUser){ toast('⚠ Iniciá sesión para cerrar la orden','err'); return; }
   const o=ordenes.find(x=>x._id===id); if(!o) return;
   if(o.estado==='Cerrada'){ toast('Esta orden ya está cerrada','warn'); return; }
   const cl=Array.isArray(o.checklist)?o.checklist:[];
@@ -3126,9 +3127,9 @@ window.cerrarOrden=async function(id){
   const merged={...o,...upd}; pintarOrdenDetalle(merged,id);
 };
 
-// Reabrir una orden cerrada (solo admin) — vuelve a estado "Completada" para poder corregirla.
+// Reabrir una orden cerrada (solo admin o supervisor) — vuelve a estado "Completada" para poder corregirla.
 window.reabrirOrden=async function(id){
-  if(currentUser?.rol!=='admin'){ toast('⚠ Solo un administrador puede reabrir una orden cerrada','err'); return; }
+  if(currentUser?.rol!=='admin' && currentUser?.rol!=='supervisor'){ toast('⚠ Solo un administrador o supervisor puede reabrir una orden cerrada','err'); return; }
   const o=ordenes.find(x=>x._id===id); if(!o) return;
   if(!confirm('¿Reabrir esta orden? Va a volver a estar disponible para editar.')) return;
   const upd={ estado:'Completada', reabiertoPor: currentUser?.username, reabiertoAt: new Date().toISOString() };
