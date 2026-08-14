@@ -1429,6 +1429,16 @@ body.modo-operario #fab{display:none !important;}
     </div>
 
     <div class="fg">
+      <label class="fl">Repuestos / insumos a utilizar <span style="color:var(--muted);font-weight:400">(se descuentan del stock automáticamente al completar la orden)</span></label>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <select class="fss" id="or-rep-item" style="flex:1"></select>
+        <input class="fi" id="or-rep-cant" type="number" min="1" placeholder="Cant." style="width:72px">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="addRepuesto()">+ Agregar</button>
+      </div>
+      <div id="or-rep-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <div class="fg">
       <label class="fl">Checklist de pasos a seguir</label>
       <div id="or-check-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
       <div style="display:flex;gap:6px"><input class="fi" id="or-check-in" placeholder="Ej: Desconectar la máquina — Enter para agregar" onkeydown="if(event.key==='Enter'){event.preventDefault();addChecklistItem();}"><button class="btn btn-ghost btn-sm" type="button" onclick="addChecklistItem()">+ Agregar paso</button></div>
@@ -1445,6 +1455,13 @@ body.modo-operario #fab{display:none !important;}
     <div id="mov-body"></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-ord-ver')">Cerrar</button></div>
   </div>
+</div>
+
+<!-- LIGHTBOX FOTOS DE ÓRDENES -->
+<div class="fact-lightbox" id="ord-lightbox" onclick="closeOrdLightbox()">
+  <button class="fact-lightbox-close" onclick="closeOrdLightbox()">✕ Cerrar</button>
+  <img id="ord-lightbox-img" src="" alt="Foto de la orden">
+  <div style="font-size:12px;color:rgba(255,255,255,.5);font-family:var(--mono)">Clic en cualquier lado para cerrar</div>
 </div>
 
 
@@ -2423,13 +2440,14 @@ function renderOrdenes(){
     const pct=cl.length?Math.round(done/cl.length*100):0;
     const progHTML=cl.length?`<div style="display:flex;align-items:center;gap:6px"><div style="width:52px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;flex-shrink:0"><div style="height:100%;background:${pct===100?'var(--accent)':'var(--blue)'};width:${pct}%"></div></div><span style="font-size:10px;color:var(--muted);font-family:var(--mono)">${done}/${cl.length}</span></div>`:`<span style="font-size:10px;color:var(--faint);font-family:var(--mono)">— sin checklist</span>`;
     const tiempoHTML=o.tiempoEstimadoMin?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px">⏱ est. ${fmtDurMin(o.tiempoEstimadoMin)}</div>`:'';
+    const extrasHTML=(o.fotos?.length||o.repuestos?.length)?`<div style="display:flex;gap:5px;margin-top:3px">${o.fotos?.length?`<span style="font-size:10px;color:var(--muted);font-family:var(--mono)">📷${o.fotos.length}</span>`:''}${o.repuestos?.length?`<span style="font-size:10px;color:var(--muted);font-family:var(--mono)">🔩${o.repuestos.length}</span>`:''}</div>`:'';
     return `<tr>
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">#${o._id.slice(-4).toUpperCase()}</td>
     <td style="font-weight:500;cursor:pointer" onclick="UI.verOrd('${o._id}')">${o.desc}${o.notas?'<br><span style="font-size:10px;color:var(--muted)">'+o.notas+'</span>':''}</td>
     <td style="font-size:11px;color:var(--muted)">${o.equipoNombre||'—'}</td>
     <td><span class="badge b-p">${o.tipo||'—'}</span><br><span class="badge ${pC(o.prio)}" style="margin-top:3px">${o.prio}</span></td>
     <td style="font-size:12px;color:var(--muted)">${o.resp}</td>
-    <td>${progHTML}${tiempoHTML}</td>
+    <td>${progHTML}${tiempoHTML}${extrasHTML}</td>
     <td><span class="badge ${eC(o.estado)}">${o.estado==='Cerrada'?'🔒 Cerrada':o.estado}</span>${o.estado==='En progreso'&&o.ejecutadoPor?`<br><span class="badge b-b" style="margin-top:3px;font-size:9px">👤 ${o.ejecutadoPor}</span>`:''}</td>
     <td>${o.estado==='Cerrada'?`<button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver (cerrada — solo lectura)" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>`:`<button class="ab" onclick="UI.verOrd('${o._id}')" title="Ver / Ejecutar" style="color:var(--accent)">👁</button><button class="ab" onclick="exportOrdenPDF('${o._id}')" title="Descargar PDF para imprimir" style="color:var(--blue)">📄</button>${currentUser?.rol==='pasante'?`<button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button>`:`<button class="ab qr-btn" onclick="UI.showQR('${o._id}','orden')" title="QR">⊡</button><button class="ab ed" onclick="UI.editOrd('${o._id}')" title="Editar">✎</button><button class="ab del" onclick="UI.delOrd('${o._id}')" title="Eliminar">✕</button>`}`}</td>
   </tr>`;}).join('');
@@ -2698,6 +2716,7 @@ window.UI={
   openOrd(id=null){
     eIds.ord=id;document.getElementById('mo-title').textContent=id?'Editar Orden':'Nueva Orden';
     document.getElementById('or-eq').innerHTML='<option value="">— Sin equipo —</option>'+maquinas.map(m=>`<option value="${m._id}">${m.nombre}</option>`).join('');
+    document.getElementById('or-rep-item').innerHTML=stock.map(s=>`<option value="${s._id}">${s.nombre} (disp: ${s.qty} ${s.unidad||''})</option>`).join('')||'<option value="">— Sin artículos en stock —</option>';
     if(id){
       const o=ordenes.find(x=>x._id===id);
       document.getElementById('or-desc').value=o.desc||'';document.getElementById('or-eq').value=o.equipoId||'';document.getElementById('or-tipo').value=o.tipo||'Preventivo';document.getElementById('or-pr').value=o.prio||'Alta';document.getElementById('or-est').value=o.estado||'Pendiente';document.getElementById('or-resp').value=o.resp||'';document.getElementById('or-notas').value=o.notas||'';
@@ -2705,13 +2724,15 @@ window.UI={
       else{document.getElementById('or-tiempo').value=o.tiempoEstimadoMin||'';document.getElementById('or-tiempo-un').value='min';}
       orHerramientas=Array.isArray(o.herramientas)?[...o.herramientas]:[];
       orChecklist=Array.isArray(o.checklist)?o.checklist.map(c=>({...c})):[];
+      orRepuestos=Array.isArray(o.repuestos)?o.repuestos.map(r=>({...r})):[];
     }
     else{
       ['or-desc','or-resp','or-notas','or-tiempo'].forEach(i=>document.getElementById(i).value='');
       document.getElementById('or-eq').value='';document.getElementById('or-tipo').value='Preventivo';document.getElementById('or-pr').value='Alta';document.getElementById('or-est').value='Pendiente';document.getElementById('or-tiempo-un').value='min';
-      orHerramientas=[];orChecklist=[];
+      orHerramientas=[];orChecklist=[];orRepuestos=[];
     }
-    renderHerrChips();renderCheckBuilder();
+    document.getElementById('or-rep-cant').value='';
+    renderHerrChips();renderCheckBuilder();renderRepChips();
     document.getElementById('m-ord').classList.add('open');
   },
   editOrd(id){ const o=id?ordenes.find(x=>x._id===id):null; if(o?.estado==='Cerrada'){toast('🔒 Esta orden está cerrada y no se puede modificar','warn');return;} if(!canDo('editar')){toast('⚠ Tu rol no puede editar órdenes, solo ejecutarlas','warn');return;} this.openOrd(id); },
@@ -2908,8 +2929,8 @@ window.saveBaja=async function(){
   closeModal('m-baja');toast('✓ Baja registrada');
 };
 
-// ═══ Herramientas y Checklist (modal Nueva/Editar Orden) ═══
-let orHerramientas=[], orChecklist=[];
+// ═══ Herramientas, Repuestos y Checklist (modal Nueva/Editar Orden) ═══
+let orHerramientas=[], orChecklist=[], orRepuestos=[];
 function renderHerrChips(){
   document.getElementById('or-herr-list').innerHTML = orHerramientas.length
     ? orHerramientas.map((h,i)=>`<span class="badge b-b" style="cursor:default">🔧 ${h} <span style="cursor:pointer;margin-left:4px;opacity:.7" onclick="rmHerramienta(${i})">✕</span></span>`).join('')
@@ -2920,6 +2941,33 @@ window.addHerramienta=function(){
   if(!v)return; orHerramientas.push(v); inp.value=''; renderHerrChips();
 };
 window.rmHerramienta=function(i){ orHerramientas.splice(i,1); renderHerrChips(); };
+
+function renderRepChips(){
+  document.getElementById('or-rep-list').innerHTML = orRepuestos.length
+    ? orRepuestos.map((r,i)=>{
+        const item=stock.find(s=>s._id===r.itemId);
+        const insuf = item && r.cantidad>item.qty;
+        return `<div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid ${insuf?'var(--danger)':'var(--border)'};border-radius:7px;padding:6px 10px">
+          <span style="flex:1;font-size:12px">🔩 ${r.nombre} <span style="color:var(--muted)">x${r.cantidad}</span>${insuf?` <span style="color:var(--danger);font-size:10px">— solo hay ${item.qty}</span>`:''}</span>
+          <span style="cursor:pointer;color:var(--danger);font-size:12px" onclick="rmRepuesto(${i})">✕</span>
+        </div>`;
+      }).join('')
+    : '<span style="font-size:11px;color:var(--faint)">Sin repuestos agregados todavía</span>';
+}
+window.addRepuesto=function(){
+  const sel=document.getElementById('or-rep-item');const itemId=sel.value;
+  const cantInp=document.getElementById('or-rep-cant');const cant=parseInt(cantInp.value)||0;
+  if(!itemId){toast('⚠ Seleccioná un artículo de stock','warn');return;}
+  if(cant<=0){toast('⚠ Indicá una cantidad válida','warn');return;}
+  const item=stock.find(s=>s._id===itemId);
+  if(!item){toast('⚠ Artículo no encontrado','warn');return;}
+  const existente=orRepuestos.find(r=>r.itemId===itemId);
+  if(existente) existente.cantidad+=cant;
+  else orRepuestos.push({itemId,nombre:item.nombre,codigo:item.codigo||'—',unidad:item.unidad||'',cantidad:cant});
+  cantInp.value='';
+  renderRepChips();
+};
+window.rmRepuesto=function(i){ orRepuestos.splice(i,1); renderRepChips(); };
 
 function renderCheckBuilder(){
   document.getElementById('or-check-list').innerHTML = orChecklist.length
@@ -2936,6 +2984,25 @@ window.addChecklistItem=function(){
 };
 window.rmChecklistItem=function(i){ orChecklist.splice(i,1); renderCheckBuilder(); };
 
+// Descuenta del stock los repuestos usados en una orden (solo una vez, controlado por o.stockDescontado).
+// Devuelve false y avisa si no hay stock suficiente para alguno de los repuestos.
+async function descontarRepuestosOrden(o){
+  const reps=Array.isArray(o.repuestos)?o.repuestos:[];
+  if(!reps.length) return true;
+  const faltantes=reps.filter(r=>{const item=stock.find(s=>s._id===r.itemId);return item && r.cantidad>item.qty;});
+  if(faltantes.length){
+    toast(`⚠ No hay stock suficiente para: ${faltantes.map(f=>f.nombre).join(', ')}. Ajustá la cantidad o el stock antes de completar.`,'err');
+    return false;
+  }
+  for(const r of reps){
+    const item=stock.find(s=>s._id===r.itemId);
+    if(!item) continue;
+    await fbUpd('stock',item._id,{qty:item.qty-r.cantidad});
+    await logH('stock',`Consumo por orden "${o.desc}": ${item.nombre} x${r.cantidad}`);
+  }
+  return true;
+}
+
 window.saveOrden=async function(){
   const desc=document.getElementById('or-desc').value.trim();if(!desc){toast('⚠ Completá la descripción','warn');return;}
   const eqId=document.getElementById('or-eq').value;const maq=maquinas.find(m=>m._id===eqId);
@@ -2944,10 +3011,17 @@ window.saveOrden=async function(){
   const tiempoEstimadoMin=tiempoUn==='h'?Math.round(tiempoVal*60):Math.round(tiempoVal);
   const nuevoEstado=document.getElementById('or-est').value;
   const prev=eIds.ord?ordenes.find(x=>x._id===eIds.ord):null;
-  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',tipo:document.getElementById('or-tipo').value,prio:document.getElementById('or-pr').value,estado:nuevoEstado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:prev?.fecha||new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),tiempoEstimadoMin,herramientas:[...orHerramientas],checklist:orChecklist.map(c=>({...c}))};
+  const obj={desc,equipoId:eqId,equipoNombre:maq?.nombre||'',tipo:document.getElementById('or-tipo').value,prio:document.getElementById('or-pr').value,estado:nuevoEstado,resp:document.getElementById('or-resp').value.trim()||'—',fecha:prev?.fecha||new Date().toISOString().split('T')[0],notas:document.getElementById('or-notas').value.trim(),tiempoEstimadoMin,herramientas:[...orHerramientas],repuestos:orRepuestos.map(r=>({...r})),checklist:orChecklist.map(c=>({...c}))};
   if(!prev) obj.creadoAt=new Date().toISOString();
   if(nuevoEstado==='En progreso' && !prev?.inicioAt) obj.inicioAt=new Date().toISOString();
-  if(nuevoEstado==='Completada' && !prev?.finAt){ obj.finAt=new Date().toISOString(); if(!prev?.inicioAt) obj.inicioAt=prev?.creadoAt||obj.finAt; }
+  if(nuevoEstado==='Completada' && !prev?.finAt){
+    obj.finAt=new Date().toISOString(); if(!prev?.inicioAt) obj.inicioAt=prev?.creadoAt||obj.finAt;
+    if(!prev?.stockDescontado){
+      const ok=await descontarRepuestosOrden({desc,repuestos:obj.repuestos});
+      if(!ok) return;
+      obj.stockDescontado=true;
+    }
+  }
   if(eIds.ord){await fbSet('ordenes',eIds.ord,obj);await logH('orden',`Orden editada: ${desc}`);}else{await fbAdd('ordenes',obj);await logH('orden',`Orden creada: ${desc}`);}
   closeModal('m-ord');toast('✓ Orden guardada');
 };
@@ -2960,6 +3034,77 @@ window.verOrdenDetalle=function(id){
   pintarOrdenDetalle(o,id);
   document.getElementById('m-ord-ver').classList.add('open');
 };
+// ═══ Helpers de repuestos y fotos para la vista de detalle de la orden ═══
+function repuestosDetalleHTML(o){
+  const reps=Array.isArray(o.repuestos)?o.repuestos:[];
+  if(!reps.length) return '';
+  return `<div class="fl">Repuestos / insumos utilizados</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${reps.map(r=>`<span class="badge b-g">🔩 ${r.nombre} x${r.cantidad}${r.unidad?' '+r.unidad:''}</span>`).join('')}</div>`;
+}
+function fotosGridHTML(o,editable){
+  const fotos=Array.isArray(o.fotos)?o.fotos:[];
+  if(!fotos.length) return editable?'':'';
+  return `<div class="fl">Fotos (${fotos.length})</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">${fotos.map((f,i)=>`
+    <div style="position:relative">
+      <img src="${f.b64}" style="width:100%;height:80px;object-fit:cover;border-radius:7px;border:1px solid var(--border);cursor:pointer" onclick="openOrdLightbox('${f.b64}')">
+      ${editable?`<span onclick="event.stopPropagation();rmFotoOrden('${o._id}',${i})" style="position:absolute;top:3px;right:3px;background:rgba(10,12,18,.8);color:var(--danger);border-radius:5px;padding:1px 5px;font-size:11px;cursor:pointer;line-height:1.4">✕</span>`:''}
+    </div>`).join('')}</div>`;
+}
+function compressImageFile(file,maxDim,quality){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>h && w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}
+        else if(h>=w && h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=()=>reject(new Error('No se pudo leer la imagen'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('No se pudo leer el archivo'));
+    reader.readAsDataURL(file);
+  });
+}
+window.agregarFotoOrden=async function(id,inputEl){
+  const file=inputEl.files?.[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ toast('⚠ Solo se aceptan imágenes','warn'); inputEl.value=''; return; }
+  const o=ordenes.find(x=>x._id===id); if(!o){ inputEl.value=''; return; }
+  const fotosActuales=Array.isArray(o.fotos)?o.fotos:[];
+  if(fotosActuales.length>=6){ toast('⚠ Máximo 6 fotos por orden','warn'); inputEl.value=''; return; }
+  try{
+    const b64=await compressImageFile(file,1000,0.6);
+    const nueva={b64,subidoPor:currentUser?.username||'—',fecha:new Date().toISOString()};
+    const fotos=[...fotosActuales,nueva];
+    await fbUpd('ordenes',id,{fotos});
+    await logH('orden',`Orden "${o.desc}" — foto agregada por ${nueva.subidoPor}`);
+    const merged={...o,fotos}; pintarOrdenDetalle(merged,id);
+    toast('✓ Foto agregada');
+  }catch(e){
+    toast('⚠ No se pudo procesar la foto','err');
+  }
+  inputEl.value='';
+};
+window.rmFotoOrden=async function(id,idx){
+  const o=ordenes.find(x=>x._id===id); if(!o || o.estado==='Cerrada') return;
+  const fotos=(Array.isArray(o.fotos)?o.fotos:[]).filter((_,i)=>i!==idx);
+  await fbUpd('ordenes',id,{fotos});
+  const merged={...o,fotos}; pintarOrdenDetalle(merged,id);
+  toast('🗑 Foto eliminada');
+};
+window.openOrdLightbox=function(src){
+  document.getElementById('ord-lightbox-img').src=src;
+  document.getElementById('ord-lightbox').classList.add('open');
+};
+window.closeOrdLightbox=function(){
+  document.getElementById('ord-lightbox').classList.remove('open');
+};
+
 function pintarOrdenDetalle(o,id){
   if(ordVerTimer){clearInterval(ordVerTimer);ordVerTimer=null;}
   const cl=Array.isArray(o.checklist)?o.checklist:[];
@@ -2990,8 +3135,10 @@ function pintarOrdenDetalle(o,id){
     </div>
     ${o.ejecutadoPor?`<div class="fr" style="margin-bottom:12px"><div><div class="fl">Ejecutada por</div><div style="font-size:13px">${o.ejecutadoPor}</div></div></div>`:''}
     ${o.herramientas?.length?`<div class="fl">Herramientas / materiales necesarios</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${o.herramientas.map(h=>`<span class="badge b-b">🔧 ${h}</span>`).join('')}</div>`:''}
+    ${repuestosDetalleHTML(o)}
     ${o.notas?`<div class="fl">Notas / instrucciones</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.notas}</div>`:''}
     ${o.observacionOperario?`<div class="fl">Observación del operario</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.observacionOperario}</div>`:''}
+    ${fotosGridHTML(o,false)}
     ${cl.length?`<div class="fl">Checklist — cumplido (${done}/${cl.length})</div>
       <div style="width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:${pct===100?'var(--accent)':'var(--warn)'};width:${pct}%"></div></div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
@@ -3026,7 +3173,13 @@ function pintarOrdenDetalle(o,id){
     <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Completá tu nombre y apellido antes de tocar "▶ En progreso" — así el supervisor ve quién está haciendo la tarea en el momento.</div>
     ${o.estado==='En progreso'?`<div style="margin-bottom:12px"><button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="guardarEjecutorOrd('${id}')">👤 Actualizar quién la está haciendo</button></div>`:'<div style="margin-bottom:12px"></div>'}
     ${o.herramientas?.length?`<div class="fl">Herramientas / materiales necesarios</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${o.herramientas.map(h=>`<span class="badge b-b">🔧 ${h}</span>`).join('')}</div>`:''}
+    ${repuestosDetalleHTML(o)}
     ${o.notas?`<div class="fl">Notas / instrucciones</div><div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;white-space:pre-wrap">${o.notas}</div>`:''}
+    ${fotosGridHTML(o,true)}
+    <div style="margin-bottom:12px">
+      <input type="file" accept="image/*" capture="environment" id="ordver-foto-input" style="display:none" onchange="agregarFotoOrden('${id}',this)">
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="document.getElementById('ordver-foto-input').click()">📷 Agregar foto</button>
+    </div>
     <div class="fl">Observación del operario (qué pasó, novedades, etc.)</div>
     <textarea id="ordver-obs" placeholder="Ej: se cambió el rodamiento, quedó pendiente pedir repuesto X, la máquina hizo un ruido raro al arrancar..." style="width:100%;min-height:70px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--sans);resize:vertical;margin-bottom:6px">${o.observacionOperario||''}</textarea>
     <div style="margin-bottom:12px">
@@ -3099,7 +3252,14 @@ window.cambiarEstadoOrd=async function(id,nuevoEstado){
     upd.ejecutadoPorEn=new Date().toISOString();
     if(!o.inicioAt) upd.inicioAt=new Date().toISOString();
   }
-  if(nuevoEstado==='Completada' && !o.finAt){ upd.finAt=new Date().toISOString(); if(!o.inicioAt) upd.inicioAt=o.creadoAt||upd.finAt; }
+  if(nuevoEstado==='Completada' && !o.finAt){
+    if(!o.stockDescontado){
+      const ok=await descontarRepuestosOrden(o);
+      if(!ok) return;
+      upd.stockDescontado=true;
+    }
+    upd.finAt=new Date().toISOString(); if(!o.inicioAt) upd.inicioAt=o.creadoAt||upd.finAt;
+  }
   if(nuevoEstado==='Pendiente'){ upd.inicioAt=null; upd.finAt=null; upd.ejecutadoPor=null; upd.ejecutadoPorEn=null; }
   await fbUpd('ordenes',id,upd);
   await logH('orden',`Orden "${o.desc}" → ${nuevoEstado}${upd.ejecutadoPor?` (por ${upd.ejecutadoPor})`:''}`);
@@ -3335,6 +3495,15 @@ window.exportOrdenPDF=function(id){
     pdf.setFont('helvetica','normal');
     const hlines=pdf.splitTextToSize(o.herramientas.join('  •  '),W-margin*2);
     pdf.text(hlines,margin,y); y+=hlines.length*5+4;
+  }
+
+  // Repuestos / insumos utilizados
+  if(o.repuestos?.length){
+    pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Repuestos / insumos utilizados:',margin,y); y+=5.5;
+    pdf.setFont('helvetica','normal');
+    const rTxt=o.repuestos.map(r=>`${r.nombre} x${r.cantidad}${r.unidad?' '+r.unidad:''}`).join('  •  ');
+    const rlines=pdf.splitTextToSize(rTxt,W-margin*2);
+    pdf.text(rlines,margin,y); y+=rlines.length*5+4;
   }
 
   // Notas / instrucciones
