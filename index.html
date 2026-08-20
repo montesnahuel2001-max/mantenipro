@@ -1485,6 +1485,8 @@ body.modo-operario #fab{display:none !important;}
       <label class="fl">Checklist de pasos a seguir</label>
       <div id="or-check-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
       <div style="display:flex;gap:6px"><input class="fi" id="or-check-in" placeholder="Ej: Desconectar la máquina — Enter para agregar" onkeydown="if(event.key==='Enter'){event.preventDefault();addChecklistItem();}"><button class="btn btn-ghost btn-sm" type="button" onclick="addChecklistItem()">+ Agregar paso</button></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Podés agregar una foto de referencia a cada paso (tocando el 📷) para que quien ejecute la orden vea claramente qué tiene que hacer.</div>
+      <input type="file" accept="image/*" id="or-check-foto-input" style="display:none" onchange="checklistFotoSelected(this)">
     </div>
 
     <div class="fg"><label class="fl">Notas / instrucciones adicionales</label><textarea class="fi" id="or-notas" placeholder="Instrucciones adicionales, seguridad, EPP requerido, etc."></textarea></div>
@@ -3246,6 +3248,10 @@ function renderCheckBuilder(){
     ? orChecklist.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:6px 10px">
         <span style="font-family:var(--mono);font-size:10px;color:var(--muted);width:16px">${i+1}.</span>
         <span style="flex:1;font-size:12px">${c.texto}</span>
+        ${c.foto?`<div style="position:relative;flex-shrink:0">
+          <img src="${c.foto}" style="width:32px;height:32px;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer" onclick="openOrdLightbox('${c.foto}')">
+          <span onclick="event.stopPropagation();rmChecklistItemFoto(${i})" style="position:absolute;top:-6px;right:-6px;background:rgba(10,12,18,.9);color:var(--danger);border-radius:5px;padding:0 3px;font-size:10px;cursor:pointer;line-height:1.4">✕</span>
+        </div>`:`<span title="Agregar foto de referencia a este paso" style="cursor:pointer;font-size:15px;flex-shrink:0" onclick="pedirFotoChecklistItem(${i})">📷</span>`}
         <span style="cursor:pointer;color:var(--danger);font-size:12px" onclick="rmChecklistItem(${i})">✕</span>
       </div>`).join('')
     : '<span style="font-size:11px;color:var(--faint)">Sin pasos agregados todavía — armá la secuencia que va a seguir el alumno/pasante</span>';
@@ -3255,6 +3261,31 @@ window.addChecklistItem=function(){
   if(!v)return; orChecklist.push({id:'p'+Date.now()+Math.floor(Math.random()*999),texto:v,hecho:false}); inp.value=''; renderCheckBuilder();
 };
 window.rmChecklistItem=function(i){ orChecklist.splice(i,1); renderCheckBuilder(); };
+window.pedirFotoChecklistItem=function(i){
+  const inp=document.getElementById('or-check-foto-input');
+  inp.dataset.idx=i;
+  inp.click();
+};
+window.checklistFotoSelected=async function(inputEl){
+  const i=parseInt(inputEl.dataset.idx);
+  const file=inputEl.files?.[0];
+  inputEl.value='';
+  if(!file || isNaN(i) || !orChecklist[i]) return;
+  if(!file.type.startsWith('image/')){ toast('⚠ Solo se aceptan imágenes','warn'); return; }
+  try{
+    const b64=await compressImageFile(file,700,0.6);
+    orChecklist[i].foto=b64;
+    renderCheckBuilder();
+    toast('✓ Foto de referencia agregada al paso');
+  }catch(e){
+    toast('⚠ No se pudo procesar la foto','err');
+  }
+};
+window.rmChecklistItemFoto=function(i){
+  if(!orChecklist[i])return;
+  delete orChecklist[i].foto;
+  renderCheckBuilder();
+};
 
 // Descuenta del stock los repuestos usados en una orden (solo una vez, controlado por o.stockDescontado).
 // Devuelve false y avisa si no hay stock suficiente para alguno de los repuestos.
@@ -3416,6 +3447,7 @@ function pintarOrdenDetalle(o,id){
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
         ${cl.map(c=>`<div style="display:flex;align-items:center;gap:9px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 10px">
           <span style="flex-shrink:0">${c.hecho?'✅':'❌'}</span>
+          ${c.foto?`<img src="${c.foto}" style="width:34px;height:34px;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer;flex-shrink:0" onclick="openOrdLightbox('${c.foto}')">`:''}
           <span style="font-size:12px;${c.hecho?'color:var(--text)':'color:var(--danger)'}">${c.texto}</span>
         </div>`).join('')}
       </div>` : ''}
@@ -3462,6 +3494,7 @@ function pintarOrdenDetalle(o,id){
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
         ${cl.map((c,i)=>`<label style="display:flex;align-items:center;gap:9px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;cursor:pointer">
           <input type="checkbox" ${c.hecho?'checked':''} onchange="toggleCheckItem('${id}',${i})" style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+          ${c.foto?`<img src="${c.foto}" style="width:34px;height:34px;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer;flex-shrink:0" onclick="event.preventDefault();event.stopPropagation();openOrdLightbox('${c.foto}')">`:''}
           <span style="font-size:12px;${c.hecho?'text-decoration:line-through;color:var(--muted)':''}">${c.texto}</span>
         </label>`).join('')}
       </div>` : ''}
